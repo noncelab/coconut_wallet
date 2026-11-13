@@ -70,10 +70,13 @@ class _WalletProvider extends ChangeNotifier implements WalletProvider {
         "wpkh([D45AA182/84'/1'/0']vpub5YtEovN9MqeUZxWqdpUKngsiaLCPFY34KpWGQVk9Tjq8G5SYcRFj9s5aCKeAQYGunG7LrFkA5obtH8kPJiv92JtWHfRvnir6PDvhd4p93Pp/<0;1>/*)#rcn2hj6y",
   );
 
+  /// 같은 계정의 다른 지갑 등(결정 ⑦ 테스트)
+  List<WalletItemBase> others = [];
+
   @override
-  List<WalletItemBase> get walletItemList => [wallet];
+  List<WalletItemBase> get walletItemList => [wallet, ...others];
   @override
-  WalletItemBase getWalletById(int id) => wallet;
+  WalletItemBase getWalletById(int id) => id == wallet.id ? wallet : others.firstWhere((other) => other.id == id);
   @override
   int getWatchedAddressCount(int id) => 0;
   @override
@@ -156,6 +159,21 @@ void main() {
       expect(preferences.getWalletTargetSats(2), 7);
     });
   }
+
+  // Fable N1: 목표 맵은 썼는데 꺼짐 표시 쓰기가 실패한 뒤에도 스위치는 목표가 있으면 켜진 채로 연다(합계·알림과 같게)
+  test('the goal switch opens on whenever the wallet has a goal', () async {
+    for (final (target, disabled, enabled) in [
+      (10, true, true),
+      (10, false, true),
+      (null, true, false),
+      (null, false, true),
+    ]) {
+      await initialize(target: target, disabled: disabled);
+      final model = viewModel();
+      expect(model.isTargetEnabled, enabled, reason: 'target $target, off flag $disabled');
+      model.dispose();
+    }
+  });
 
   test('a failed enable restores the previous target and disabled state', () async {
     await initialize(target: 10, disabled: true);
@@ -249,6 +267,8 @@ void main() {
 
   Future<_Analytics> openTargetSheet(
     WidgetTester tester, {
+    int id = 1,
+    bool sheetExpected = true,
     WalletInfoTarget? focus,
     Size viewport = const Size(430, 932),
     double bottomInset = 0,
@@ -286,7 +306,7 @@ void main() {
               ),
           home: LoaderOverlay(
             child: WalletInfoScreen(
-              id: 1,
+              id: id,
               walletType: WalletType.singleSignature,
               showTargetSetting: focus == null,
               initialTarget: focus,
@@ -297,7 +317,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
-    expect(find.byType(SingleTextFieldBottomSheet), focus == null ? findsOneWidget : findsNothing);
+    expect(find.byType(SingleTextFieldBottomSheet), focus == null && sheetExpected ? findsOneWidget : findsNothing);
     return analytics;
   }
 
@@ -437,5 +457,67 @@ void main() {
     expect(preferences.getWalletTargetSats(1), isNull);
     expect(preferences.isWalletTargetDisabled(1), isTrue);
     await tester.pump(const Duration(seconds: 4));
+  });
+
+  group('a second wallet of the same account (decision 7)', () {
+    // 같은 지갑 정보: 핫월렛과 그 보기 전용 지갑처럼 같은 계정
+    SinglesigWalletItem twin() => SinglesigWalletItem(
+      id: 2,
+      name: 'Twin wallet',
+      colorIndex: 1,
+      iconIndex: 1,
+      descriptor: walletProvider.wallet.descriptor,
+    );
+
+    Future<void> targets(Map<String, int> values) async {
+      final prefs = <String, Object>{SharedPrefKeys.kWalletTargetSatsMap: jsonEncode(values)};
+      SharedPreferences.setMockInitialValues(prefs);
+      store = _ControlledStore(prefs.map((key, value) => MapEntry('flutter.$key', value)));
+      SharedPreferencesStorePlatform.instance = store;
+      preferences = SharedPrefsRepository();
+      await preferences.init();
+    }
+
+    WalletInfoViewModel second() =>
+        WalletInfoViewModel(2, _AuthProvider(), walletProvider, _NodeProvider(), WalletType.singleSignature);
+
+    setUp(() => walletProvider.others = [twin()]);
+
+    test('cannot save a new goal while the first wallet has one, and storage stays the same', () async {
+      await targets({'1': 100000000});
+      final model = second();
+      addTearDown(model.dispose);
+      expect(model.goalBlockedBySameAccount, isTrue);
+      expect(await model.setTargetSats(50000000), isFalse);
+      expect(model.targetSats, isNull);
+    });
+
+    test('a goal it already has stays editable and removable', () async {
+      await targets({'1': 100000000, '2': 50000000});
+      final model = second();
+      addTearDown(model.dispose);
+      expect(model.goalBlockedBySameAccount, isFalse);
+      expect(await model.setTargetSats(70000000), isTrue);
+      expect(model.targetSats, 70000000);
+      await model.removeTargetSats();
+      expect(model.targetSats, isNull);
+      expect(model.goalBlockedBySameAccount, isTrue);
+    });
+
+    testWidgets('opening the goal of the second wallet explains instead of opening the editor', (tester) async {
+      await targets({'1': 100000000});
+      await openTargetSheet(tester, id: 2, sheetExpected: false);
+      final reason = t.home_edit.wallet_goal_same_account;
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Text &&
+              (w.data == reason || w.semanticsLabel == reason || w.data?.replaceAll('\u2060', '') == reason),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(SingleTextFieldBottomSheet), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+    });
   });
 }

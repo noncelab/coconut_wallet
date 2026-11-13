@@ -71,6 +71,7 @@ import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart' as app_field;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_platform_interface.dart';
@@ -2574,6 +2575,88 @@ void main() {
       await tester.pump();
       expect(label(), t.hodl_insights.goal_wallet_count(count: 2));
       expect(target(), both);
+      await _close(tester);
+    });
+
+    testWidgets('a second wallet of the same account cannot get a goal in the goal sheet', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        walletList: [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createSingleSigWalletItem(id: 2)],
+        targetSatsOf: (id) => id == 1 ? 100000000 : null,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      // 목표 시트는 저장된 목표를 읽는다. 1번 지갑에 목표를 저장해 둔다.
+      await tester.runAsync(() => SharedPrefsRepository().updateWalletTarget(1, 100000000));
+      await tester.tap(find.byKey(const Key('goal-amount-edit')));
+      await tester.pumpAndSettle();
+      // 시트 목록은 보이는 줄만 만든다. 2번 지갑 줄까지 내린다.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('widget-configure-goal-2')),
+        100,
+        scrollable: find.descendant(of: find.byType(WidgetConfigureSheet), matching: find.byType(Scrollable)).first,
+      );
+      await tester.pumpAndSettle();
+      // 같은 지갑 정보(같은 계정)인 2번 지갑은 목표를 넣을 수 없고, 이유를 한 줄로 보여 준다.
+      expect(find.byKey(const ValueKey('widget-configure-goal-same-account-2')), findsOneWidget);
+      expect(find.byKey(const ValueKey('widget-configure-goal-same-account-1')), findsNothing);
+      expect(
+        tester.widget<app_field.CoconutTextField>(find.byKey(const ValueKey('widget-configure-goal-input-2'))).enabled,
+        isFalse,
+      );
+      expect(find.bySemanticsLabel(t.home_edit.wallet_goal_same_account), findsOneWidget);
+      // 1번 지갑의 목표를 지우면 2번 지갑에 넣을 수 있다.
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('widget-configure-goal-input-1')),
+          matching: find.byType(EditableText),
+        ),
+        '',
+      );
+      await tester.pump();
+      expect(find.byKey(const ValueKey('widget-configure-goal-same-account-2')), findsNothing);
+      Navigator.of(tester.element(find.byType(WidgetConfigureSheet))).pop();
+      await tester.pumpAndSettle();
+      await _close(tester);
+    });
+
+    testWidgets('the later of two goals on one account explains itself and can be cleared', (tester) async {
+      await _openWidgetsTab(
+        tester,
+        fake: false,
+        disableAnimations: true,
+        walletList: [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createSingleSigWalletItem(id: 2)],
+        targetSatsOf: (id) => 100000000,
+        screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      // 예전 데이터: 같은 계정 두 지갑에 모두 목표가 있다
+      await tester.runAsync(() async {
+        await SharedPrefsRepository().updateWalletTarget(1, 100000000);
+        await SharedPrefsRepository().updateWalletTarget(2, 50000000);
+      });
+      await tester.tap(find.byKey(const Key('goal-amount-edit')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('widget-configure-goal-2')),
+        100,
+        scrollable: find.descendant(of: find.byType(WidgetConfigureSheet), matching: find.byType(Scrollable)).first,
+      );
+      await tester.pumpAndSettle();
+      final input2 = find.byKey(const ValueKey('widget-configure-goal-input-2'));
+      // 작은 목표의 지갑만 '합계에 넣지 않아요'를 보여 주고(막힌 이유와 다른 말), 입력은 막지 않는다
+      expect(find.byKey(const ValueKey('widget-configure-goal-same-account-2')), findsOneWidget);
+      expect(find.byKey(const ValueKey('widget-configure-goal-same-account-1')), findsNothing);
+      expect(find.bySemanticsLabel(t.home_edit.wallet_goal_smaller_excluded), findsOneWidget);
+      expect(tester.widget<app_field.CoconutTextField>(input2).enabled, isTrue);
+      // 지우고 새 숫자를 쓰려는 사람을 막지 않는다(Fable N1)
+      await tester.enterText(find.descendant(of: input2, matching: find.byType(EditableText)), '');
+      await tester.pump();
+      expect(tester.widget<app_field.CoconutTextField>(input2).enabled, isTrue);
+      Navigator.of(tester.element(find.byType(WidgetConfigureSheet))).pop();
+      await tester.pumpAndSettle();
       await _close(tester);
     });
 

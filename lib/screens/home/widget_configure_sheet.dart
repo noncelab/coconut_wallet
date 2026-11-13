@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
-    show CoconutLayout, CoconutSwitch, CoconutTypography, Sizes;
+    show CoconutLayout, CoconutSwitch, CoconutToast, CoconutToastLevel, CoconutTypography, Sizes;
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -17,6 +18,8 @@ import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/configure/home_configure_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/widgets/common/info/inline_notice.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -133,7 +136,7 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
     initial: widget.initial,
     initialSpan: widget.initialSpan,
     targetOf: widget.spec.goals ? SharedPrefsRepository().getWalletTargetSats : null,
-    saveTarget: widget.spec.goals ? SharedPrefsRepository().updateWalletTarget : null,
+    saveTargets: widget.spec.goals ? SharedPrefsRepository().updateWalletTargets : null,
   );
   final TextEditingController _fakeBalanceController = TextEditingController();
   final Map<int, TextEditingController> _targetControllers = {};
@@ -237,8 +240,18 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
 
   Future<void> _submit() async {
     await _viewModel.commitFakeBalance();
-    await _viewModel.commitTargets();
+    final skipped = await _viewModel.commitTargets();
     if (!mounted) return;
+    // 시트를 연 사이 같은 계정의 다른 지갑에 목표가 생겨 저장하지 않은 목표가 있으면 알린다
+    if (skipped.isNotEmpty) {
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: CommonStateIconPath.triangleWarning,
+        text: t.home_edit.wallet_goal_same_account,
+        level: CoconutToastLevel.warning,
+      );
+    }
     Navigator.pop(context, _viewModel.settings);
   }
 
@@ -396,7 +409,12 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(wallet.name, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText)),
+              Text(
+                wallet.name,
+                style: CoconutTypography.body2_14_Bold.copyWith(
+                  color: viewModel.goalBlocked(wallet.id) ? colors.tertiaryText : colors.primaryText,
+                ),
+              ),
               CoconutLayout.spacing_200h,
               KeyedSubtree(
                 key: _targetFieldKey(wallet.id),
@@ -408,7 +426,9 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
                   isLengthVisible: false,
                   controller: _targetController(wallet.id),
                   focusNode: _targetFocusNode(wallet.id),
-                  onChanged: (text) {},
+                  // 같은 계정의 다른 지갑을 막을지 바로 다시 그린다
+                  onChanged: (_) => setState(() {}),
+                  enabled: !viewModel.goalBlocked(wallet.id),
                   backgroundColor: colors.inputSurface,
                   maxLength: 19,
                   suffix: Text(t.btc, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText)),
@@ -422,6 +442,19 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
                   onClear: _targetController(wallet.id).clear,
                 ),
               ),
+              if (viewModel.goalBlocked(wallet.id) || viewModel.goalExcluded(wallet.id)) ...[
+                CoconutLayout.spacing_200h,
+                InlineNotice(
+                  key: ValueKey('widget-configure-goal-same-account-${wallet.id}'),
+                  icon: CupertinoIcons.info_circle,
+                  // 새 목표를 막은 이유와, 예전 목표가 합계에서 빠진 이유는 다른 말로(Astra)
+                  message:
+                      viewModel.goalBlocked(wallet.id)
+                          ? t.home_edit.wallet_goal_same_account
+                          : t.home_edit.wallet_goal_smaller_excluded,
+                  backgroundColor: Colors.transparent,
+                ),
+              ],
             ],
           ),
         ),

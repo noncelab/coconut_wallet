@@ -8,6 +8,10 @@ import 'package:coconut_wallet/services/home/builtin_home_widgets.dart';
 import 'package:flutter/foundation.dart';
 
 /// 위젯 설정 시트. [initial]이 null이면 새로 추가하는 위젯이다.
+/// 목표들을 한 번에 바꾸는 저장 함수([SharedPrefsRepository.updateWalletTargets]). 차례가 오면 지금 저장된 맵을 받아
+/// 바꿀 지갑과 값(null이면 지움)을 돌려준다.
+typedef WalletTargetsUpdate = Future<Map<int, int?>> Function(Map<int, int?> Function(Map<int, int> current) change);
+
 class WidgetConfigureViewModel extends ChangeNotifier {
   final HomeWidgetSettingsSpec spec;
   final List<WalletItemBase> wallets;
@@ -31,7 +35,9 @@ class WidgetConfigureViewModel extends ChangeNotifier {
   late int? _fakeBalance = _savedFakeBalance;
 
   final int? Function(int walletId) _targetOf;
-  final Future<void> Function(int walletId, int? targetSats) _saveTarget;
+  final WalletTargetsUpdate _saveTargets;
+
+  /// 시트를 연 때(저장에 실패했으면 그 뒤 다시 읽은) 목표. 이번 편집이 무엇을 바꿨는지 이 값과 비교한다.
   late final Map<int, int?> _savedTargets = {for (final wallet in wallets) wallet.id: _targetOf(wallet.id)};
   late final Map<int, int?> _targets = Map.of(_savedTargets);
 
@@ -42,10 +48,10 @@ class WidgetConfigureViewModel extends ChangeNotifier {
     HomeWidgetSettings? initial,
     HomeSpan? initialSpan,
     int? Function(int walletId)? targetOf,
-    Future<void> Function(int walletId, int? targetSats)? saveTarget,
+    WalletTargetsUpdate? saveTargets,
   }) : _preferenceProvider = preferenceProvider,
        _targetOf = targetOf ?? ((_) => null),
-       _saveTarget = saveTarget ?? ((_, __) async {}),
+       _saveTargets = saveTargets ?? ((_) async => const {}),
        isNew = initial == null {
     // null은 전체 지갑. 저장된 목록이 비었거나 id가 모두 사라져도 남은 지갑으로 넓히지 않는다.
     final savedIds = initial?.walletIds;
@@ -160,12 +166,70 @@ class WidgetConfigureViewModel extends ChangeNotifier {
     return true;
   }
 
-  /// 바뀐 지갑 목표만 저장한다.
-  Future<void> commitTargets() async {
-    if (!spec.goals) return;
-    for (final wallet in wallets) {
-      if (_targets[wallet.id] != _savedTargets[wallet.id]) await _saveTarget(wallet.id, _targets[wallet.id]);
+  /// 같은 계정(핫월렛과 그 보기 전용 지갑)의 다른 지갑에 [walletId]보다 큰 목표(없으면 아무 목표)가 지금 편집에 있는지
+  int? _largestOtherGoal(int walletId) {
+    final wallet = wallets.firstWhere((wallet) => wallet.id == walletId);
+    int? largest;
+    for (final other in wallets) {
+      if (other.id == walletId || other.accountKey != wallet.accountKey) continue;
+      final theirs = _targets[other.id];
+      if (theirs != null && (largest == null || theirs > largest)) largest = theirs;
     }
+    return largest;
+  }
+
+  /// 새 목표를 받지 않는 지갑(결정 ⑦): 시트를 연 때 목표가 없었고 같은 계정의 다른 지갑에 목표가 있다.
+  /// 이미 목표가 있던 지갑(예전 데이터)은 지우고 다시 써도 막지 않는다(Fable N1). 이유: "같은 계정 지갑에 이미 목표가 있어요"
+  bool goalBlocked(int walletId) => _savedTargets[walletId] == null && _largestOtherGoal(walletId) != null;
+
+  /// 이 지갑의 목표가 합계에 들어가지 않는 지갑: 목표가 있는데 같은 계정에 더 큰 목표가 있다(예전 데이터, 큰 목표로 센다).
+  /// 이유: "같은 계정에 더 큰 목표가 있어 이 목표는 합계에 넣지 않아요"(막힌 것과 다른 말, Astra)
+  bool goalExcluded(int walletId) {
+    final mine = _targets[walletId];
+    final largest = _largestOtherGoal(walletId);
+    return mine != null && largest != null && largest > mine;
+  }
+
+  /// 바뀐 지갑 목표를 한 번에 저장하고, 계정 규칙 때문에 저장하지 않은 지갑 id를 돌려준다(B1-b).
+  /// - 저장소가 차례를 주면(다른 목표 저장과 겹치지 않게) 그때의 최신 저장값으로 정한다. 이번 시트에서 바꾼 지갑만 쓰고,
+  ///   안 바꾼 지갑은 그 저장값을 그대로 둔다(시트를 연 사이 다른 곳에서 저장한 목표도 계정 규칙에 넣는다).
+  /// - 목표가 없던 지갑의 새 목표는 같은 계정에 남는 목표가 없을 때만, 지갑 id 순서로 계정마다 하나 받는다.
+  /// - 목표 맵은 한 번에 쓴다: 다 바뀌거나 하나도 안 바뀐다. 꺼짐 표시는 그 뒤에 쓰고, 실패하면 오류를 그대로 올린다.
+  /// - 저장했든 못 했든 시트는 다시 읽은 저장값으로 다음 저장을 맞춘다.
+  Future<Set<int>> commitTargets() async {
+    if (!spec.goals) return const {};
+    final skipped = <int>{};
+    try {
+      await _saveTargets((stored) {
+        skipped.clear();
+        final current = {for (final wallet in wallets) wallet.id: stored[wallet.id]};
+        final edited = [
+          for (final wallet in [...wallets]..sort((a, b) => a.id.compareTo(b.id)))
+            if (_targets[wallet.id] != _savedTargets[wallet.id]) wallet,
+        ];
+        final wanted = {...current, for (final wallet in edited) wallet.id: _targets[wallet.id]};
+        final claimed = {
+          for (final wallet in wallets)
+            if (wanted[wallet.id] != null && current[wallet.id] != null) wallet.accountKey,
+        };
+        for (final wallet in edited) {
+          if (wanted[wallet.id] != null && current[wallet.id] == null && !claimed.add(wallet.accountKey)) {
+            skipped.add(wallet.id);
+            wanted[wallet.id] = null;
+          }
+        }
+        return {
+          for (final wallet in edited)
+            if (wanted[wallet.id] != current[wallet.id]) wallet.id: wanted[wallet.id],
+        };
+      });
+    } finally {
+      for (final wallet in wallets) {
+        _savedTargets[wallet.id] = _targetOf(wallet.id);
+      }
+      notifyListeners();
+    }
+    return skipped;
   }
 
   HomeWidgetSettings get settings => HomeWidgetSettings(

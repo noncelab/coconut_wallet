@@ -210,6 +210,47 @@ class SharedPrefsRepository {
     }
   }
 
+  /// 목표들을 한 번에 바꾸는 저장은 차례로 한다: 읽기 → 합치기 → 쓰기가 다른 저장과 겹치지 않게(B1-b)
+  Completer<void>? _targetsLock;
+
+  Future<T> _inTargetOrder<T>(Future<T> Function() body) async {
+    while (_targetsLock != null) {
+      await _targetsLock!.future;
+    }
+    final lock = _targetsLock = Completer<void>();
+    try {
+      return await body();
+    } finally {
+      _targetsLock = null;
+      lock.complete();
+    }
+  }
+
+  /// 저장된 목표 맵(지갑 id → sats). 손상된 값이면 던진다(덮어써 버리지 않게).
+  Map<int, int> _readWalletTargets() {
+    final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletTargetSatsMap);
+    if (encodedData == null || encodedData.isEmpty) return {};
+    return (json.decode(encodedData) as Map<String, dynamic>).map(
+      (k, v) => MapEntry(int.parse(k), v is int ? v : int.parse(v.toString())),
+    );
+  }
+
+  /// 지금 맵을 [change]에 넘기고, 돌려준 지갑만(null이면 지움) 합쳐 맵을 한 번 쓴다. 바꾼 지갑과 값을 돌려준다.
+  Future<Map<int, int?>> _writeWalletTargets(Map<int, int?> Function(Map<int, int> current) change) async {
+    final current = _readWalletTargets();
+    final changes = change(Map.unmodifiable(current));
+    if (changes.isEmpty) return const {};
+    final next = {...current};
+    changes.forEach((walletId, sats) => sats == null ? next.remove(walletId) : next[walletId] = sats);
+    await _persistTargetPreference(
+      () => _sharedPrefs.setString(
+        SharedPrefKeys.kWalletTargetSatsMap,
+        json.encode({for (final entry in next.entries) '${entry.key}': entry.value}),
+      ),
+    );
+    return changes;
+  }
+
   Future<void> setWalletTargetSats(int walletId, int targetSats) async {
     final String? encodedData = _sharedPrefs.getString(SharedPrefKeys.kWalletTargetSatsMap);
     final Map<String, int> map =
@@ -232,15 +273,21 @@ class SharedPrefsRepository {
     await _persistTargetPreference(() => _sharedPrefs.setString(SharedPrefKeys.kWalletTargetSatsMap, json.encode(map)));
   }
 
-  /// 지갑 목표 수량을 바꾼다. null이면 목표를 지우고 꺼 둔다(지갑 정보 화면과 같은 규칙).
-  Future<void> updateWalletTarget(int walletId, int? targetSats) async {
-    if (targetSats == null) {
-      await removeWalletTargetSats(walletId);
-    } else {
-      await setWalletTargetSats(walletId, targetSats);
-    }
-    await setWalletTargetDisabled(walletId, targetSats == null);
-  }
+  /// 여러 지갑의 목표를 한 번에 바꾼다(B1-b). 차례가 오면 지금 저장된 맵을 [change]에 넘기고, [change]가 돌려준 지갑만
+  /// (null이면 지움) 합쳐 맵을 한 번 쓴다. 그래서 목표는 다 바뀌거나 하나도 안 바뀐다(맵 쓰기가 실패하면 캐시를 다시 읽고
+  /// 던진다). 그 뒤 바뀐 지갑의 꺼짐 표시를 쓴다(지우면 꺼짐, 넣으면 켜짐). 꺼짐 표시는 지갑마다 다른 키라 맵과 한 번에 묶지
+  /// 못한다. 실패하면 목표는 저장된 채로 던진다(읽는 쪽은 목표가 있으면 켜진 것으로 본다). 바꾼 지갑과 값을 돌려준다.
+  Future<Map<int, int?>> updateWalletTargets(Map<int, int?> Function(Map<int, int> current) change) =>
+      _inTargetOrder(() async {
+        final changes = await _writeWalletTargets(change);
+        for (final entry in changes.entries) {
+          await setWalletTargetDisabled(entry.key, entry.value == null);
+        }
+        return changes;
+      });
+
+  /// 지갑 하나의 목표를 바꾼다. null이면 목표를 지우고 꺼 둔다(지갑 정보 화면과 같은 규칙).
+  Future<void> updateWalletTarget(int walletId, int? targetSats) => updateWalletTargets((_) => {walletId: targetSats});
 
   bool isWalletTargetDisabled(int walletId) => getBool(SharedPrefKeys.walletTargetDisabled(walletId));
 

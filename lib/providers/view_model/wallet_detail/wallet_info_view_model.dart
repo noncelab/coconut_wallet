@@ -293,7 +293,23 @@ class WalletInfoViewModel extends ChangeNotifier {
   int? get targetSats => _sharedPrefs.getWalletTargetSats(_walletId);
   bool get isTargetDisabled => _sharedPrefs.isWalletTargetDisabled(_walletId);
 
+  /// 목표 스위치를 켠 채로 열지. 목표가 있으면 켜짐: 목표는 저장되고 꺼짐 표시 쓰기만 실패한 뒤에도 합계·알림과 같게 본다
+  bool get isTargetEnabled => targetSats != null || !isTargetDisabled;
+
   bool get isUpdatingTarget => _isUpdatingTarget;
+
+  /// 목표가 없는데 같은 계정(핫월렛과 그 보기 전용 지갑)의 다른 지갑에 목표가 있으면 true(결정 ⑦).
+  /// 새 두 번째 목표는 막는다. 이미 있는 목표는 고치고 지울 수 있다.
+  bool get goalBlockedBySameAccount {
+    if (targetSats != null) return false;
+    final wallet = _walletProvider.getWalletById(_walletId);
+    return _walletProvider.walletItemList.any(
+      (other) =>
+          other.id != _walletId &&
+          other.accountKey == wallet.accountKey &&
+          _sharedPrefs.getWalletTargetSats(other.id) != null,
+    );
+  }
 
   Future<bool> setTargetSats(int targetSats) => _updateTargetSats(targetSats);
 
@@ -304,6 +320,8 @@ class WalletInfoViewModel extends ChangeNotifier {
   Future<bool> _updateTargetSats(int? targetSats) async {
     if (_isUpdatingTarget) return false;
     if (targetSats != null && targetSats <= 0) throw ArgumentError('Wallet target must be positive');
+    // 화면에서 막지만 저장할 때도 한 번 더 본다(결정 ⑦)
+    if (targetSats != null && goalBlockedBySameAccount) return false;
     final previousTarget = this.targetSats;
     final previousDisabled = isTargetDisabled;
     _isUpdatingTarget = true;

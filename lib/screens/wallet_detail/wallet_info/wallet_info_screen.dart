@@ -832,6 +832,17 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
 
   void _showTargetSettingBottomSheet(BuildContext context, WalletInfoViewModel viewModel) {
     if (viewModel.isUpdatingTarget) return;
+    // 같은 계정의 다른 지갑에 이미 목표가 있으면 새 목표를 넣지 않는다(결정 ⑦). 이유만 알려 준다.
+    if (viewModel.goalBlockedBySameAccount) {
+      CoconutToast.showToast(
+        context: context,
+        isVisibleIcon: true,
+        iconPath: CommonStateIconPath.triangleWarning,
+        text: t.home_edit.wallet_goal_same_account,
+        level: CoconutToastLevel.warning,
+      );
+      return;
+    }
     final btcString =
         viewModel.targetSats != null ? BalanceFormatUtil.formatSatoshiToBtcInputText(viewModel.targetSats!) : '';
     final parentContext = context;
@@ -866,7 +877,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       focusOnlyWhenOriginalNotEmpty: true,
       toggleLabel: t.wallet_info_screen.target_enabled,
       toggleDescription: t.wallet_info_screen.target_enabled_description,
-      initiallyEnabled: !viewModel.isTargetDisabled,
+      initiallyEnabled: viewModel.isTargetEnabled,
       submitValidator: (text) {
         final btc = text.toDoubleSafe();
         return btc != null && btc <= 0 ? t.wallet_info_screen.target_set_zero_error : null;
