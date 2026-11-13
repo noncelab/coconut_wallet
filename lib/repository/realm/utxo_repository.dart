@@ -357,6 +357,12 @@ class UtxoRepository extends BaseRepository {
             existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
             existingUtxo.timestamp = toUpdateUtxo.timestamp;
             existingUtxo.status = toUpdateUtxo.status;
+          } else if (existingUtxo != null && _isRevivable(walletId, existingUtxo, toUpdateUtxo)) {
+            existingUtxo
+              ..isDeleted = false
+              ..blockHeight = toUpdateUtxo.blockHeight
+              ..timestamp = toUpdateUtxo.timestamp
+              ..status = toUpdateUtxo.status;
           }
         }
         realm.addAll<RealmUtxo>(newUtxos);
@@ -364,6 +370,19 @@ class UtxoRepository extends BaseRepository {
 
       return true;
     });
+  }
+
+  /// 받는 중일 때 지운 것으로 표시된 코인이 확정 출력으로 다시 왔는지(원문 조회 실패로 대체로 보고 지운 입금 등).
+  /// 그 코인을 만든 거래의 확정 기록이 있고, 내 거래가 그 코인을 쓰지 않았을 때만 되살린다.
+  /// 내가 쓴 코인(확정 코인이었거나, 그 코인을 쓴 내 거래가 남아 있음)은 되살리지 않는다
+  bool _isRevivable(int walletId, RealmUtxo deleted, RealmUtxo fetched) {
+    if (fetched.blockHeight <= 0 || deleted.blockHeight != 0 || deleted.spentByTransactionHash != null) return false;
+    final creator =
+        realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+          walletId,
+          deleted.transactionHash,
+        ]).firstOrNull;
+    return (creator?.blockHeight ?? 0) > 0;
   }
 
   // UTXO 상태를 "출금 중(outgoing)"으로 표시
@@ -602,6 +621,20 @@ class UtxoRepository extends BaseRepository {
   Future<void> deleteUtxosByTransaction(int walletId, lib.Transaction transaction) async {
     final utxoIds = transaction.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
 
+    // 확정된 지출이 쓴 코인에 쓴 거래가 비어 있으면 이 거래를 남긴다(이미 지운 것으로 표시된 코인 포함).
+    // 낡은 listunspent가 이 코인을 확정 출력으로 다시 보여 줘도 되살리지 않게 한다(_isRevivable).
+    // 미확정 지출로 이미 남은 연결은 덮어쓰지 않는다(_isSpentByConfirmed가 그 연결로 충돌을 찾는다)
+    final unmarked = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND spentByTransactionHash == null', [
+      walletId,
+      utxoIds.map((utxoId) => '$walletId:$utxoId').toList(),
+    ]);
+    if (unmarked.isNotEmpty) {
+      await realm.writeAsync(() {
+        for (final utxo in unmarked) {
+          utxo.spentByTransactionHash = transaction.transactionHash;
+        }
+      });
+    }
     await deleteUtxoList(walletId, utxoIds);
   }
 

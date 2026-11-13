@@ -574,6 +574,16 @@ void main() {
         });
       }
 
+      test('내 자식이 쓴 받는 중 코인은 둘이 확정된 뒤 낡은 listunspent가 다시 보여도 되살리지 않는다', () async {
+        await syncChild();
+        await wallet.sync([history(incoming, 101), history(child, 101)]);
+        expect(wallet.coin(incoming.transactionHash, 0), isNull);
+
+        await wallet.sync([history(incoming, 101), history(child, 101)], unspentList: wallet.unspent(incoming, 101));
+
+        expect(wallet.coin(incoming.transactionHash, 0), isNull);
+      });
+
       test('부모와 자식 원문을 잠깐 못 받아 자식까지 지웠어도, 둘이 확정되면 자식 기록과 출력 코인이 돌아온다', () async {
         final childOut = await syncChild();
         final rawParent = wallet.server.rawByHash.remove(incoming.transactionHash)!;
@@ -835,15 +845,91 @@ void main() {
       expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.unspent);
     });
 
-    // 이 PR 전과 같은 동작(별도 이슈): 남이 보낸 거래는 원문 조회 실패를 대체로 보고, 지운 것으로 표시된 코인은 다시 넣지 않는다
-    test('받는 중 거래의 원문 조회가 일반 오류로 실패하면 지금처럼 그 받는 중 코인을 지우고, 확정 뒤에도 코인은 돌아오지 않는다', () async {
+    // PR #789 재리뷰 2: 남이 보낸 거래는 지금처럼 원문 조회 실패를 대체로 보고 받는 중 코인을 지운 것으로 표시한다.
+    // 지운 것으로 표시된 코인은 다시 넣지 않아서, 그 입금이 확정돼도 코인이 돌아오지 않았음
+    test('받는 중 거래의 원문 조회가 일반 오류로 실패하면 지금처럼 그 받는 중 코인을 지우지만, 그 입금이 확정되면 코인이 다시 보인다', () async {
       final first = await receiveThenFailFetch((txHash) => StateError('unavailable $txHash'));
 
       expect(wallet.coin(first.transactionHash, 0), isNull);
       expect(wallet.txs.getTransactionRecord(walletId, first.transactionHash), isNull);
       await wallet.sync([history(first, 101)], unspentList: wallet.unspent(first, 101, index: 1), index: 1);
       expect(wallet.txs.getTransactionRecord(walletId, first.transactionHash)?.blockHeight, 101);
+      expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    test('지운 받는 중 코인은 그 거래의 확정 기록과 확정 출력이 모두 있어야 되살린다', () async {
+      final first = await receiveThenFailFetch((txHash) => StateError('unavailable $txHash'));
+
+      // 거래 기록 없이 확정 출력만 옴
+      await wallet.sync([], unspentList: wallet.unspent(first, 101, index: 1), index: 1);
       expect(wallet.coin(first.transactionHash, 0), isNull);
+      // 확정 기록은 생겼지만 출력은 아직 미확정으로 옴
+      await wallet.sync([history(first, 101)], unspentList: wallet.unspent(first, 0, index: 1), index: 1);
+      expect(wallet.txs.getTransactionRecord(walletId, first.transactionHash)?.blockHeight, 101);
+      expect(wallet.coin(first.transactionHash, 0), isNull);
+
+      await wallet.sync([history(first, 101)], unspentList: wallet.unspent(first, 101, index: 1), index: 1);
+      expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    // PR #789 푸시 전 리뷰 1: 받는 중 코인을 쓴 내 지출을 확정으로 처음 보면, 그 코인이 지운 것으로만 표시되고 쓴 거래가 비어
+    // 낡은 listunspent가 그 코인을 확정 출력으로 보여 주면 되살아났음
+    for (final (seenPending, sameResponse) in [(false, true), (false, false), (true, true), (true, false)]) {
+      test('받는 중 코인을 쓴 내 지출을 ${seenPending ? '미확정으로 먼저' : '확정으로 처음'} 보고(입금 확정과 ${sameResponse ? '같은' : '다른'} 응답), '
+          '낡은 listunspent가 그 코인을 다시 보여도 전체 동기화 뒤까지 되살리지 않는다', () async {
+        final first = _paidToMe(wallet, 1, 94);
+        await wallet.sync([history(first, 0)], unspentList: wallet.unspent(first, 0, index: 1), index: 1);
+        final spend = signer.pay([wallet.coin(first.transactionHash, 0)!], {shop: 10000}, changeIndex: 3);
+        wallet.publish([spend]);
+        final spendable = wallet.spendable;
+        if (seenPending) {
+          await wallet.sync([history(first, 0), history(spend, 0)], index: 1);
+        }
+        if (!sameResponse) {
+          await wallet.sync(
+            [history(first, 101), if (seenPending) history(spend, 0)],
+            unspentList: seenPending ? const [] : wallet.unspent(first, 101, index: 1),
+            index: 1,
+          );
+        }
+        await wallet.sync([history(first, 101), history(spend, 102)], index: 1);
+        expect(wallet.coin(first.transactionHash, 0), isNull);
+
+        await wallet.sync(
+          [history(first, 101), history(spend, 102)],
+          unspentList: wallet.unspent(first, 101, index: 1),
+          index: 1,
+        );
+        expect(wallet.coin(first.transactionHash, 0), isNull, reason: 'stale listunspent');
+        await wallet.syncBatch([
+          (history: [history(first, 101), history(spend, 102)], unspent: [], index: 1, isChange: false),
+        ]);
+
+        expect(wallet.coin(first.transactionHash, 0), isNull, reason: 'after a full sync');
+        expect(wallet.spendable, spendable);
+      });
+    }
+
+    test('확정으로 처음 본 내 지출이 쓴 확정 코인은 낡은 listunspent가 다시 보여도 되살리지 않는다', () async {
+      final funded = signer.funded([60000], 9, indexes: [3]);
+      wallet.publish([funded.funding]);
+      await wallet.sync(
+        [history(funded.funding, 100)],
+        unspentList: wallet.unspent(funded.funding, 100, index: 3),
+        index: 3,
+      );
+      final spend = signer.pay(funded.coins, {shop: 10000}, changeIndex: 3);
+      wallet.publish([spend]);
+      await wallet.sync([history(funded.funding, 100), history(spend, 102)], index: 3);
+      expect(wallet.coin(funded.funding.transactionHash, 0), isNull);
+
+      await wallet.sync(
+        [history(funded.funding, 100), history(spend, 102)],
+        unspentList: wallet.unspent(funded.funding, 100, index: 3),
+        index: 3,
+      );
+
+      expect(wallet.coin(funded.funding.transactionHash, 0), isNull);
     });
 
     test('보낸 쪽이 RBF로 바꾼 받는 거래는, 이전 거래 원문을 못 받으면 대체됨으로 보고 새 거래만 받는 중으로 남긴다', () async {
@@ -859,6 +945,7 @@ void main() {
       expect(wallet.coin(replacement.transactionHash, 0)?.status, UtxoStatus.incoming);
       await wallet.sync([history(replacement, 101)], unspentList: wallet.unspent(replacement, 101, index: 1), index: 1);
       expect(wallet.coin(replacement.transactionHash, 0)?.status, UtxoStatus.unspent);
+      expect(wallet.coin(first.transactionHash, 0), isNull, reason: 'the replaced deposit never confirms');
     });
 
     test('내 결제 A의 원문 조회가 실패해도 A에서 나온 내 잔돈 코인을 지우지 않고, A가 확정되면 그대로 쓸 수 있다', () async {
