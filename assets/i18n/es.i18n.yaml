@@ -2394,7 +2394,7 @@ ark:
     server_down: "El servidor Ark no responde. No puedes enviar"
     server_down_retry: "El servidor Ark no responde.\nInténtalo más tarde."
     server_down_submitted_title: "Espera el resultado"
-    server_down_submitted: "Enviado, pero el servidor no responde. Se procesará cuando vuelva; no lo reenvíes hasta confirmarlo."
+    server_down_submitted: "Enviado, pero el servidor no responde. Se procesará cuando vuelva; deja la app abierta y no lo reenvíes hasta confirmarlo."
     locked: "Desbloquea Ark primero"
     ark_wallet_only: "Solo con billeteras con Ark"
     onchain_only: "Varios: solo direcciones Bitcoin"

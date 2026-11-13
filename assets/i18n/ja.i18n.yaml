@@ -2391,7 +2391,7 @@ ark:
     server_down: "Arkサーバーが応答せず、今は送れません"
     server_down_retry: "Arkサーバーが応答していません。\nしばらくしてからお試しください。"
     server_down_submitted_title: "結果をお待ちください"
-    server_down_submitted: "送信済みですが、サーバーが応答していません。復旧すると処理されるので、確認できるまで再送しないでください。"
+    server_down_submitted: "送信済みですが、サーバーが応答していません。復旧すると処理されるので、アプリを開いたまま確認できるまで再送しないでください。"
     locked: "Arkのロックを解除してください"
     ark_wallet_only: "Arkを有効にしたウォレットでのみ送れます"
     onchain_only: "複数の宛先にはビットコインアドレスのみ使えます"

@@ -2399,7 +2399,7 @@ ark:
     server_down: "Ark-Server antwortet nicht. Senden geht nicht"
     server_down_retry: "Der Ark-Server antwortet nicht.\nBitte später erneut versuchen."
     server_down_submitted_title: "Bitte auf das Ergebnis warten"
-    server_down_submitted: "Gesendet, aber der Server antwortet nicht. Es wird ausgeführt, sobald er zurück ist. Bis dahin nicht erneut senden."
+    server_down_submitted: "Gesendet, aber der Server antwortet nicht. Es wird ausgeführt, sobald er zurück ist. App offen lassen und nicht erneut senden."
     locked: "Entsperre zuerst Ark"
     ark_wallet_only: "Nur mit Ark-Wallets möglich"
     onchain_only: "Mehrere Empfänger: nur Bitcoin-Adressen"

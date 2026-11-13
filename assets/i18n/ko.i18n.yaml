@@ -2400,7 +2400,7 @@ ark:
     server_down: "아크 서버가 응답하지 않아 지금은 보낼 수 없어요"
     server_down_retry: "아크 서버가 응답하지 않아요.\n잠시 후 다시 시도해 주세요."
     server_down_submitted_title: "결과를 잠시 기다려 주세요"
-    server_down_submitted: "거래를 보냈지만 서버가 응답하지 않아요. 서버가 재개되면 처리되니, 확인될 때까지 다시 보내지 마세요."
+    server_down_submitted: "거래를 보냈지만 서버가 응답하지 않아요. 서버가 재개되면 처리되니, 앱을 켜 둔 채 확인될 때까지 다시 보내지 마세요."
     locked: "아크 잠금을 해제해 주세요"
     ark_wallet_only: "아크를 켠 지갑에서만 보낼 수 있어요"
     onchain_only: "여러 명에게는 비트코인 주소로만 보낼 수 있어요"

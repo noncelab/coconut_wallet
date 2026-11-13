@@ -203,7 +203,9 @@ class ArkProvider extends ChangeNotifier {
 
   /// 지갑의 아크 내역. 직접 출금에는 앱이 기록한 온체인 거래를 붙임
   List<ArkMovement> movements(int walletId) {
-    final movements = snapshot(walletId)?.movements ?? const <ArkMovement>[];
+    final recorded = snapshot(walletId)?.movements ?? const <ArkMovement>[];
+    final inFlight = _inFlightMovements(walletId, recorded);
+    final movements = inFlight.isEmpty ? recorded : [...inFlight, ...recorded];
     final exits = [
       if (_exitSessions[walletId] case final active?) active,
       ..._exitHistory.where((session) => session.walletId == walletId),
@@ -1198,6 +1200,16 @@ class ArkProvider extends ChangeNotifier {
   }) async {
     final fingerprint = _requireFingerprint(walletId);
     final isLightning = rail == ArkPaymentRail.lightningInvoice || rail == ArkPaymentRail.lightningAddress;
+    final inFlight = (
+      id: --_lastInFlightId,
+      startedAt: DateTime.now(),
+      amountSats: amountSats,
+      destination: destination,
+      rail: rail,
+    );
+    (_inFlightPayments[walletId] ??= []).add(inFlight);
+    var keepInFlight = false;
+    var succeeded = false;
     try {
       for (var attempt = 0; ; attempt++) {
         if (isLightning) await _syncChainTipIgnoringFailure(fingerprint);
@@ -1220,6 +1232,7 @@ class ArkProvider extends ChangeNotifier {
           if (comment != null && comment.isNotEmpty && movementId != null) {
             _savePaymentMemo(walletId, movementId, comment);
           }
+          succeeded = true;
           return movementId;
         } on ArkPaymentException catch (error) {
           // The server rejects a Lightning payment whose HTLC expiry, set from the wallet's chain
@@ -1232,10 +1245,82 @@ class ArkProvider extends ChangeNotifier {
       if (rail == ArkPaymentRail.onchain && error.toString().contains('remains pending')) {
         throw ArkMovePendingException(error.toString());
       }
+      keepInFlight = !await _canReachServer();
+      rethrow;
+    } catch (_) {
+      keepInFlight = !await _canReachServer();
       rethrow;
     } finally {
+      // 성공하면 bark 기록이 목록에 들어올 때 바꿔 끼움, 서버가 닿지 않는 실패는 나중에 처리될 수 있어 남김
+      if (succeeded) {
+        _settledInFlight[inFlight.id] = DateTime.now();
+      } else if (!keepInFlight) {
+        _inFlightPayments[walletId]?.remove(inFlight);
+      }
+      cacheRevision.value++;
       unawaited(syncNow(walletId, withRounds: false));
     }
+  }
+
+  /// bark에 넘겼지만 서버가 응답하지 않아 아직 bark 기록이 없는 결제. 앱이 켜져 있는 동안만 bark가
+  /// 다시 연결해 보내므로 메모리에만 둠
+  final Map<int, List<({int id, DateTime startedAt, int amountSats, String destination, ArkPaymentRail rail})>>
+  _inFlightPayments = {};
+  int _lastInFlightId = 0;
+
+  /// bark가 성공을 돌려준 결제와 그 시각, 기록이 끝내 안 들어와도 1분 뒤 지움
+  final Map<int, DateTime> _settledInFlight = {};
+
+  /// 아직 bark 기록이 없는 결제를 대기 중인 보내기 기록으로
+  List<ArkMovement> _inFlightMovements(int walletId, List<ArkMovement> movements) {
+    final payments = _inFlightPayments[walletId];
+    if (payments == null || payments.isEmpty) return const [];
+    final now = DateTime.now();
+    payments.removeWhere(
+      (payment) =>
+          (_settledInFlight[payment.id]?.isBefore(now.subtract(const Duration(minutes: 1))) ?? false) ||
+          movements.any(
+            (movement) =>
+                movement.effectiveBalanceSats < 0 &&
+                movement.kind != ArkMovementKind.refresh &&
+                movement.kind != ArkMovementKind.exit &&
+                !movement.createdAt.isBefore(payment.startedAt.subtract(const Duration(seconds: 5))),
+          ),
+    );
+    return [
+      for (final payment in payments)
+        ArkMovement(
+          id: payment.id,
+          status: ArkMovementStatus.pending,
+          subsystemName: switch (payment.rail) {
+            ArkPaymentRail.ark => 'bark.arkoor',
+            ArkPaymentRail.onchain => 'bark.offboard',
+            _ => 'bark.lightning_send',
+          },
+          subsystemKind: payment.rail == ArkPaymentRail.onchain ? 'send_onchain' : 'send',
+          metadataJson: '{}',
+          intendedBalanceSats: -payment.amountSats,
+          effectiveBalanceSats: -payment.amountSats,
+          offchainFeeSats: 0,
+          sentTo: [
+            jsonEncode({
+              'type': switch (payment.rail) {
+                ArkPaymentRail.ark => 'ark',
+                ArkPaymentRail.onchain => 'bitcoin',
+                ArkPaymentRail.lightningInvoice => 'invoice',
+                ArkPaymentRail.lightningAddress => 'lightning-address',
+              },
+              'value': payment.destination,
+            }),
+          ],
+          receivedOn: const [],
+          inputVtxoIds: const [],
+          outputVtxoIds: const [],
+          exitedVtxoIds: const [],
+          createdAt: payment.startedAt,
+          updatedAt: payment.startedAt,
+        ),
+    ];
   }
 
   /// bark sets a Lightning payment's HTLC expiry from its last known chain tip; a sync refreshes it.

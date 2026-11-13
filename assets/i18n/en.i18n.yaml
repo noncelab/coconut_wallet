@@ -2394,7 +2394,7 @@ ark:
     server_down: "The Ark server isn't responding. You can't send now"
     server_down_retry: "The Ark server isn't responding.\nPlease try again later."
     server_down_submitted_title: "Please wait for the result"
-    server_down_submitted: "Sent, but the server isn't responding. It goes through when the server is back, so don't resend until it's confirmed."
+    server_down_submitted: "Sent, but the server isn't responding. It goes through when the server is back, so keep the app open and don't resend until it's confirmed."
     locked: "Unlock Ark first"
     ark_wallet_only: "Only wallets with Ark can pay this"
     onchain_only: "Multiple recipients need Bitcoin addresses"
