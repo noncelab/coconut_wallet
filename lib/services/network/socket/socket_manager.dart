@@ -7,6 +7,7 @@ import 'package:coconut_wallet/constants/network_constants.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/services/network/socket/socket_factory.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 
 class SocketManager {
@@ -78,6 +79,22 @@ class SocketManager {
     _scriptSubscribeCallbacks.remove(scriptReverseHash);
     return true;
   }
+
+  /// 지갑의 콜백이 [callback] 그 자체일 때만 지운다. 그사이 같은 지갑이 다시 등록했거나 해제했으면 그대로 둔다
+  void removeWalletSubscriptionCallbackIfSame(
+    String scriptReverseHash,
+    int walletId,
+    Function(String, String?) callback,
+  ) {
+    final callbacks = _scriptSubscribeCallbacks[scriptReverseHash];
+    if (callbacks == null || !identical(callbacks[walletId], callback)) return;
+    callbacks.remove(walletId);
+    if (callbacks.isEmpty) _scriptSubscribeCallbacks.remove(scriptReverseHash);
+  }
+
+  @visibleForTesting
+  bool hasWalletSubscriptionCallback(String scriptReverseHash, int walletId) =>
+      _scriptSubscribeCallbacks[scriptReverseHash]?.containsKey(walletId) ?? false;
 
   // .onion 주소인 경우 타임아웃을 길게 설정
   Duration getConnectionTimeout(bool isOnionHost) {
