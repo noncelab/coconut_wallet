@@ -1510,6 +1510,11 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "지원하지 않는 트랜잭션이에요."
     utxo_not_found_title: "UTXO 없음"
     utxo_not_found: "거래에 사용한 UTXO를 찾을 수 없어요."
+    unverified_original_title: "서명 확인 불가"
+    unverified_original: "이 거래의 서명을 확인할 수 없어 수수료를 올릴 수 없어요. 연결한 서버를 확인해 주세요."
+    original_not_found_title: "거래를 찾을 수 없음"
+    original_not_found: "서버에서 이 거래를 받지 못해 수수료를 올릴 수 없어요. 지갑을 재동기화하면 서버에 있는 내역으로 다시 불러와요."
+    resync: "재동기화"
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
 
@@ -2147,3 +2152,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "한 장씩 보기"
 wallet_selection_grid: "모아 보기"
+unverified_transaction_dialog:
+  title: "서버가 잘못된 거래를 보냈어요"
+  description: "서명이 맞지 않는 거래라 내역에 넣지 않았어요. 다른 서버로 바꿔 주세요."
+  change_server: "서버 바꾸기"

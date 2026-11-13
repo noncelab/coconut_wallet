@@ -34,4 +34,7 @@ abstract class StateManagerInterface {
 
   /// 지갑의 트랜잭션 fetch 요청이 몇 건 완료됐는지 보고
   void addWalletFetchCompleted(int walletId, int count);
+
+  /// 내 코인을 쓰지만 내 입력의 서명이 맞지 않아 내역에 넣지 않은 미확정 거래(거래 번호만)
+  void addUnverifiedPendingTransactions(int walletId, List<String> txHashes);
 }

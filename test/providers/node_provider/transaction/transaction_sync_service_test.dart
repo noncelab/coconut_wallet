@@ -64,6 +64,7 @@ void main() {
       stateManager,
       utxoRepository,
       scriptCallbackService,
+      pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
     );
     transactionSyncService = TransactionSyncService(
       electrumService,
@@ -72,6 +73,7 @@ void main() {
       stateManager,
       utxoRepository,
       scriptCallbackService,
+      pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
     );
 
     // 테스트용 지갑 생성
@@ -374,6 +376,7 @@ void main() {
         stateManager,
         recordingUtxoRepository,
         scriptCallbackService,
+        pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
       );
       final fundingTx = TransactionMock.createMockTransaction(toAddress: testAddress, amount: 1000000);
       final replacements = [

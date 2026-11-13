@@ -22,6 +22,7 @@ import 'package:coconut_wallet/utils/result.dart';
 
 import '../providers/node_provider/transaction/rbf_service_test.mocks.dart';
 import '../repository/realm/test_realm_manager.dart';
+import 'transaction_mock.dart';
 
 class ScriptSyncServiceMock {
   static int callSubscribeWalletCount = 0;
@@ -113,6 +114,7 @@ class ScriptSyncServiceMock {
       stateManager,
       utxoRepository,
       scriptCallbackService,
+      pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
     );
   }
 }

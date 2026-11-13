@@ -1505,6 +1505,11 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "Esta transacción no es compatible."
     utxo_not_found_title: "UTXO no encontrado"
     utxo_not_found: "No se puede encontrar el UTXO utilizado en la transacción."
+    unverified_original_title: "Firma no verificada"
+    unverified_original: "No se pudo verificar la firma de esta transacción, así que no se puede aumentar su comisión. Revisa el servidor al que estás conectado."
+    original_not_found_title: "Transacción no encontrada"
+    original_not_found: "No se pudo obtener esta transacción del servidor, así que no se puede aumentar su comisión. Resincroniza la billetera para volver a cargar el historial desde el servidor."
+    resync: "Resincronizar"
   toast:
     insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
 
@@ -2141,3 +2146,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "Ver de una en una"
 wallet_selection_grid: "Ver juntas"
+unverified_transaction_dialog:
+  title: "Transacción no válida del servidor"
+  description: "La firma de esta transacción no es válida, así que no se añadió al historial. Cambia a otro servidor."
+  change_server: "Cambiar servidor"

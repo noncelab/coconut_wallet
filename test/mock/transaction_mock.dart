@@ -4,7 +4,15 @@ import 'package:crypto/crypto.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/pending_transaction_verifier.dart';
 import 'package:coconut_wallet/providers/node_provider/transaction/rbf_service.dart';
+
+/// 서명 확인과 상관없는 동기화 테스트용. 서명 없는 목 거래도 확인된 것으로 본다
+class UncheckedPendingTransactionVerifier implements PendingTransactionVerifier {
+  @override
+  Future<PendingTransactionCheck> check(int walletId, Transaction tx, Map<String, Transaction> parents) async =>
+      PendingTransactionCheck.ok;
+}
 
 class TransactionMock {
   static const String testTxHash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';

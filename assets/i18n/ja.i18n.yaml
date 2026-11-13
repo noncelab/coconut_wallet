@@ -1502,6 +1502,11 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "このトランザクションはサポートされていません。"
     utxo_not_found_title: "UTXOが見つかりません"
     utxo_not_found: "トランザクションで使用されたUTXOが見つかりません。"
+    unverified_original_title: "署名を確認できません"
+    unverified_original: "このトランザクションの署名を確認できないため、手数料を上げることはできません。接続しているサーバーを確認してください。"
+    original_not_found_title: "トランザクションが見つかりません"
+    original_not_found: "サーバーからこのトランザクションを取得できなかったため、手数料を上げることはできません。ウォレットを再同期すると、サーバーにある履歴で読み込み直します。"
+    resync: "再同期"
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 
@@ -2138,3 +2143,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "1枚ずつ表示"
 wallet_selection_grid: "まとめて表示"
+unverified_transaction_dialog:
+  title: "サーバーから無効な取引が届きました"
+  description: "署名が無効な取引のため、履歴には追加していません。別のサーバーに切り替えてください。"
+  change_server: "サーバーを変更"

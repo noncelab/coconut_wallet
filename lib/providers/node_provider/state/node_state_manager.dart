@@ -17,6 +17,7 @@ class NodeStateManager implements StateManagerInterface {
   final StreamController<Map<int, WalletUpdateInfo>> _walletStateController;
   final StreamController<Map<int, ResyncProgress>> _resyncProgressController;
   final StreamController<Map<int, WalletFetchProgress>> _fetchProgressController;
+  final StreamController<List<String>> _unverifiedTransactionController;
 
   NodeProviderState _state = const NodeProviderState(nodeSyncState: NodeSyncState.init, registeredWallets: {});
   NodeProviderState get state => _state;
@@ -32,8 +33,9 @@ class NodeStateManager implements StateManagerInterface {
     this._syncStateController,
     this._walletStateController,
     this._resyncProgressController,
-    this._fetchProgressController,
-  );
+    this._fetchProgressController, {
+    StreamController<List<String>>? unverifiedTransactionController,
+  }) : _unverifiedTransactionController = unverifiedTransactionController ?? StreamController<List<String>>.broadcast();
 
   /// 노드 상태 업데이트
   /// [newConnectionState] 노드 상태
@@ -305,6 +307,11 @@ class NodeStateManager implements StateManagerInterface {
     _fetchProgressController.add(_fetchProgressByWallet);
   }
 
+  @override
+  void addUnverifiedPendingTransactions(int walletId, List<String> txHashes) {
+    _unverifiedTransactionController.add(txHashes);
+  }
+
   void handleIsolateStateMessage(IsolateStateMessage message) {
     final methodName = message.methodName;
     final params = message.params;
@@ -346,6 +353,9 @@ class NodeStateManager implements StateManagerInterface {
           break;
         case IsolateStateMethod.setWalletSyncQueueState:
           setWalletSyncQueueState(params[0], params[1], params[2]);
+          break;
+        case IsolateStateMethod.addUnverifiedPendingTransactions:
+          addUnverifiedPendingTransactions(params[0], List<String>.from(params[1] as List));
           break;
       }
     } catch (e) {

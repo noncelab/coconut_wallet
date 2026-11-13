@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/rbf_history.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
@@ -144,7 +145,17 @@ class RbfService {
             return oldTx.transactionHash;
           }
         }
+      } on FormatException {
+        // 서버 응답이 요청한 번호의 거래가 아님(getTransaction의 번호 확인). 위의 번호 확인처럼 대체된 것으로 보지 않는다
+        continue;
       } catch (e) {
+        // 내가 보낸 거래에서 나온 코인(내 잔돈)이거나 내 미확정 거래가 쓰고 있는 코인(빨리 받기 등)이면, 조회 실패만으로
+        // 대체됐다고 보지 않고 다음 동기화에서 다시 확인한다. 대체로 보면 이 코인과 이 코인을 쓰는 내 거래 기록이 지워진다
+        if (const {TransactionType.sent, TransactionType.self}.contains(txRecord.transactionType) ||
+            utxo.spentByTransactionHash != null) {
+          Logger.log('트랜잭션 ${utxo.transactionHash} 조회 실패, 내 거래가 걸려 있어 대체로 보지 않음: $e');
+          continue;
+        }
         // 기존 트랜잭션을 조회할 수 없는 경우 (이미 mempool에서 제거된 경우)
         Logger.log('트랜잭션 ${utxo.transactionHash} 조회 실패: $e');
         return utxo.transactionHash;

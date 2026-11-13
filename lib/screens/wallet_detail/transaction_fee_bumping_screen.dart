@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
+import 'package:coconut_design_system/coconut_design_system.dart' as cds show CoconutPopup;
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -242,7 +243,35 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         .initialize()
         .onError((e, _) {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (mounted) {
+            if (mounted && e is OriginalTransactionNotFoundException) {
+              // 원래 거래를 서버에서 받지 못하면 수수료를 올릴 수 없다. 기존 지갑 재동기화 화면으로 안내한다
+              // (디자인 시스템 팝업, 글자 크기 고정)
+              showDialog(
+                context: context,
+                builder: (BuildContext dialogContext) {
+                  return cds.CoconutPopup(
+                    languageCode: dialogContext.read<PreferenceProvider>().language,
+                    title: t.transaction_fee_bumping_screen.dialog.original_not_found_title,
+                    description: t.transaction_fee_bumping_screen.dialog.original_not_found,
+                    leftButtonText: t.close,
+                    onTapLeft: () {
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(dialogContext).pop();
+                    },
+                    rightButtonText: t.transaction_fee_bumping_screen.dialog.resync,
+                    onTapRight: () {
+                      // 수수료 올리기 화면 대신 재동기화 화면을 띄운다(뒤로 가면 거래 상세로 돌아간다)
+                      final navigator = Navigator.of(dialogContext);
+                      navigator.pop();
+                      navigator.pushReplacementNamed(
+                        AppRouteNames.walletResync,
+                        arguments: WalletResyncRouteArgs(id: widget.walletId),
+                      );
+                    },
+                  );
+                },
+              );
+            } else if (mounted) {
               String title = t.alert.error_occurs;
               String description = t.alert.contact_admin(error: e.toString());
 
@@ -252,6 +281,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               } else if (e is UtxoNotFoundException) {
                 title = t.transaction_fee_bumping_screen.dialog.utxo_not_found_title;
                 description = t.transaction_fee_bumping_screen.dialog.utxo_not_found;
+              } else if (e is UnverifiedOriginalTransactionException) {
+                title = t.transaction_fee_bumping_screen.dialog.unverified_original_title;
+                description = t.transaction_fee_bumping_screen.dialog.unverified_original;
               }
 
               showDialog(

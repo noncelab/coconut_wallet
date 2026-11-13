@@ -246,6 +246,7 @@ void main() {
         ScriptSyncServiceMock.stateManager,
         failingUtxos,
         ScriptSyncServiceMock.scriptCallbackService,
+        pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
       );
       final subscriptions = {receive.address, change.address};
       final sync = ScriptSyncServiceMock.createMockScriptSyncService();
@@ -303,6 +304,7 @@ void main() {
             ScriptSyncServiceMock.stateManager,
             failingUtxos,
             ScriptCallbackService(),
+            pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
           );
           final result = await restarted.fetchScriptTransaction(wallet, change);
           expect(repository.getTransactionRecord(wallet.id, child.transactionHash)?.blockHeight, greaterThan(0));
@@ -362,6 +364,7 @@ void main() {
           ScriptSyncServiceMock.stateManager,
           failingUtxos,
           ScriptCallbackService(),
+          pendingTransactionVerifier: UncheckedPendingTransactionVerifier(),
         );
         final result = await restarted.fetchScriptTransaction(wallet, change);
         expect(result.coSpentAddresses, contains(receive.address));

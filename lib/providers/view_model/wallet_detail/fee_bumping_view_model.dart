@@ -299,13 +299,25 @@ class FeeBumpingViewModel extends ChangeNotifier {
     _updateAdditionalSpendable(_selectedUtxoList);
   }
 
-  Future<RbfBuilder> _initRbfBuilder() async {
+  /// 화면을 닫아(뷰모델이 dispose됨) 늦게 끝난 결과는 버린다
+  bool _isDisposed = false;
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  /// 화면을 닫았으면 null(이어서 준비하지 않음)
+  Future<RbfBuilder?> _initRbfBuilder() async {
     final txResult = await _nodeProvider.getTransaction(_pendingTx.transactionHash);
     if (txResult.isFailure) {
-      throw Exception('Failed to get transaction');
+      throw const OriginalTransactionNotFoundException();
     }
+    if (_isDisposed) return null;
 
-    final preparer = RbfPreparer.fromPendingTx(
+    // 원래 거래의 서명 확인은 입력 수만큼 걸리므로 다른 아이솔레이트에서 끝날 때까지 기다린다
+    final preparer = await RbfPreparer.fromPendingTxAsync(
       pendingTx: _pendingTx,
       rawTx: txResult.value,
       getUtxos: (String utxoId) {
@@ -316,6 +328,8 @@ class FeeBumpingViewModel extends ChangeNotifier {
               _walletProvider.containsAddress(_walletId, address, isChange: isChange),
       getDerivationPath: (String address) => _addressRepository.getDerivationPath(_walletId, address),
     );
+    // 서명을 확인하는 동안 화면을 닫았으면 늦게 끝난 결과로 이어서 준비하지 않는다
+    if (_isDisposed) return null;
 
     if (preparer.hasDuplicatedOutput) {
       throw const DuplicatedOutputException();
@@ -349,11 +363,14 @@ class FeeBumpingViewModel extends ChangeNotifier {
 
   Future<void> initialize() async {
     await _fetchRecommendedFees();
+    if (_isDisposed) return;
     if (_isFeeFetchSuccess == true) {
       double initialFee = _feeInfos[2].satsPerVb!.toDouble();
       if (_type == FeeBumpingType.rbf) {
         _recommendedFeeRateDescription = t.transaction_fee_bumping_screen.recommend_fee_info_rbf;
-        _rbfBuilder = await _initRbfBuilder();
+        final rbfBuilder = await _initRbfBuilder();
+        if (rbfBuilder == null) return;
+        _rbfBuilder = rbfBuilder;
         _updateRbfBaseline(_rbfBuilder!.getBaselineTransaction());
       } else {
         _cpfpBuilder = _initCpfpBuilder(initialFee);

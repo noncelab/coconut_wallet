@@ -1505,6 +1505,11 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "This transaction is not supported."
     utxo_not_found_title: "UTXO Not Found"
     utxo_not_found: "Cannot find the UTXO used in the transaction."
+    unverified_original_title: "Signature Not Verified"
+    unverified_original: "We couldn't verify this transaction's signature, so its fee can't be bumped. Please check the server you're connected to."
+    original_not_found_title: "Transaction Not Found"
+    original_not_found: "We couldn't get this transaction from the server, so its fee can't be bumped. Resync your wallet to reload its history from the server."
+    resync: "Resync"
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 
@@ -2141,3 +2146,7 @@ wallet_card_detail_screen:
 
 wallet_selection_carousel: "View one at a time"
 wallet_selection_grid: "View together"
+unverified_transaction_dialog:
+  title: "Invalid transaction from server"
+  description: "This transaction isn't correctly signed, so we left it out of your history. Please switch to another server."
+  change_server: "Change server"
