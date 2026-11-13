@@ -64,8 +64,16 @@ class SocketManager {
     _scriptSubscribeCallbacks.remove(scriptReverseHash);
   }
 
-  void setWalletSubscriptionCallback(String scriptReverseHash, int walletId, Function(String, String?) callback) {
-    (_scriptSubscribeCallbacks[scriptReverseHash] ??= {})[walletId] = callback;
+  /// 지갑의 콜백을 [callback]으로 바꾸고, 바뀌기 전 콜백을 돌려준다(없으면 null)
+  Function(String, String?)? setWalletSubscriptionCallback(
+    String scriptReverseHash,
+    int walletId,
+    Function(String, String?) callback,
+  ) {
+    final callbacks = _scriptSubscribeCallbacks[scriptReverseHash] ??= {};
+    final previous = callbacks[walletId];
+    callbacks[walletId] = callback;
+    return previous;
   }
 
   /// 해당 스크립트의 지갑 구독자가 더 이상 남아 있지 않으면 true를 반환한다.
@@ -80,14 +88,20 @@ class SocketManager {
     return true;
   }
 
-  /// 지갑의 콜백이 [callback] 그 자체일 때만 지운다. 그사이 같은 지갑이 다시 등록했거나 해제했으면 그대로 둔다
-  void removeWalletSubscriptionCallbackIfSame(
+  /// 지갑의 콜백이 아직 [callback] 그 자체일 때만 [previous]로 되돌린다(없었으면 지운다).
+  /// 그사이 같은 지갑이 다시 등록했거나 해제했으면 그대로 둔다
+  void restoreWalletSubscriptionCallback(
     String scriptReverseHash,
     int walletId,
     Function(String, String?) callback,
+    Function(String, String?)? previous,
   ) {
     final callbacks = _scriptSubscribeCallbacks[scriptReverseHash];
     if (callbacks == null || !identical(callbacks[walletId], callback)) return;
+    if (previous != null) {
+      callbacks[walletId] = previous;
+      return;
+    }
     callbacks.remove(walletId);
     if (callbacks.isEmpty) _scriptSubscribeCallbacks.remove(scriptReverseHash);
   }

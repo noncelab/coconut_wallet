@@ -288,4 +288,88 @@ void main() {
     expect(result, startsWith('delivered=[] server=0 bCallback=0 bLocal=0'), reason: result);
     expect(rig.wire.requestsFor(rig.address), ['subscribe', 'unsubscribe']);
   });
+
+  // 재동기화처럼 목록만 비우고 다시 구독했다가 실패하면, 이전에 성공한 B의 콜백으로 돌아가 알림을 계속 받는다
+  test("a failed re-subscribe keeps the wallet's previous successful callback (the list was cleared first)", () async {
+    final rig = await _Rig.open();
+    await rig.subscribe(rig.a);
+    await rig.subscribe(rig.b);
+    rig.b.subscribedScriptMap.clear(); // WalletResyncService가 subscribeWallet 전에 비운다
+    final held = _Held(fail: true);
+    rig.wire.holdNextSubscribe = held;
+    final retry = rig.subscribe(rig.b);
+    await pumpEventQueue();
+    held.release();
+    await expectLater(retry, throwsA(isA<Map>()));
+    final result = await rig.notifyAndReport();
+    expect(result, startsWith('delivered=[1, 2] server=1 bCallback=1 bLocal=1'), reason: result);
+  });
+
+  // Electrum 층에서 바로: 성공 → 같은 지갑 재구독 실패 → 알림은 이전 콜백이 받는다
+  test('a failed same-wallet re-subscribe keeps the previous callback at the Electrum level', () async {
+    final rig = await _Rig.open();
+    final delivered = <String>[];
+    await rig.wire.electrum.subscribeScriptForWallet(
+      AddressType.p2wpkh,
+      rig.address,
+      walletId: 2,
+      onUpdate: (_, status) => delivered.add('old:$status'),
+    );
+    final held = _Held(fail: true);
+    rig.wire.holdNextSubscribe = held;
+    final retry = rig.wire.electrum.subscribeScriptForWallet(
+      AddressType.p2wpkh,
+      rig.address,
+      walletId: 2,
+      onUpdate: (_, status) => delivered.add('new:$status'),
+    );
+    await pumpEventQueue();
+    held.release();
+    await expectLater(retry, throwsA(isA<Map>()));
+    await rig.wire.notify(rig.address, 'still-subscribed');
+    expect(delivered, ['old:still-subscribed']);
+  });
+
+  // 실패 전에 이 지갑을 해제했으면(다른 지갑은 남음) 실패해도 이전 콜백을 되살리지 않는다
+  test('a failed re-subscribe after an explicit unsubscribe revives nothing', () async {
+    final rig = await _Rig.open();
+    await rig.subscribe(rig.a);
+    await rig.subscribe(rig.b);
+    rig.b.subscribedScriptMap.clear();
+    final held = _Held(fail: true);
+    rig.wire.holdNextSubscribe = held;
+    final retry = rig.subscribe(rig.b);
+    await pumpEventQueue();
+    await rig.service.unsubscribeWallet(rig.b);
+    held.release();
+    await expectLater(retry, throwsA(isA<Map>()));
+    final result = await rig.notifyAndReport();
+    expect(result, startsWith('delivered=[1] server=1 bCallback=0 bLocal=0'), reason: result);
+  });
+
+  // 응답을 잡아 둔 사이 온 알림(새 상태) 뒤에 지난 스냅숏(null)을 담은 성공 응답이 와도, 목록과 이미 넘긴 이벤트는 새 상태다
+  test('an early notification is not overwritten by an older snapshot in the reply', () async {
+    final rig = await _Rig.open();
+    final held = _Held();
+    rig.wire.holdNextSubscribe = held;
+    final pending = rig.subscribe(rig.b);
+    await pumpEventQueue();
+    await rig.wire.notify(rig.address, 'early-new-status');
+    expect(rig.sync.events.single.scriptStatus.status, 'early-new-status');
+    held.release();
+    await pending;
+    expect(
+      'local=${rig.b.subscribedScriptMap.values.single.status} queued=${rig.sync.events.single.scriptStatus.status}',
+      'local=early-new-status queued=early-new-status',
+    );
+  });
+
+  // 큐로 넘긴 이벤트는 자기 상태를 지닌다: 뒤의 알림이 앞서 넘긴 이벤트를 바꾸지 않는다
+  test('a queued event keeps its own status when a later notification arrives', () async {
+    final rig = await _Rig.open();
+    await rig.subscribe(rig.b);
+    await rig.wire.notify(rig.address, 'first');
+    await rig.wire.notify(rig.address, 'second');
+    expect([for (final event in rig.sync.events) event.scriptStatus.status], ['first', 'second']);
+  });
 }

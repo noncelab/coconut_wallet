@@ -414,8 +414,12 @@ class SubscriptionService {
       return (scriptStatus: scriptStatus, isSubscribed: true);
     }
 
+    var awaitingReply = true;
+    var notifiedBeforeReply = false;
+
     /// 구독중인 스크립트의 상태 변경 이벤트 처리
     void onUpdate(String reversedScriptHash, String? newStatus) {
+      if (awaitingReply) notifiedBeforeReply = true;
       // 새 상태 업데이트
       scriptStatus.status = newStatus;
       scriptStatus.timestamp = DateTime.now();
@@ -441,8 +445,12 @@ class SubscriptionService {
       rethrow;
     }
 
-    scriptStatus.status = status;
-    scriptStatus.timestamp = DateTime.now();
+    awaitingReply = false;
+    // 응답보다 먼저 온 알림이 더 새 상태를 이미 반영했으면, 응답에 담긴 지난 상태로 덮지 않는다
+    if (!notifiedBeforeReply) {
+      scriptStatus.status = status;
+      scriptStatus.timestamp = DateTime.now();
+    }
 
     // 응답을 기다리는 사이 이 지갑이 해제했거나 다시 구독했으면 이 응답으로 목록을 되살리지 않는다
     if (identical(_subscribeGenerations[key], generation)) {
@@ -478,9 +486,10 @@ class SubscriptionService {
       timestamp: scriptStatus.timestamp,
     );
 
+    // 큐로 넘기는 이벤트는 따로 떼어 낸 상태를 담는다(뒤에 오는 응답·알림이 이미 넘긴 이벤트를 바꾸지 않게)
     scriptStatusController.add(
       SubscribeScriptStreamDto(
-        scriptStatus: scriptStatus,
+        scriptStatus: scriptStatus.copy(),
         walletItem: walletItem,
         updateUsedIndex: withinGapReach,
         retrySubscription: statusChanged && scriptStatus.index >= currentIndex,
