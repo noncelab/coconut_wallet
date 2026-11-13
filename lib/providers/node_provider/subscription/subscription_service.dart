@@ -78,6 +78,8 @@ class SubscriptionService {
     return _scriptSyncService.runQueued(walletId, task);
   }
 
+  void clearDormantHistory(int walletId) => _scriptSyncService.clearDormantHistory(walletId);
+
   /// dormant 주소들의 잔액을 재검증한다 (외부 진입점, 지갑별 큐를 거쳐서 실행한다)
   Future<Result<bool>> syncDormantAddresses(WalletItemBase walletItem) {
     return _scriptSyncService.runQueued(walletItem.id, () async {
@@ -124,6 +126,8 @@ class SubscriptionService {
         minReceiveUsedIndex: minReceiveUsedIndex,
         minChangeUsedIndex: minChangeUsedIndex,
       );
+      // 구독 범위 밖이거나 캐시만 재사용한 주소 목록 실패도 실제 조회로 다시 확인한다.
+      if (result.isSuccess) await _scriptSyncService.recheckViewedFailures(walletItem);
       completer.complete(result);
       return result;
     } catch (e, stackTrace) {
@@ -147,6 +151,7 @@ class SubscriptionService {
     int? minChangeUsedIndex,
   }) async {
     _stateManager.addWalletSyncState(walletItem.id, UpdateElement.subscription);
+    final previouslySubscribed = walletItem.subscribedScriptMap.keys.toSet();
     final [receiveResult, changeResult] = await Future.wait([
       _subscribeWallet(walletItem, false, _scriptStatusController, minKnownUsedIndex: minReceiveUsedIndex),
       _subscribeWallet(walletItem, true, _scriptStatusController, minKnownUsedIndex: minChangeUsedIndex),
@@ -184,6 +189,12 @@ class SubscriptionService {
         updatedScriptStatuses.add(script);
       }
     }
+
+    _scriptSyncService.markSubscribedAddressesChecked(walletItem.id, [
+      for (final script in fetchedScriptStatuses)
+        if (!previouslySubscribed.contains(script.scriptPubKey) && !updatedKeys.contains(script.scriptPubKey))
+          script.address,
+    ]);
 
     if (updatedScriptStatuses.isEmpty) {
       await _scriptSyncService.restorePendingUtxoLocks(walletItem.id);
