@@ -676,6 +676,36 @@ void main() {
       expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash)?.blockHeight, 0);
       expect(wallet.coin(coin.transactionHash, 0)?.spentByTransactionHash, own.transactionHash);
     });
+
+    // PR #789 2라운드: getTransaction이 다른 거래에 FormatException을 던지면서, 받는 RBF 확인이 이를 "대체됨"으로 봤음
+    test('받는 RBF 확인에서 서버가 받는 중 거래 번호에 다른 거래를 주면(FormatException) 그 받는 중 코인을 지우지 않는다', () async {
+      final foreign = _vault(0x55);
+      final funding = fundingTransaction([(foreign.getAddress(0), 50000), (foreign.getAddress(1), 50000)], 94);
+      Transaction payMe(int input, int index) {
+        final tx = Transaction.withInputsAndOutputs(
+          [TransactionInput.forPayment(funding.transactionHash, input)],
+          [TransactionOutput.forPayment(40000, wallet.address(index))],
+          AddressType.p2wpkh,
+        );
+        signP2wpkhInput(tx, 0, funding.outputs[input], _receiveKey(foreign, input));
+        return tx;
+      }
+
+      final first = payMe(0, 1);
+      final second = payMe(1, 2);
+      wallet.publish([funding, first, second]);
+      await wallet.sync([history(first, 0)], unspentList: wallet.unspent(first, 0, index: 1), index: 1);
+      expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.incoming);
+      wallet.server.transactionSource = (txHash) async {
+        if (txHash == first.transactionHash) throw FormatException('Received a different transaction for $txHash');
+        return wallet.server.rawByHash[txHash] ?? (throw StateError('unavailable $txHash'));
+      };
+
+      await wallet.sync([history(second, 0)], unspentList: wallet.unspent(second, 0, index: 2), index: 2);
+
+      expect(wallet.coin(second.transactionHash, 0)?.status, UtxoStatus.incoming);
+      expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.incoming);
+    });
   });
 
   group('3. 서버 동작: 연결 끊김 (p2wpkh 핫 지갑)', () {

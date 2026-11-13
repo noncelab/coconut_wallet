@@ -144,6 +144,9 @@ class RbfService {
             return oldTx.transactionHash;
           }
         }
+      } on FormatException {
+        // 서버 응답이 요청한 번호의 거래가 아님(getTransaction의 번호 확인). 위의 번호 확인처럼 대체된 것으로 보지 않는다
+        continue;
       } catch (e) {
         // 기존 트랜잭션을 조회할 수 없는 경우 (이미 mempool에서 제거된 경우)
         Logger.log('트랜잭션 ${utxo.transactionHash} 조회 실패: $e');
