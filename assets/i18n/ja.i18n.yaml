@@ -2313,7 +2313,6 @@ ark:
     you_receive: "${amount}を受け取ります(手数料 $fee)"
   request:
     lightning_address: "ライトニングアドレス"
-    payment_request: "支払いリクエスト"
     bitcoin_address: "ビットコインアドレス"
     ark_address: "Arkアドレス"
   move:

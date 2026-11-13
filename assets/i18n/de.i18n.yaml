@@ -2321,7 +2321,6 @@ ark:
     you_receive: "Du erhältst $amount (Gebühr $fee)"
   request:
     lightning_address: "Lightning-Adresse"
-    payment_request: "Zahlungsanfrage"
     bitcoin_address: "Bitcoin-Adresse"
     ark_address: "Ark-Adresse"
   move:

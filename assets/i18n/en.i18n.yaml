@@ -2316,7 +2316,6 @@ ark:
     you_receive: "You receive $amount (fee $fee)"
   request:
     lightning_address: "Lightning address"
-    payment_request: "Payment request"
     bitcoin_address: "Bitcoin address"
     ark_address: "Ark address"
   move:

@@ -360,7 +360,13 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   int? get arkFee => _arkFee;
   bool get isEstimatingArkFee => _isEstimatingArkFee;
   int? get arkPaymentAmountSats => _amountSatsAt(0);
-  SendSource get selectedSource => _chosenSource ?? SendSource.onchain;
+
+  /// 고르지 않았으면 온체인, 아크·라이트닝이 담긴 결제 요청은 아크
+  SendSource get selectedSource =>
+      _chosenSource ?? (_hasOffchainOption(_requestAt(0)) ? SendSource.ark : SendSource.onchain);
+
+  bool _hasOffchainOption(PaymentRequest? request) =>
+      request != null && request.arkOptions.any((option) => option.rail != ArkPaymentRail.onchain);
 
   PaymentRequest? _requestAt(int index) {
     final address = _recipientList[index].address.trim();
@@ -386,7 +392,6 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     final request = _requestAt(0);
     final amount = _amountSatsAt(0);
     if (request == null || request.bitcoinAddress == null || amount == null) return false;
-    if (request.arkOptions.any((option) => option.rail != ArkPaymentRail.onchain)) return false;
     return amount < balance && amount <= arkSendableSats;
   }
 
@@ -404,6 +409,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     final arkFits = amount == null || amount <= arkSendableSats;
     final offchain = request.arkOptions.where((option) => option.rail != ArkPaymentRail.onchain).firstOrNull;
     final address = request.bitcoinAddress;
+    if (offchain != null && canChooseSource && selectedSource == SendSource.onchain) return null;
     if (offchain != null && (arkFits || address == null)) {
       return ArkSendRoute(
         offchain.rail,
@@ -427,7 +433,13 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
         if (request!.invoiceDescription case final memo?) memo,
       ].join(' · '),
       PaymentRequestKind.lightningAddress => t.ark.request.lightning_address,
-      PaymentRequestKind.bip321 => t.ark.request.payment_request,
+      // 결제 요청은 실제로 보낼 경로
+      PaymentRequestKind.bip321 => switch (index == 0 ? arkRoute?.rail : null) {
+        ArkPaymentRail.ark => t.ark.request.ark_address,
+        ArkPaymentRail.lightningInvoice => t.ark.receive.lightning_invoice,
+        ArkPaymentRail.lightningAddress => t.ark.request.lightning_address,
+        _ => t.ark.request.bitcoin_address,
+      },
       PaymentRequestKind.bitcoinAddress => t.ark.request.bitcoin_address,
       _ => null,
     };

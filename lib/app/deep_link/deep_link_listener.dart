@@ -1,11 +1,14 @@
+import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 
 import 'package:coconut_wallet/app/bootstrap/platform_channels.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/utils/payment_request_parser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -61,11 +64,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
       return;
     }
 
-    final walletProvider = context.read<WalletProvider>();
-    final walletOrder = context.read<PreferenceProvider>().walletOrder;
-    final firstWallet = walletProvider.walletItemList.isEmpty ? null : walletProvider.walletItemList.first;
-    final targetId =
-        firstWallet == null ? null : walletOrder.firstWhere((id) => id == firstWallet.id, orElse: () => firstWallet.id);
+    final targetId = _targetWalletId(bitcoinUri);
 
     _isHandlingBitcoinUri = true;
     _recentBitcoinUri = bitcoinUri;
@@ -88,6 +87,22 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
         _isHandlingBitcoinUri = false;
       }
     });
+  }
+
+  /// 사용자 지갑 순서의 첫 지갑. 아크·라이트닝이 담긴 링크면 아크를 켠 첫 지갑
+  int? _targetWalletId(String bitcoinUri) {
+    final walletProvider = context.read<WalletProvider>();
+    final walletOrder = context.read<PreferenceProvider>().walletOrder;
+    final wallets = [
+      for (final id in walletOrder) ...walletProvider.walletItemList.where((wallet) => wallet.id == id),
+      ...walletProvider.walletItemList.where((wallet) => !walletOrder.contains(wallet.id)),
+    ];
+    final arkProvider = context.readArkProviderOrNull();
+    if (arkProvider != null && PaymentRequest.parse(bitcoinUri, NetworkType.currentNetworkType).hasArkOrLightning) {
+      final arkWallet = wallets.where(arkProvider.supportsArk).firstOrNull;
+      if (arkWallet != null) return arkWallet.id;
+    }
+    return wallets.firstOrNull?.id;
   }
 
   @override

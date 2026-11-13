@@ -2322,7 +2322,6 @@ ark:
     you_receive: "${amount}를 받아요 (수수료 $fee)"
   request:
     lightning_address: "라이트닝 주소"
-    payment_request: "결제 요청"
     bitcoin_address: "비트코인 주소"
     ark_address: "아크 주소"
   move:
