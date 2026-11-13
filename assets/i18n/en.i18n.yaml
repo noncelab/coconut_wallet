@@ -253,9 +253,10 @@ hodl_insights:
   goal_remaining: "Remaining"
   goal_by_wallet: "Goal by Wallet"
   goal_plan_title: "Saving Plan"
-  goal_plan_weekday: "Day"
-  goal_plan_day: "Date"
+  goal_plan_weekday: "Saving day"
+  goal_plan_day: "Saving day"
   goal_plan_day_value: "Day ${day}"
+  goal_plan_day_monthly: "Monthly on day ${day}"
   goal_plan_weekdays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
   goal_plan_reset_notice: "${date} has passed, so the plan now runs 3 months from today"
   goal_plan_period_question: "When do you want to reach it?"

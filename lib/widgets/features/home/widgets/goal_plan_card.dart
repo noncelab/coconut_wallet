@@ -524,7 +524,8 @@ class _GoalPlanCardState extends State<GoalPlanCard> {
                 key: const Key('goal-plan-day'),
                 icon: CupertinoIcons.calendar,
                 label: copy.goal_plan_day,
-                value: copy.goal_plan_day_value(day: _controller.dayOn(today)),
+                // 줄 값은 '매월 12일'(카드 3). 날짜 휠의 칸은 '12일' 그대로
+                value: copy.goal_plan_day_monthly(day: _controller.dayOn(today)),
                 onPressed: _pickDay,
               ),
             ],

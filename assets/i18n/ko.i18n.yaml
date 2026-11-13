@@ -253,9 +253,10 @@ hodl_insights:
   goal_remaining: "남은 수량"
   goal_by_wallet: "지갑별 목표"
   goal_plan_title: "모으기 계획"
-  goal_plan_weekday: "요일"
-  goal_plan_day: "날짜"
+  goal_plan_weekday: "모으는 요일"
+  goal_plan_day: "모으는 날"
   goal_plan_day_value: "${day}일"
+  goal_plan_day_monthly: "매월 ${day}일"
   goal_plan_weekdays: ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
   goal_plan_reset_notice: "${date}이 지나 오늘부터 3개월로 다시 잡았어요"
   goal_plan_period_question: "언제까지 채울까요?"

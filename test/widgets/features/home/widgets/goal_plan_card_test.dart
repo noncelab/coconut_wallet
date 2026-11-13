@@ -245,6 +245,8 @@ void main() {
     // 2026-11-12는 목요일, 기본 3개월 마감일은 2027-02-12(금)
     await _prefs({SharedPrefKeys.kGoalPlanCycle: GoalPlanCycle.weekly.name});
     await _open(tester, _nov12);
+    // 줄은 '모으는 요일 · 목요일'(카드 3)
+    expect(_label(t.hodl_insights.goal_plan_weekday), findsOneWidget);
     expect(find.text(t.hodl_insights.goal_plan_weekdays[DateTime.thursday - 1]), findsOneWidget);
     expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanWeekday), '${DateTime.thursday}');
     expect(_count(tester), contains(t.hodl_insights.goal_plan_count(count: 14)));
@@ -274,13 +276,17 @@ void main() {
   testWidgets('a monthly plan keeps the picked save day from 1 to 28', (tester) async {
     await _prefs({SharedPrefKeys.kGoalPlanCycle: GoalPlanCycle.monthly.name});
     await _open(tester, _nov12);
-    expect(find.text(t.hodl_insights.goal_plan_day_value(day: 12)), findsOneWidget);
+    // 줄은 '모으는 날 · 매월 12일'(카드 3)
+    expect(_label(t.hodl_insights.goal_plan_day), findsOneWidget);
+    expect(find.text(t.hodl_insights.goal_plan_day_monthly(day: 12)), findsOneWidget);
     await _tap(tester, 'goal-plan-day');
+    // 날짜 휠의 칸은 '12일' 그대로
+    expect(find.text(t.hodl_insights.goal_plan_day_value(day: 12)), findsOneWidget);
     await tester.drag(find.byKey(const Key('goal-plan-day-picker')), const Offset(0, -40));
     await tester.pumpAndSettle();
     await _tap(tester, 'goal-plan-day-done');
     expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanDay), '13');
-    expect(find.text(t.hodl_insights.goal_plan_day_value(day: 13)), findsOneWidget);
+    expect(find.text(t.hodl_insights.goal_plan_day_monthly(day: 13)), findsOneWidget);
   });
 
   testWidgets('a filled goal that is not reached yet says the balance is being checked, whatever the reason', (
@@ -318,3 +324,6 @@ void main() {
     }
   });
 }
+
+/// 줄 이름(LabelValueRow는 keepWords로 보이고 원문을 semanticsLabel로 넘긴다)
+Finder _label(String label) => find.byWidgetPredicate((w) => w is Text && w.semanticsLabel == label);

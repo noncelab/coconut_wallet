@@ -253,9 +253,10 @@ hodl_insights:
   goal_remaining: "Verbleibend"
   goal_by_wallet: "Ziel pro Wallet"
   goal_plan_title: "Sparplan"
-  goal_plan_weekday: "Wochentag"
-  goal_plan_day: "Datum"
+  goal_plan_weekday: "Spartag"
+  goal_plan_day: "Spartag"
   goal_plan_day_value: "${day}."
+  goal_plan_day_monthly: "Monatlich am ${day}."
   goal_plan_weekdays: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
   goal_plan_reset_notice: "Der ${date} ist vorbei. Der Plan läuft jetzt 3 Monate ab heute"
   goal_plan_period_question: "Bis wann möchtest du es erreichen?"

@@ -254,9 +254,10 @@ hodl_insights:
   goal_remaining: "Restante"
   goal_by_wallet: "Objetivo por billetera"
   goal_plan_title: "Plan de ahorro"
-  goal_plan_weekday: "Día"
-  goal_plan_day: "Fecha"
+  goal_plan_weekday: "Día de ahorro"
+  goal_plan_day: "Día de ahorro"
   goal_plan_day_value: "Día ${day}"
+  goal_plan_day_monthly: "Cada mes el día ${day}"
   goal_plan_weekdays: ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
   goal_plan_reset_notice: "El ${date} ya pasó, así que el plan dura 3 meses desde hoy"
   goal_plan_period_question: "¿Para cuándo quieres alcanzarlo?"
