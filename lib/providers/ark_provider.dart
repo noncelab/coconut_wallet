@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
 import 'package:collection/collection.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/notification/local_notification_service.dart';
@@ -58,6 +59,7 @@ class ArkProvider extends ChangeNotifier {
        _arkWalletService = arkWalletService ?? ArkWalletService(),
        _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository() {
     _walletProvider.walletItemListNotifier.addListener(_onWalletListChanged);
+    _walletProvider.walletLoadStateNotifier.addListener(_onWalletLoadStateChanged);
     _currentBlock?.addListener(_onCurrentBlockChanged);
     _walletProvider.setOffchainBalanceSource(totalSats);
     _walletProvider.setOffchainMovementsSource((walletId) => supportsArkById(walletId) ? movements(walletId) : null);
@@ -596,6 +598,7 @@ class ArkProvider extends ChangeNotifier {
     _lastSync.remove(walletId);
     cacheRevision.value++;
     _notify();
+    await _cancelStaleNotifications();
   }
 
   /// 아크 서버 수수료표, 서버에 닿지 못하면 null
@@ -607,17 +610,64 @@ class ArkProvider extends ChangeNotifier {
   /// 마지막 동기화 기준 갱신이 필요한 VTXO
   ArkRefreshDue refreshDue(int walletId) => _refreshDue[walletId] ?? ArkRefreshDue.none;
 
+  /// 저장된 VTXO와 지금 블록 높이로 본 갱신할 VTXO, 아직 알 수 없으면 null
+  List<String>? dueVtxoIds(int walletId) {
+    final tip = _currentBlock?.value?.height;
+    final vtxos = snapshot(walletId)?.vtxos;
+    if (tip == null || vtxos == null) return null;
+    return [
+      for (final vtxo in vtxos)
+        if (!vtxo.isLocked && !isRefreshingVtxo(vtxo.id) && vtxo.expiryHeight - tip <= ArkRefreshDue.noticeBlocks)
+          vtxo.id,
+    ];
+  }
+
   Future<void> _loadArkWallets() async {
     try {
       final fingerprints = await _arkWalletService.listFingerprints();
       _arkOnFingerprints
         ..clear()
         ..addAll(fingerprints.map((fingerprint) => fingerprint.toLowerCase()));
+      _arkWalletsListed = true;
       _snapshots.clear();
       cacheRevision.value++;
       _notify();
     } catch (error) {
       Logger.error('ArkProvider: failed to list Ark wallets: $error');
+      return;
+    }
+    await _cancelStaleNotifications();
+  }
+
+  /// 아크를 켠 지갑 목록을 한 번이라도 읽었는지(읽기 전에는 모든 지갑이 꺼진 것으로 보임)
+  bool _arkWalletsListed = false;
+
+  void _onWalletLoadStateChanged() => unawaited(_cancelStaleNotifications());
+
+  /// 예약해 둔 만료·출금 알림 중 지갑이 없어졌거나 아크를 끈 지갑의 것을 취소
+  Future<void> _cancelStaleNotifications() async {
+    final notifications = _notifications;
+    if (notifications == null ||
+        !_arkWalletsListed ||
+        _walletProvider.walletLoadState != WalletLoadState.loadCompleted) {
+      return;
+    }
+    try {
+      for (final id in await notifications.pendingIds()) {
+        final int walletId;
+        if (id >= _expiryNotificationIdBase && id < _exitNotificationIdBase) {
+          walletId = (id - _expiryNotificationIdBase) ~/ 2;
+        } else if (id >= _exitNotificationIdBase && id < _exitNotificationIdBase + 1000) {
+          walletId = id - _exitNotificationIdBase;
+        } else {
+          continue;
+        }
+        if (supportsArkById(walletId)) continue;
+        await notifications.cancel(id);
+        _scheduledExpiryKeys.remove(walletId);
+      }
+    } catch (error) {
+      Logger.error('ArkProvider: failed to clean up notifications: $error');
     }
   }
 
@@ -862,21 +912,8 @@ class ArkProvider extends ChangeNotifier {
     }
   }
 
-  /// 지갑 화면에 온체인·아크 잔액을 나눠 보여 줄지
-  bool showsBalanceBreakdown(int walletId) {
-    if (!supportsArkById(walletId)) return false;
-    try {
-      return _sharedPrefs.isWalletBalanceBreakdown(walletId);
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<void> setBalanceBreakdown(int walletId, bool shown) async {
-    await _sharedPrefs.setWalletBalanceBreakdown(walletId, shown);
-    cacheRevision.value++;
-    _notify();
-  }
+  /// 아크를 켠 지갑은 온체인·아크 잔액을 늘 나눠 보여 줌
+  bool showsBalanceBreakdown(int walletId) => supportsArkById(walletId);
 
   Future<void> setAutoRefreshOn(int walletId, bool on) async {
     await _sharedPrefs.setWalletArkAutoRefreshOn(walletId, on);
@@ -937,6 +974,9 @@ class ArkProvider extends ChangeNotifier {
       keypairIndex: info.keypairIndex,
     );
   }
+
+  /// bark가 체인에서 읽은 지금 권장 수수료율(sat/vB)
+  Future<int> onchainFeeRate(int walletId) => _arkWalletService.exitFeeRate(_requireFingerprint(walletId));
 
   Future<int> estimateBoardFee(int walletId, int amountSats) async =>
       (await _arkWalletService.estimateBoardFee(_requireFingerprint(walletId), amountSats)).feeSats;
@@ -1440,6 +1480,7 @@ class ArkProvider extends ChangeNotifier {
     refreshIncomplete.dispose();
     _timer?.cancel();
     _walletProvider.walletItemListNotifier.removeListener(_onWalletListChanged);
+    _walletProvider.walletLoadStateNotifier.removeListener(_onWalletLoadStateChanged);
     _walletProvider.setOffchainBalanceSource(null);
     _walletProvider.setOffchainMovementsSource(null);
     cacheRevision.removeListener(_walletProvider.notifyOffchainBalanceChanged);

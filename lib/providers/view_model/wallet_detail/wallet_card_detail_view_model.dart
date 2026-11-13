@@ -155,6 +155,16 @@ class WalletCardDetailViewModel extends ChangeNotifier {
     return null;
   }
 
+  /// 온체인·아크 사이 옮기기는 서버와 열린 아크 지갑이 있어야 함
+  bool canMoveBetweenRails(WalletItemBase wallet) {
+    final ark = _arkProvider;
+    return ark != null &&
+        ark.supportsArk(wallet) &&
+        wallet.hasLocalKey &&
+        ark.isOpen(wallet.id) &&
+        !ark.isServerDown(wallet.id);
+  }
+
   bool isArkLocked(WalletItemBase wallet) {
     final ark = _arkProvider;
     return ark != null && ark.supportsArk(wallet) && !ark.isOpen(wallet.id) && !ark.isOpening(wallet.id);

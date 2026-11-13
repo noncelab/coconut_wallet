@@ -80,6 +80,7 @@ abstract final class CommonNavigationIconPath {
   static const String arrowDown = 'assets/svg/common/navigation/arrow-down.svg';
   static const String arrowRight = 'assets/svg/common/navigation/arrow-right.svg';
   static const String arrowRightMd = 'assets/svg/common/navigation/arrow-right-md.svg';
+  static const String arrowSwap = 'assets/svg/common/navigation/arrow-swap.svg';
   static const String arrowTopDown = 'assets/svg/common/navigation/arrow-top-down.svg';
   static const String arrowLeftRight = 'assets/svg/common/navigation/arrow-left-right.svg';
   static const String arrowUpDown = 'assets/svg/common/navigation/arrow-up-down.svg';

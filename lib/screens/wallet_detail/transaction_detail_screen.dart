@@ -148,7 +148,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         CoconutLayout.spacing_500h,
                         _buildAmount(tx),
                         CoconutLayout.spacing_400h,
-                        if (_isTransactionStatusPending(txList.last) && viewModel.isSendType != null) ...[
+                        if (_isTransactionStatusPending(txList.last) &&
+                            viewModel.isSendType != null &&
+                            !(context.readArkProviderOrNull()?.fundsBoard(tx.transactionHash) ?? false)) ...[
                           _buildFeeBumpingWidget(txList, viewModel),
                         ],
                         if (viewModel.isFetchingFromMempool) ...[

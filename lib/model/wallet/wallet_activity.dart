@@ -131,13 +131,9 @@ class ArkActivity extends WalletActivity {
   @override
   int get amount => movement.effectiveBalanceSats + _onchainAmount;
 
-  /// For a move, what arrived on the other side: in Ark for a board, on-chain for an offboard.
+  /// 같은 지갑 안의 이동(아크 출금 포함)은 수수료만큼 줄어든 것으로 보임
   @override
-  int get displayAmount {
-    final tx = linkedTx;
-    if (tx == null) return movement.effectiveBalanceSats;
-    return movement.kind == ArkMovementKind.board ? movement.effectiveBalanceSats : tx.amount;
-  }
+  int get displayAmount => linkedTx == null ? movement.effectiveBalanceSats : amount;
 
   @override
   DateTime get time => movement.timestamp;
@@ -168,7 +164,9 @@ class ArkActivity extends WalletActivity {
   @override
   ArkRail get rail => switch (movement.kind) {
     ArkMovementKind.lightningSend || ArkMovementKind.lightningReceive => ArkRail.lightning,
-    ArkMovementKind.offboard || ArkMovementKind.sendOnchain => ArkRail.onchain,
+    // 같은 지갑 안의 이동은 수수료를 낸 쪽
+    ArkMovementKind.board => isMove ? ArkRail.onchain : ArkRail.ark,
+    ArkMovementKind.offboard || ArkMovementKind.sendOnchain => isMove ? ArkRail.ark : ArkRail.onchain,
     ArkMovementKind.exit => linkedTx == null ? ArkRail.ark : ArkRail.onchain,
     _ => ArkRail.ark,
   };

@@ -17,6 +17,7 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/model/ark/ark_balance.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/ark/ark_wallet_service.dart';
+import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -51,6 +52,34 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
 
   @override
   final ValueNotifier<BlockTimestamp?> currentBlockHeightNotifier = ValueNotifier(null);
+
+  @override
+  final ValueNotifier<WalletLoadState> walletLoadStateNotifier = ValueNotifier(WalletLoadState.loadCompleted);
+
+  @override
+  WalletLoadState get walletLoadState => walletLoadStateNotifier.value;
+}
+
+class _FakeNotifications extends Fake implements LocalNotificationService {
+  final Set<int> pending = {};
+
+  @override
+  Future<List<int>> pendingIds() async => pending.toList();
+
+  @override
+  Future<void> cancel(int id) async => pending.remove(id);
+
+  @override
+  Future<void> schedule({
+    required int id,
+    required String channelId,
+    required String channelName,
+    required String channelDescription,
+    required String title,
+    required String body,
+    required String payload,
+    required DateTime at,
+  }) async => pending.add(id);
 }
 
 class _FakeArkWalletService extends Fake implements ArkWalletService {
@@ -323,6 +352,49 @@ void main() {
     expect(arkService.calls, ['delete']);
     expect(arkProvider.supportsArkById(1), isFalse);
     expect(arkRepository.getSnapshot(1), isNull);
+  });
+
+  test('expiry and exit notifications of a removed wallet or Ark turned off are cancelled', () async {
+    final notifications = _FakeNotifications()..pending.addAll([72002, 72003, 73001, 72010, 73005, 1]);
+    final provider = ArkProvider(
+      walletProvider,
+      arkRepository,
+      arkWalletService: arkService,
+      notifications: notifications,
+      startTimer: false,
+    );
+    await pumpEventQueue();
+
+    // 지갑 5는 없음, 지갑 1은 아크가 켜져 있음, 1은 다른 기능의 알림
+    expect(notifications.pending, unorderedEquals([72002, 72003, 73001, 1]));
+
+    await arkRepository.saveSnapshot(1, createArkSnapshot(balance: ArkBalance.zero));
+    await provider.turnOff(1);
+    expect(notifications.pending, [1]);
+    provider.dispose();
+  });
+
+  test('refreshing the VTXOs a reminder was set for cancels the reminder', () async {
+    arkService.openWallets.add(_fingerprint.toLowerCase());
+    walletProvider.currentBlockHeightNotifier.value = BlockTimestamp(4000, DateTime.utc(2026, 11, 12));
+    arkService.nextSnapshot = createArkSnapshot(vtxos: [createArkVtxo(id: 'soon:0', expiryHeight: 6000)]);
+    final notifications = _FakeNotifications();
+    final provider = ArkProvider(
+      walletProvider,
+      arkRepository,
+      arkWalletService: arkService,
+      currentBlock: walletProvider.currentBlockHeightNotifier,
+      notifications: notifications,
+      startTimer: false,
+    );
+    await pumpEventQueue();
+
+    await provider.syncNow(1);
+    expect(notifications.pending, unorderedEquals([72002, 72003]));
+
+    await provider.refreshDelegated(1, ['soon:0']);
+    expect(notifications.pending, isEmpty);
+    provider.dispose();
   });
 
   test('a refresh input the server has not picked up yet is counted once (#29)', () async {

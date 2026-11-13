@@ -163,10 +163,18 @@ class _AppGuardState extends State<AppGuard> {
     if (!payload.startsWith(ArkProvider.arkExpiryPayloadPrefix)) return;
     final walletId = int.tryParse(payload.substring(ArkProvider.arkExpiryPayloadPrefix.length));
     if (walletId == null) return;
-    widget.navigatorKey?.currentState?.pushNamed(
-      AppRouteNames.vtxoList,
-      arguments: VtxoListRouteArgs(id: walletId, startRefresh: true),
-    );
+    final navigator = widget.navigatorKey?.currentState;
+    if (_arkProvider.dueVtxoIds(walletId)?.isEmpty ?? false) {
+      // 예약 뒤 갱신했거나 블록이 예상보다 느리게 쌓인 경우
+      navigator?.pushNamed(AppRouteNames.walletDetail, arguments: WalletDetailRouteArgs(id: walletId));
+      final overlay = navigator?.overlay;
+      final overlayContext = widget.navigatorKey?.currentContext;
+      if (overlay != null && overlayContext != null) {
+        CoconutToast.showToast(context: overlayContext, overlay: overlay, text: t.ark.vtxo.none_due);
+      }
+      return;
+    }
+    navigator?.pushNamed(AppRouteNames.vtxoList, arguments: VtxoListRouteArgs(id: walletId, startRefresh: true));
   }
 
   void _showRefreshIncomplete() {

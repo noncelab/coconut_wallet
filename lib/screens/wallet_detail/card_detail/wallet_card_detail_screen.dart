@@ -760,6 +760,10 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
       onBalanceTap: viewModel.toggleUnit,
       onUnlockArk:
           viewModel.isArkLocked(wallet) ? () => openArkWalletForSession(context, wallet.id, userInitiated: true) : null,
+      onMoveBalance:
+          viewModel.canMoveBetweenRails(wallet) && viewModel.balanceOf(wallet) > 0
+              ? () => Navigator.pushNamed(context, AppRouteNames.arkMove, arguments: ArkMoveRouteArgs(id: wallet.id))
+              : null,
       actions: WalletDetailCardAction.standard(
         onReceive: _openReceive,
         onSend: _openSend,

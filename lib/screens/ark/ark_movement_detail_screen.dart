@@ -212,8 +212,6 @@ class _MovementDetails extends StatelessWidget {
   String _destinationLabel(String value, String fallback) {
     return switch (PaymentRequest.parse(value, NetworkType.currentNetworkType).kind) {
       PaymentRequestKind.lightningInvoice => t.ark.movement.lightning_invoice,
-      PaymentRequestKind.arkAddress => t.ark.request.ark_address,
-      PaymentRequestKind.lightningAddress => t.ark.request.lightning_address,
       _ => fallback,
     };
   }
@@ -224,7 +222,7 @@ class _MovementDetails extends StatelessWidget {
     final isExit = movement.kind == ArkMovementKind.exit;
     final activity = ArkActivity(
       movement,
-      linkedTx: isExit ? _record(transactions, movement.linkedTxid) : null,
+      linkedTx: _record(transactions, movement.linkedTxid),
       relatedTxs: [
         if (isExit)
           for (final txid in movement.exitRelatedTxids)
@@ -238,9 +236,13 @@ class _MovementDetails extends StatelessWidget {
         linkedTxid != null && context.read<TransactionProvider>().getTransactionRecord(walletId, linkedTxid) != null;
     final copyable = <(String, String)>[
       if (isExit && movement.exitDestination != null) (t.ark.movement.received_on, movement.exitDestination!),
+      // 내 온체인으로 옮긴 경우 보낸 곳이 곧 받은 주소
       if (!isExit)
         for (final destination in movement.sentToDestinations)
-          (_destinationLabel(destination.value, t.ark.movement.sent_to), destination.value),
+          (
+            _destinationLabel(destination.value, activity.isMove ? t.ark.movement.received_on : t.ark.movement.sent_to),
+            destination.value,
+          ),
       for (final destination in movement.receivedOnDestinations)
         (_destinationLabel(destination.value, t.ark.movement.received_on), destination.value),
       // 보낸·받은 주소에 이미 인보이스가 있으면 다시 보여 주지 않음
@@ -268,10 +270,7 @@ class _MovementDetails extends StatelessWidget {
         children: [
           HighlightedInfoArea(textList: DateTimeUtil.formatTimestamp(movement.timestamp)),
           CoconutLayout.spacing_500h,
-          _buildAmount(
-            context,
-            isExit && activity.linkedTx != null ? activity.displayAmount : movement.effectiveBalanceSats,
-          ),
+          _buildAmount(context, activity.linkedTx != null ? activity.displayAmount : movement.effectiveBalanceSats),
           CoconutLayout.spacing_400h,
           CoconutLayout.spacing_400h,
           UnderlineButtonItemCard(
@@ -283,16 +282,38 @@ class _MovementDetails extends StatelessWidget {
               label: t.ark.movement.memo,
               child: Text(memo, style: CoconutTypography.body2_14.setColor(colors.primaryText)),
             ),
+          // 받은 거래가 생긴 뒤에야 받은 금액과 수수료가 정해짐
           if (isExit) ...[
-            UnderlineButtonItemCard(
-              label: t.ark.movement.exit_requested,
-              child: Text(formatSats(unit, -movement.effectiveBalanceSats), style: valueStyle),
-            ),
-            // 받은 거래가 생긴 뒤에야 수수료가 다 정해짐
-            if (activity.linkedTx != null)
+            if (activity.linkedTx != null) ...[
+              UnderlineButtonItemCard(
+                label: t.ark.movement.moved_amount,
+                child: Text(formatSats(unit, activity.linkedTx!.amount), style: valueStyle),
+              ),
               UnderlineButtonItemCard(
                 label: t.ark.movement.exit_onchain_fee,
                 child: Text(formatSats(unit, -activity.amount), style: valueStyle),
+              ),
+            ],
+          ] else if (activity.isMove) ...[
+            UnderlineButtonItemCard(
+              label: t.ark.movement.moved_amount,
+              child: Text(
+                formatSats(
+                  unit,
+                  movement.kind == ArkMovementKind.board ? movement.effectiveBalanceSats : activity.linkedTx!.amount,
+                ),
+                style: valueStyle,
+              ),
+            ),
+            if (-activity.amount - movement.offchainFeeSats > 0)
+              UnderlineButtonItemCard(
+                label: t.ark.movement.exit_onchain_fee,
+                child: Text(formatSats(unit, -activity.amount - movement.offchainFeeSats), style: valueStyle),
+              ),
+            if (movement.offchainFeeSats > 0)
+              UnderlineButtonItemCard(
+                label: t.ark.movement.fee,
+                child: Text(formatSats(unit, movement.offchainFeeSats), style: valueStyle),
               ),
           ] else
             UnderlineButtonItemCard(
@@ -328,6 +349,8 @@ class _MovementDetails extends StatelessWidget {
               children: [
                 _detail(context, t.ark.movement.movement_id, '${movement.id}'),
                 _detail(context, t.ark.movement.subsystem, '${movement.subsystemName} / ${movement.subsystemKind}'),
+                if (isExit)
+                  _detail(context, t.ark.movement.exit_requested, formatSats(unit, -movement.effectiveBalanceSats)),
                 if (isExit)
                   for (final destination in movement.sentToDestinations)
                     _detail(context, t.ark.movement.exit_output_address, destination.value),

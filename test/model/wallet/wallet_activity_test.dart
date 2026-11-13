@@ -101,7 +101,7 @@ void main() {
       expect(move.isMove, isTrue);
       expect(move.linkedTx, same(funding));
       expect(move.amount, -500); // the on-chain fee and the board fee
-      expect(move.displayAmount, 99800); // what arrived in Ark
+      expect(move.displayAmount, -500); // only the fees left the wallet
       expect(move.status, TransactionStatus.self);
       expect(move.label, ArkActivityLabel.movedToArk);
     });
@@ -147,7 +147,7 @@ void main() {
       final move = WalletActivity.merge([receive], [send]).single as ArkActivity;
 
       expect(move.amount, -400);
-      expect(move.displayAmount, 30000);
+      expect(move.displayAmount, -400);
       expect(move.label, ArkActivityLabel.movedOnchain);
     });
 

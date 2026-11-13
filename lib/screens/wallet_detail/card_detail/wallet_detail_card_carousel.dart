@@ -292,6 +292,9 @@ class WalletDetailCard extends StatelessWidget {
 
   /// 아크가 잠겨 있을 때만 값이 있음
   final VoidCallback? onUnlockArk;
+
+  /// 잔액을 나눠 보여 줄 때 가운데 옮기기 버튼, null이면 흐리게
+  final VoidCallback? onMoveBalance;
   final List<WalletDetailCardAction> actions;
   final BorderRadius borderRadius;
 
@@ -307,8 +310,72 @@ class WalletDetailCard extends StatelessWidget {
     required this.actions,
     this.onBalanceTap,
     this.onUnlockArk,
+    this.onMoveBalance,
     this.borderRadius = const BorderRadius.all(Radius.circular(28)),
   });
+
+  /// 가운데 옮기기 버튼을 둔 온체인·아크 잔액 나눠 보기
+  Widget _buildBreakdown(BuildContext context, ({int onchain, int ark}) parts) {
+    final colors = context.coconutColors;
+    final labelStyle = CoconutTypography.body3_12.copyWith(color: colors.secondaryText);
+    final amountStyle = CoconutTypography.body2_14_Number.copyWith(color: colors.primaryText);
+    Widget side(String label, int sats, ({bool receiving, bool sending}) pending, String source, bool alignEnd) =>
+        SizedBox(
+          width: 120,
+          child: Column(
+            crossAxisAlignment: alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              Text(label, style: labelStyle),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(unit.displayBitcoinAmount(sats), style: amountStyle),
+                    ..._pendingIcons(pending, source),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+    final onTap = onMoveBalance;
+    final moveButton = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Opacity(
+        opacity: onTap == null ? 0.4 : 1,
+        child: ShrinkAnimationButton(
+          key: const Key('wallet-detail-card-move-balance'),
+          onPressed: onTap ?? () {},
+          defaultColor: colors.homeSurfaceButton,
+          pressedOverlayColor: colors.surfacePressOverlay,
+          pressedOverlayOpacity: colors.surfacePressOverlayOpacity,
+          borderRadius: _ActionButton.size / 2,
+          child: SizedBox.square(
+            dimension: _ActionButton.size,
+            child: Center(
+              child: SvgPicture.asset(
+                CommonNavigationIconPath.arrowSwap,
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(colors.surfaceButtonText, BlendMode.srcIn),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return Row(
+      key: const Key('wallet-detail-card-balance-breakdown'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        side(t.ark.balance.onchain, parts.onchain, onchainPending, 'onchain', true),
+        moveButton,
+        side(t.ark.balance.ark, parts.ark, arkPending, 'ark', false),
+      ],
+    );
+  }
 
   List<Widget> _pendingIcons(({bool receiving, bool sending}) pending, String source) => [
     for (final (isIncoming, isPending) in [(true, pending.receiving), (false, pending.sending)])
@@ -397,26 +464,8 @@ class WalletDetailCard extends StatelessWidget {
                           ],
                         ),
                         if (breakdown case final parts?) ...[
-                          const SizedBox(height: 4),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              key: const Key('wallet-detail-card-balance-breakdown'),
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '${t.ark.balance.onchain} ${unit.displayBitcoinAmount(parts.onchain)}',
-                                  style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
-                                ),
-                                ..._pendingIcons(onchainPending, 'onchain'),
-                                Text(
-                                  '  ·  ${t.ark.balance.ark} ${unit.displayBitcoinAmount(parts.ark)}',
-                                  style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
-                                ),
-                                ..._pendingIcons(arkPending, 'ark'),
-                              ],
-                            ),
-                          ),
+                          const SizedBox(height: 12),
+                          _buildBreakdown(context, parts),
                         ],
                         if (onUnlockArk case final unlock?) ...[
                           const SizedBox(height: 8),

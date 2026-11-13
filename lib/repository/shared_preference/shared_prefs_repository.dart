@@ -245,16 +245,6 @@ class SharedPrefsRepository {
     await deleteSharedPrefsWithKey(SharedPrefKeys.walletTargetDisabled(walletId));
   }
 
-  /// 아크를 켜면 기본으로 나눠 보기, 사용자가 끈 뒤에만 false
-  bool isWalletBalanceBreakdown(int walletId) {
-    final key = SharedPrefKeys.walletBalanceBreakdown(walletId);
-    return isContainsKey(key) ? getBool(key) : true;
-  }
-
-  Future<void> setWalletBalanceBreakdown(int walletId, bool shown) async {
-    await setBool(SharedPrefKeys.walletBalanceBreakdown(walletId), shown);
-  }
-
   Future<void> removeWalletBalanceBreakdown(int walletId) async {
     await deleteSharedPrefsWithKey(SharedPrefKeys.walletBalanceBreakdown(walletId));
   }

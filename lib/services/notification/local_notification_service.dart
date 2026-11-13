@@ -98,6 +98,12 @@ class LocalNotificationService {
     );
   }
 
+  /// 아직 울리지 않은 예약 알림 ID
+  Future<List<int>> pendingIds() async {
+    await ensureInitialized();
+    return [for (final request in await _plugin.pendingNotificationRequests()) request.id];
+  }
+
   Future<void> cancel(int id) async {
     await ensureInitialized();
     await _plugin.cancel(id: id);

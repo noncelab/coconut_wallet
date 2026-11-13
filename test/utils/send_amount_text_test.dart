@@ -18,6 +18,13 @@ void main() {
     expect(type('05'), '5');
     expect(type('00'), '0');
     expect(type('0.05'), '0.05');
+    expect(type('00.'), '0.');
+  });
+
+  test('sats takes digits only and never starts with 0', () {
+    expect(type('0', isSats: true), '');
+    expect(type('05', isSats: true), '5');
+    expect(type('1a2', isSats: true), '12');
   });
 
   test('BTC keeps 8 decimals and 8 integer digits; sats has no decimals and 16 digits', () {

@@ -235,13 +235,6 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   /// 온체인 + 아크, 백업 경고와 삭제 확인에 사용
   int get totalBalance => _walletProvider.getDisplayBalance(_walletId);
-  bool get showsBalanceBreakdown => _arkProvider?.showsBalanceBreakdown(_walletId) ?? false;
-
-  Future<void> setBalanceBreakdown(bool shown) async {
-    await _arkProvider?.setBalanceBreakdown(_walletId, shown);
-    _safeNotifyListeners();
-  }
-
   bool get hasTaprootKeyPath =>
       _walletItemBase is TaprootWalletItem && (_walletItemBase as TaprootWalletItem).canSpendViaKeyPath;
 

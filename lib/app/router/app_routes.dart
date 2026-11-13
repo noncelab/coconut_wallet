@@ -54,6 +54,7 @@ import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.da
 import 'package:coconut_wallet/screens/ark/ark_movement_detail_screen.dart';
 import 'package:coconut_wallet/screens/ark/vtxo_detail_screen.dart';
 import 'package:coconut_wallet/screens/ark/ark_exit_screen.dart';
+import 'package:coconut_wallet/screens/ark/ark_move_screen.dart';
 import 'package:coconut_wallet/screens/ark/vtxo_list_screen.dart';
 import 'package:flutter/widgets.dart';
 
@@ -121,6 +122,8 @@ Map<String, WidgetBuilder> buildAppRoutes() {
         ),
     AppRouteNames.arkExit:
         (context) => _buildLoadingScreenWithArgs<ArkExitRouteArgs>(context, (args) => ArkExitScreen(walletId: args.id)),
+    AppRouteNames.arkMove:
+        (context) => _buildLoadingScreenWithArgs<ArkMoveRouteArgs>(context, (args) => ArkMoveScreen(walletId: args.id)),
     AppRouteNames.vtxoDetail:
         (context) => _buildLoadingScreenWithArgs<VtxoDetailRouteArgs>(
           context,

@@ -86,11 +86,7 @@ class _ArkExitScreenState extends State<ArkExitScreen> {
                     onButtonClicked: _start,
                   ),
                 if (_viewModel.step == ArkExitStep.done || _viewModel.step == ArkExitStep.failed)
-                  FixedBottomButton(
-                    isVisibleAboveKeyboard: false,
-                    text: t.ark.exit.confirm,
-                    onButtonClicked: _finish,
-                  ),
+                  FixedBottomButton(isVisibleAboveKeyboard: false, text: t.ark.exit.confirm, onButtonClicked: _finish),
               ],
             ),
           ),

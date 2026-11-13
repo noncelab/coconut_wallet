@@ -32,6 +32,7 @@ class AppRouteNames {
   static const String arkMovementDetail = '/ark-movement-detail';
   static const String vtxoList = '/vtxo-overview';
   static const String arkExit = '/ark-exit';
+  static const String arkMove = '/ark-move';
   static const String vtxoDetail = '/vtxo-detail';
   static const String transactionList = '/transaction-list';
   static const String transactionDraft = '/transaction-draft';

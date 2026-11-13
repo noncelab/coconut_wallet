@@ -469,12 +469,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       ),
       if (viewModel.isArkOn) ...[
         _toggleRowWithDescription(
-          title: t.ark.wallet_info.show_breakdown,
-          description: t.ark.wallet_info.show_breakdown_description,
-          toggle: toggle(viewModel.showsBalanceBreakdown, viewModel.setBalanceBreakdown),
-          onPressed: () => viewModel.setBalanceBreakdown(!viewModel.showsBalanceBreakdown),
-        ),
-        _toggleRowWithDescription(
           title: t.ark.consent.auto_refresh_title,
           description: t.ark.consent.auto_refresh_description,
           toggle: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),

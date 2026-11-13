@@ -24,6 +24,11 @@ class ArkExitRouteArgs {
   const ArkExitRouteArgs({required this.id});
 }
 
+class ArkMoveRouteArgs {
+  final int id;
+  const ArkMoveRouteArgs({required this.id});
+}
+
 class VtxoListRouteArgs {
   final int id;
   final bool startRefresh;
