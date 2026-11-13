@@ -307,7 +307,7 @@ hodl_insights:
   goal_reminder_until: "通知は期限の前日（${date}）まで届きます"
   goal_reminder_until_booked: "${booked}まで通知を予約しています。アプリを開くと、期限の前日の${date}まで続けて予約します"
   goal_reminder_amount_disabled_pending: "残高を確認している間は数量なしで通知します"
-  goal_reminder_amount_disabled_hidden: "残高を隠している間は数量を表示しません"
+  goal_reminder_amount_disabled_hidden: "残高を隠している間やフェイク残高を使っている間は数量を表示しません"
   goal_reminder_amount_disabled_conflict: "同じアカウントの目標を整理するまで、数量なしで通知します"
   goal_reminder_amount_disabled_unsynced: "残高を確認してから数量を入れます"
   goal_reminder_preview: "通知プレビュー"

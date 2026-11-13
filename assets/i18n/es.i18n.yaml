@@ -309,7 +309,7 @@ hodl_insights:
   goal_reminder_until: "Los recordatorios llegan hasta el día antes de la fecha límite (${date})"
   goal_reminder_until_booked: "Los recordatorios están programados hasta el ${booked}. Al abrir la app, siguen hasta el ${date}, el día antes de la fecha límite"
   goal_reminder_amount_disabled_pending: "Mientras se comprueba el saldo, los recordatorios llegan sin la cantidad"
-  goal_reminder_amount_disabled_hidden: "Mientras tu saldo esté oculto, los recordatorios no incluyen la cantidad"
+  goal_reminder_amount_disabled_hidden: "Mientras tu saldo esté oculto o uses Saldo falso, los recordatorios no incluyen la cantidad"
   goal_reminder_amount_disabled_conflict: "Hasta que ordenes las metas de esta cuenta, los recordatorios llegan sin la cantidad"
   goal_reminder_amount_disabled_unsynced: "La cantidad se añadirá cuando se compruebe el saldo"
   goal_reminder_preview: "Vista previa del recordatorio"

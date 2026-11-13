@@ -308,7 +308,7 @@ hodl_insights:
   goal_reminder_until: "Erinnerungen kommen bis zum Tag vor dem Zieldatum (${date})"
   goal_reminder_until_booked: "Erinnerungen sind bis ${booked} geplant. Beim Öffnen der App gehen sie bis ${date} weiter, dem Tag vor dem Zieldatum"
   goal_reminder_amount_disabled_pending: "Solange das Guthaben geprüft wird, kommen Erinnerungen ohne Menge"
-  goal_reminder_amount_disabled_hidden: "Solange dein Guthaben verborgen ist, zeigen Erinnerungen keine Menge"
+  goal_reminder_amount_disabled_hidden: "Solange dein Guthaben verborgen ist oder Falsches Guthaben aktiv ist, zeigen Erinnerungen keine Menge"
   goal_reminder_amount_disabled_conflict: "Bis die Ziele dieses Kontos geordnet sind, kommen Erinnerungen ohne Menge"
   goal_reminder_amount_disabled_unsynced: "Die Menge kommt dazu, sobald das Guthaben geprüft ist"
   goal_reminder_preview: "Vorschau der Erinnerung"
