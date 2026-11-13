@@ -1,4 +1,4 @@
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutChip, CoconutLayout, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -24,8 +24,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 const goalAmountHeroTag = 'hodl-goal-amount';
 
 /// 목표 수량: 범위 안 지갑들의 목표 진행을 자세히 본다.
-/// 목표가 한 지갑에만 있으면 합산 카드만, 여러 지갑에 걸쳐 있으면 그 지갑 칩과 지갑별 목표도 보여 준다.
-/// 칩을 눌러 끈 지갑은 합산 카드와 모으기 계획에서 뺀다. 모으기 계획은 목표 지갑이 하나여도 보여 준다.
+/// 목표가 한 지갑에만 있으면 합산 카드만, 여러 지갑에 걸쳐 있으면 지갑별 목표도 보여 준다.
+/// 범위는 늘 목표를 정한 지갑 전체(합산 기준)다. 모으기 계획은 목표 지갑이 하나여도 보여 준다.
 class GoalAmountScreen extends StatefulWidget {
   static const routeName = '/goal-amount';
 
@@ -57,9 +57,6 @@ class GoalAmountScreen extends StatefulWidget {
 }
 
 class _GoalAmountScreenState extends State<GoalAmountScreen> {
-  /// 칩을 눌러 합산에서 뺀 지갑. 이 화면에 있는 동안만 유지한다.
-  final Set<int> _excluded = {};
-
   late final GoalPlanController _plan = GoalPlanController();
 
   @override
@@ -69,15 +66,6 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
   }
 
   HodlInsightsViewModel get viewModel => widget.viewModel;
-
-  /// 칩을 눌러 지갑을 빼거나 다시 넣는다. 마지막 남은 지갑은 뺄 수 없다.
-  void _toggleWallet(int walletId, List<HomeGoalShare> targeted) {
-    setState(() {
-      if (_excluded.remove(walletId)) return;
-      final included = targeted.where((share) => !_excluded.contains(share.walletId)).length;
-      if (included > 1) _excluded.add(walletId);
-    });
-  }
 
   String? _fiat(int sats) {
     final data = viewModel.data;
@@ -107,23 +95,12 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
     return ListenableBuilder(
       listenable: Listenable.merge([viewModel, _plan]),
       builder: (context, _) {
-        final shares = viewModel.goalShares;
-        // 목표가 여러 지갑에 걸쳐 있을 때만 그 지갑들을 칩과 지갑별 목표로 나눠 보여 준다.
-        final targeted = GoalAmountSummary.targetedOf(shares);
+        // 범위는 늘 목표를 정한 지갑 전체(합산 기준). 같은 계정은 한 번, 목표가 다르면 큰 목표(결정 ⑦).
+        // 지갑 하나씩은 아래 '지갑별 목표'가 지갑마다 따로 보여 준다.
+        final sum = viewModel.goalSum;
+        final targeted = GoalAmountSummary.targetedOf(viewModel.goalShares);
         final multiple = targeted.length > 1;
-        final kept = [
-          for (final share in targeted)
-            if (!multiple || !_excluded.contains(share.walletId)) share,
-        ];
-        // 목표를 고치다 남은 지갑이 모두 꺼진 상태가 되면 다시 모두 넣는다.
-        final included = kept.isEmpty ? targeted : kept;
-        final goal =
-            included.isEmpty
-                ? null
-                : HomeSavingsGoal(
-                  balance: included.fold(0, (sum, share) => sum + share.balance),
-                  target: included.fold(0, (sum, share) => sum + share.target!),
-                );
+        final goal = sum.goal;
         return Scaffold(
           backgroundColor: colors.homeBackground,
           appBar: CoconutAppBar.build(
@@ -149,14 +126,6 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
               key: const Key('goal-amount-list'),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
               children: [
-                if (multiple) ...[
-                  _WalletChips(
-                    shares: targeted,
-                    excluded: _excluded,
-                    onToggle: (walletId) => _toggleWallet(walletId, targeted),
-                  ),
-                  CoconutLayout.spacing_400h,
-                ],
                 Hero(
                   tag: widget.heroTag,
                   flightShuttleBuilder: walletBalanceHistoryFlight,
@@ -201,16 +170,21 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
                               )
                               : GoalAmountSummary(
                                 goal: goal,
-                                shares: included,
+                                shares: sum.accounts,
                                 amountNumber: _number,
                                 amountText: _text,
+                                hasConflictingGoals: sum.hasConflictingGoals,
+                                onTidyGoals: () => _openGoalSettings(context),
+                                awaitingConfirmation: sum.awaitingConfirmation,
+                                hasUnsettledAccounts: sum.hasUnsettledAccounts,
+                                balancesDiffer: sum.hasDifferingBalances,
                               ),
                     ),
                   ),
                 ),
                 if (multiple) ...[
                   CoconutLayout.spacing_400h,
-                  _WalletGoalList(shares: targeted, excluded: _excluded, amountNumber: _number, amountText: _text),
+                  _WalletGoalList(shares: targeted, settled: sum.isSettled, amountNumber: _number, amountText: _text),
                 ],
                 if (goal != null) ...[
                   CoconutLayout.spacing_400h,
@@ -231,73 +205,19 @@ class _GoalAmountScreenState extends State<GoalAmountScreen> {
   }
 }
 
-/// 목표를 정한 지갑만 칩으로 보여 준다. 누르면 합산에서 빼거나 다시 넣는다.
-class _WalletChips extends StatelessWidget {
-  final List<HomeGoalShare> shares;
-  final Set<int> excluded;
-  final ValueChanged<int> onToggle;
-
-  const _WalletChips({required this.shares, required this.excluded, required this.onToggle});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    final appearances = context.watchWalletAppearance();
-    return Wrap(
-      key: const Key('goal-amount-wallet-chips'),
-      spacing: 8,
-      runSpacing: 0,
-      children: [
-        for (final share in shares)
-          Builder(
-            builder: (context) {
-              final active = !excluded.contains(share.walletId);
-              final walletColor = BalanceByWalletView.colorOf(context, share.asBalanceShare, appearances: appearances);
-              // 칩 모양은 그대로. 누르는 곳만 최소 44×44로 넓힌다(짧은 이름도). 넓힌 곳은 화면 읽기에서 빼서
-              // 칩 하나가 이름 있는 탭 대상으로 남는다. 칩을 누르면 칩이, 둘레를 누르면 바깥이 받아 한 번만 바뀐다.
-              return GestureDetector(
-                key: ValueKey('goal-amount-chip-hit-${share.walletId}'),
-                behavior: HitTestBehavior.opaque,
-                excludeFromSemantics: true,
-                onTap: () => onToggle(share.walletId),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                  child: Center(
-                    widthFactor: 1,
-                    heightFactor: 1,
-                    child: CoconutChip(
-                      key: ValueKey('goal-amount-chip-${share.walletId}'),
-                      color: colors.homeSurface,
-                      borderColor: active ? walletColor : colors.border,
-                      labelColor: active ? colors.primaryText : colors.tertiaryText,
-                      label: share.name,
-                      labelSize: 13,
-                      isSelected: active,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      onTap: () => onToggle(share.walletId),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-      ],
-    );
-  }
-}
-
-/// 목표를 정한 지갑마다 목표 진행
+/// 목표를 정한 지갑마다 목표 진행과 부족분
 class _WalletGoalList extends StatelessWidget {
   final List<HomeGoalShare> shares;
 
-  /// 칩에서 끈 지갑. 흐리게 보여 준다.
-  final Set<int> excluded;
+  /// 계정 잔액을 믿을 수 있는지(합계와 같은 규칙, [HomeGoalSum.isSettled]). 아니면 다 채운 지갑도 '확인 대기'(Fable N3)
+  final bool Function(String accountKey) settled;
+
   final String Function(int sats) amountNumber;
   final String Function(int sats) amountText;
 
   const _WalletGoalList({
     required this.shares,
-    required this.excluded,
+    required this.settled,
     required this.amountNumber,
     required this.amountText,
   });
@@ -320,15 +240,12 @@ class _WalletGoalList extends StatelessWidget {
           CoconutLayout.spacing_200h,
           for (var i = 0; i < shares.length; i++) ...[
             if (i > 0) Divider(height: 1, thickness: 0.5, color: colors.border),
-            AnimatedOpacity(
-              opacity: excluded.contains(shares[i].walletId) ? 0.35 : 1,
-              duration: const Duration(milliseconds: 200),
-              child: _WalletGoalRow(
-                share: shares[i],
-                color: BalanceByWalletView.colorOf(context, shares[i].asBalanceShare, appearances: appearances),
-                amountNumber: amountNumber,
-                amountText: amountText,
-              ),
+            _WalletGoalRow(
+              share: shares[i],
+              color: BalanceByWalletView.colorOf(context, shares[i].asBalanceShare, appearances: appearances),
+              settled: settled,
+              amountNumber: amountNumber,
+              amountText: amountText,
             ),
           ],
         ],
@@ -340,12 +257,14 @@ class _WalletGoalList extends StatelessWidget {
 class _WalletGoalRow extends StatelessWidget {
   final HomeGoalShare share;
   final Color color;
+  final bool Function(String accountKey) settled;
   final String Function(int sats) amountNumber;
   final String Function(int sats) amountText;
 
   const _WalletGoalRow({
     required this.share,
     required this.color,
+    required this.settled,
     required this.amountNumber,
     required this.amountText,
   });
@@ -356,6 +275,8 @@ class _WalletGoalRow extends StatelessWidget {
     final nameStyle = CoconutTypography.body2_14.copyWith(color: colors.primaryText);
     // 목표를 정한 지갑만 넘어온다.
     final goal = share.goal!;
+    // 수량과 단위는 떼지 않는다(좁으면 '남은 수량' 뒤에서 줄을 바꾼다)
+    final remaining = amountText(goal.target - share.balance).replaceAll(' ', '\u00A0');
     return Padding(
       key: ValueKey('goal-amount-wallet-${share.walletId}'),
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -391,9 +312,19 @@ class _WalletGoalRow extends StatelessWidget {
           CoconutLayout.spacing_200h,
           GoalSegmentsBar(shares: [share], target: goal.target, height: 6),
           CoconutLayout.spacing_200h,
-          Text(
-            '${amountNumber(share.balance)} / ${amountText(goal.target)}',
-            style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryTextStrong),
+          // 이 지갑의 부족분(합산과 따로). 다 채운 지갑은 '목표 달성'
+          LabelValueRow(
+            label: '${amountNumber(share.balance)} / ${amountText(goal.target)}',
+            labelStyle: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryTextStrong),
+            value:
+                share.balance < goal.target
+                    ? '${t.hodl_insights.goal_remaining} $remaining'
+                    // 합계와 같은 규칙: 계정 잔액을 믿을 수 있고 확인된 미사용 잔액으로 채웠을 때만 '목표 달성'
+                    : settled(share.accountKey) && share.reachBalance >= goal.target
+                    ? t.hodl_insights.goal_reached
+                    : t.hodl_insights.goal_pending,
+            valueKey: ValueKey('goal-amount-wallet-remaining-${share.walletId}'),
+            valueStyle: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
           ),
         ],
       ),

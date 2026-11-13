@@ -1136,7 +1136,11 @@ class _GoalCard extends StatelessWidget {
         builder:
             (context, reveal) => GoalAmountSummary(
               goal: goal,
-              shares: viewModel.goalShares,
+              shares: viewModel.goalSum.accounts,
+              hasConflictingGoals: viewModel.goalSum.hasConflictingGoals,
+              awaitingConfirmation: viewModel.goalSum.awaitingConfirmation,
+              hasUnsettledAccounts: viewModel.goalSum.hasUnsettledAccounts,
+              balancesDiffer: viewModel.goalSum.hasDifferingBalances,
               amountNumber: (sats) => _btcNumber(viewModel, sats),
               amountText: (sats) => _btcText(viewModel, sats),
               reveal: reveal,

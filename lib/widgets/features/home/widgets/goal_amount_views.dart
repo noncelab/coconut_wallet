@@ -5,9 +5,11 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
 import 'package:coconut_wallet/widgets/common/text/keep_words.dart';
+import 'package:coconut_wallet/widgets/common/info/inline_notice.dart';
 import 'package:coconut_wallet/widgets/common/text/label_value_row.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -115,6 +117,22 @@ class GoalAmountSummary extends StatelessWidget {
   final String Function(int sats) amountNumber;
   final String Function(int sats) amountText;
 
+  /// 같은 계정에 서로 다른 목표가 있어 큰 목표로 계산했으면 true. 합계 바로 아래에 이유 한 줄을 둔다.
+  final bool hasConflictingGoals;
+
+  /// [목표 정리]를 누르면(목표 설정 시트). 없으면 버튼 없이 한 줄만
+  final VoidCallback? onTidyGoals;
+
+  /// 진행률은 목표에 닿았지만 아직 달성이 아니면 true. 남은 수량 줄이 '목표 달성' 대신 '확인 대기'
+  final bool awaitingConfirmation;
+
+  /// 같은 계정 지갑끼리 잔액이 다르거나 아직 동기화 중이라 확인 대기면 true. 이유 한 줄을 둔다(B1-a)
+  final bool hasUnsettledAccounts;
+
+  /// [hasUnsettledAccounts]의 이유가 실제로 다른 잔액이면 true(작은 잔액으로 보여 준다), 같은데 동기화 중이면 false
+  /// (잔액을 확인하는 중이라고만 말한다, Fable C2)
+  final bool balancesDiffer;
+
   const GoalAmountSummary({
     super.key,
     required this.goal,
@@ -122,6 +140,11 @@ class GoalAmountSummary extends StatelessWidget {
     required this.amountNumber,
     required this.amountText,
     this.reveal = 1,
+    this.hasConflictingGoals = false,
+    this.onTidyGoals,
+    this.awaitingConfirmation = false,
+    this.hasUnsettledAccounts = false,
+    this.balancesDiffer = false,
   });
 
   /// 목표 수량을 정한 지갑들
@@ -206,6 +229,18 @@ class GoalAmountSummary extends StatelessWidget {
             style: CoconutTypography.heading3_21_NumberBold.copyWith(color: colors.primaryText),
           ),
         ),
+        // 같은 계정에 서로 다른 목표가 있으면 합계 바로 아래에 계산 기준과 정리 버튼(결정 ⑦)
+        if (hasConflictingGoals) ...[
+          CoconutLayout.spacing_200h,
+          InlineNotice(
+            key: const Key('goal-amount-conflict'),
+            icon: CupertinoIcons.info_circle,
+            message: t.hodl_insights.goal_conflict_larger,
+            actionLabel: onTidyGoals == null ? null : t.hodl_insights.goal_conflict_tidy,
+            actionKey: const Key('goal-amount-conflict-tidy'),
+            onAction: onTidyGoals,
+          ),
+        ],
         CoconutLayout.spacing_400h,
         GoalSegmentsBar(
           shares: targeted,
@@ -240,7 +275,15 @@ class GoalAmountSummary extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Divider(height: 1, thickness: 0.5, color: colors.border),
         ),
-        _RemainingLine(remaining: remaining, amountText: amountText),
+        _RemainingLine(remaining: remaining, pending: awaitingConfirmation, amountText: amountText),
+        if (hasUnsettledAccounts) ...[
+          CoconutLayout.spacing_200h,
+          InlineNotice(
+            key: const Key('goal-amount-unsettled'),
+            icon: CupertinoIcons.clock,
+            message: balancesDiffer ? t.hodl_insights.goal_unsettled_smaller : t.hodl_insights.goal_unsettled_syncing,
+          ),
+        ],
         if (multiple) ...[
           CoconutLayout.spacing_300h,
           Wrap(
@@ -319,9 +362,12 @@ class _WrappingHeader extends StatelessWidget {
 /// '남은 수량' 줄. 다 채우면 값 자리에 '목표 달성'(지금과 같은 문구). 이름과 값이 안 들어가면 값을 다음 줄로 내린다.
 class _RemainingLine extends StatelessWidget {
   final int remaining;
+
+  /// 다 채웠지만 아직 달성이 아니면 '목표 달성' 대신 '확인 대기'
+  final bool pending;
   final String Function(int sats) amountText;
 
-  const _RemainingLine({required this.remaining, required this.amountText});
+  const _RemainingLine({required this.remaining, required this.pending, required this.amountText});
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +375,12 @@ class _RemainingLine extends StatelessWidget {
     return LabelValueRow(
       label: t.hodl_insights.goal_remaining,
       labelStyle: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-      value: remaining > 0 ? amountText(remaining) : t.hodl_insights.goal_reached,
+      value:
+          remaining > 0
+              ? amountText(remaining)
+              : pending
+              ? t.hodl_insights.goal_pending
+              : t.hodl_insights.goal_reached,
       valueKey: const Key('goal-remaining-amount'),
       // 다 채우면 한글 문구라 숫자 글꼴을 쓰지 않는다.
       valueStyle: (remaining > 0 ? CoconutTypography.body2_14_NumberBold : CoconutTypography.body2_14_Bold).copyWith(
