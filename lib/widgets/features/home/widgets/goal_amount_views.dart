@@ -419,11 +419,12 @@ class _WrappingHeader extends StatelessWidget {
   }
 }
 
-/// '남은 수량' 줄. 다 채우면 값 자리에 '목표 달성'(지금과 같은 문구). 이름과 값이 안 들어가면 값을 다음 줄로 내린다.
+/// '남은 수량' 줄. 다 채우면 그 자리에 지갑 상세 목표 카드와 같은 문장 한 줄을 둔다.
+/// 넘었으면 '목표보다 0.002 BTC 더 모았어요', 딱 맞으면 '축하해요! 목표를 달성했어요'.
 class _RemainingLine extends StatelessWidget {
   final int remaining;
 
-  /// 다 채웠지만 아직 달성이 아니면 '목표 달성' 대신 '확인 대기'
+  /// 다 채웠지만 아직 달성이 아니면(1차 7판 확인 대기) 문장 대신 '확인 대기'
   final bool pending;
   final String Function(int sats) amountText;
 
@@ -432,19 +433,41 @@ class _RemainingLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    return LabelValueRow(
-      label: t.hodl_insights.goal_remaining,
-      labelStyle: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-      value:
-          remaining > 0
-              ? amountText(remaining)
-              : pending
-              ? t.hodl_insights.goal_pending
-              : t.hodl_insights.goal_reached,
-      valueKey: const Key('goal-remaining-amount'),
-      // 다 채우면 한글 문구라 숫자 글꼴을 쓰지 않는다.
-      valueStyle: (remaining > 0 ? CoconutTypography.body2_14_NumberBold : CoconutTypography.body2_14_Bold).copyWith(
-        color: colors.primaryText,
+    final secondaryStyle = CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong);
+    if (remaining > 0 || pending) {
+      return LabelValueRow(
+        label: t.hodl_insights.goal_remaining,
+        labelStyle: secondaryStyle,
+        value: remaining > 0 ? amountText(remaining) : t.hodl_insights.goal_pending,
+        valueKey: const Key('goal-remaining-amount'),
+        valueStyle: (remaining > 0 ? CoconutTypography.body2_14_NumberBold : CoconutTypography.body2_14_Bold).copyWith(
+          color: colors.primaryText,
+        ),
+      );
+    }
+    if (remaining == 0) {
+      final title = t.wallet_info_screen.target_exceeded_title;
+      return Text(
+        keepWords(title),
+        key: const Key('goal-reached'),
+        semanticsLabel: title,
+        style: CoconutTypography.body2_14_Bold.copyWith(color: colors.primaryText),
+      );
+    }
+    final excess = amountText(-remaining);
+    final message = t.wallet_info_screen.target_exceeded_secondary(amount: excess);
+    final at = message.indexOf(excess);
+    // 줄바꿈 막기는 보이는 글에만 하고, 화면 읽기에는 원문 문장을 넘긴다.
+    return Text.rich(
+      key: const Key('goal-reached'),
+      semanticsLabel: message,
+      TextSpan(
+        style: secondaryStyle,
+        children: [
+          TextSpan(text: keepWords(message.substring(0, at))),
+          TextSpan(text: excess, style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText)),
+          TextSpan(text: keepWords(message.substring(at + excess.length))),
+        ],
       ),
     );
   }

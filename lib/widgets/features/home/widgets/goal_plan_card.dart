@@ -462,11 +462,11 @@ class _GoalPlanCardState extends State<GoalPlanCard> {
               message: copy.goal_plan_pending,
             )
           else if (reached)
-            Text(
-              keepWords(copy.goal_plan_reached),
+            InlineNotice(
               key: const Key('goal-plan-reached'),
-              semanticsLabel: copy.goal_plan_reached,
-              style: questionStyle,
+              icon: CupertinoIcons.checkmark_circle_fill,
+              iconColor: colors.success,
+              message: copy.goal_plan_reached,
             )
           else ...[
             if (_resetFrom != null) ...[

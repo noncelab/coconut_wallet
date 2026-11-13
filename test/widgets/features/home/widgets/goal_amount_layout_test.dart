@@ -184,4 +184,25 @@ void main() {
       }
     }
   });
+
+  testWidgets('over the goal the remaining row becomes the wallet detail sentence with its original label', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      locale: 'ko',
+      scale: 1,
+      width: 390,
+      child: GoalAmountSummary(
+        goal: const HomeSavingsGoal(balance: 105, target: 100),
+        shares: const [HomeGoalShare(walletId: 1, name: '비상금', balance: 105, target: 100)],
+        amountNumber: (sats) => '$sats',
+        amountText: (sats) => '$sats sats',
+      ),
+    );
+    expect(find.byKey(const Key('goal-remaining-amount')), findsNothing);
+    final reached = tester.widget<Text>(find.byKey(const Key('goal-reached')));
+    expect(reached.semanticsLabel, t.wallet_info_screen.target_exceeded_secondary(amount: '5 sats'));
+    expect(tester.takeException(), isNull);
+  });
 }
