@@ -8,6 +8,7 @@ import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/transaction_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
@@ -27,6 +28,7 @@ class WalletDetailViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final TransactionProvider _transactionProvider;
   final NodeProvider _nodeProvider;
+  final ArkProvider? _arkProvider;
   final SharedPrefsRepository _sharedPrefs;
   late WalletItemBase _wallet;
   final Faucet _faucetService = Faucet();
@@ -46,9 +48,11 @@ class WalletDetailViewModel extends ChangeNotifier {
     this._walletProvider,
     this._transactionProvider,
     this._nodeProvider, {
+    ArkProvider? arkProvider,
     required BitcoinUnit initialUnit,
     SharedPrefsRepository? sharedPrefs,
   }) : _currentUnit = initialUnit,
+       _arkProvider = arkProvider,
        _sharedPrefs = sharedPrefs ?? SharedPrefsRepository() {
     _wallet = _walletProvider.getWalletById(_walletId);
     _walletUpdateInfo = _nodeProvider.state.registeredWallets[_walletId];
@@ -187,7 +191,12 @@ class WalletDetailViewModel extends ChangeNotifier {
     notifyListeners();
     final stopwatch = Stopwatch()..start();
     try {
-      await _nodeProvider.refreshWallet(_wallet);
+      await Future.wait<void>([
+        () async {
+          await _nodeProvider.refreshWallet(_wallet);
+        }(),
+        if (_arkProvider?.isOpen(_walletId) ?? false) _arkProvider!.syncNow(_walletId),
+      ]);
       if (_isDisposed) return;
       _transactionProvider.initTxList(_walletId);
       notifyListeners();

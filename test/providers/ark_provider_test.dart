@@ -344,6 +344,18 @@ void main() {
     expect(() => arkProvider.turnOff(1), throwsStateError);
   });
 
+  test('a wallet whose Ark holds funds cannot be deleted', () async {
+    await arkRepository.saveSnapshot(1, createArkSnapshot());
+
+    expect(arkProvider.deleteBlock(1), ArkDeleteBlock.hasFunds);
+  });
+
+  test('a wallet whose Ark is empty can be deleted', () async {
+    await arkRepository.saveSnapshot(1, createArkSnapshot(balance: ArkBalance.zero));
+
+    expect(arkProvider.deleteBlock(1), isNull);
+  });
+
   test('turning Ark off with no funds removes its data and cache', () async {
     await arkRepository.saveSnapshot(1, createArkSnapshot(balance: ArkBalance.zero));
 

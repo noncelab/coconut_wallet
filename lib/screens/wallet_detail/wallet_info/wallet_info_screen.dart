@@ -468,10 +468,17 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         onPressed: () => _setArkOn(viewModel, !viewModel.isArkOn),
       ),
       if (viewModel.isArkOn) ...[
+        if (viewModel.needsArkRecoveryRetry)
+          _toggleRowWithDescription(
+            title: t.ark.wallet_info.recovery_retry_title,
+            description: t.ark.wallet_info.recovery_retry_description,
+            trailing: const _RowArrow(),
+            onPressed: () => _retryArkRecovery(viewModel),
+          ),
         _toggleRowWithDescription(
           title: t.ark.consent.auto_refresh_title,
           description: t.ark.consent.auto_refresh_description,
-          toggle: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),
+          trailing: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),
           onPressed: () => _setArkAutoRefresh(viewModel, !viewModel.isArkAutoRefreshOn),
         ),
         _walletInfoMenu(
@@ -509,6 +516,23 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
       t.ark.wallet_info.turn_off,
     );
     if (confirmed && mounted) await viewModel.turnOffArk();
+  }
+
+  Future<void> _retryArkRecovery(WalletInfoViewModel viewModel) async {
+    if (viewModel.isArkBusy) return;
+    final bool? found;
+    try {
+      found = await viewModel.retryArkRecovery(() => unlockArkSeed(context, viewModel.walletItemBase));
+    } catch (error) {
+      Logger.error('WalletInfoScreen: retrying Ark recovery failed: $error');
+      if (mounted) CoconutToast.showToast(context: context, text: t.ark.wallet_info.recovery_retry_failed);
+      return;
+    }
+    if (found == null || !mounted) return;
+    CoconutToast.showToast(
+      context: context,
+      text: found ? t.ark.wallet_info.recovery_retry_done : t.ark.wallet_info.recovery_retry_failed,
+    );
   }
 
   Future<void> _setArkAutoRefresh(WalletInfoViewModel viewModel, bool on) async {
@@ -1039,6 +1063,14 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   }
 
   Future<void> _showDeleteWalletDialog(WalletInfoViewModel viewModel) async {
+    switch (viewModel.arkDeleteBlock) {
+      case ArkDeleteBlock.hasFunds:
+        return _showArkMessage(t.ark.wallet_info.has_funds_title, t.ark.wallet_info.delete_has_funds_description);
+      case ArkDeleteBlock.exitInProgress:
+        return _showArkMessage(t.ark.wallet_info.delete_exit_title, t.ark.wallet_info.delete_exit_description);
+      case null:
+        break;
+    }
     final shouldConfirmBackup = viewModel.walletItemBase.hasLocalKey && viewModel.totalBalance > 0;
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -1225,7 +1257,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
   Widget _toggleRowWithDescription({
     required String title,
     required String description,
-    required Widget toggle,
+    required Widget trailing,
     required VoidCallback onPressed,
   }) {
     final colors = context.coconutColors;
@@ -1255,7 +1287,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
               ),
             ),
             const SizedBox(width: _trailingGap),
-            toggle,
+            trailing,
           ],
         ),
       ),

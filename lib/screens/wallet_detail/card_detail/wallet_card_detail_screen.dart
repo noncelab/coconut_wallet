@@ -7,6 +7,8 @@ import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
 import 'package:coconut_wallet/screens/ark/ark_unlock_flow.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/widgets/common/overlays/coconut_loading_overlay.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
@@ -498,6 +500,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                           key: const Key('wallet-detail-vtxo-header'),
                           title: t.ark.vtxo.section_title(count: viewModel.vtxoCount),
                           onMore: _openVtxoList,
+                          moreEnabled: viewModel.vtxoCount > 0,
                         ),
                         SizedBox(
                           height: 216,
@@ -975,19 +978,25 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                 (expiryNotice.beforeBackup || warning != WalletDetailSecurityWarningType.unbackedHotWallet)
             ? expiryNotice
             : null;
+    final recovery =
+        arkNotice == null &&
+        warning != WalletDetailSecurityWarningType.unbackedHotWallet &&
+        _viewModel.needsArkRecoveryRetry(_viewModel.focusedWallet);
     return ValueListenableBuilder<bool>(
       valueListenable: _carouselMoving,
       builder:
           (context, moving, _) => WalletSecurityBanner(
             warning: warning,
-            text: arkNotice?.text,
+            text: recovery ? t.ark.wallet_info.recovery_banner : arkNotice?.text,
             danger: arkNotice?.danger ?? false,
-            closable: arkNotice == null,
+            closable: arkNotice == null && !recovery,
             walletId: detail.walletId,
             moving: moving,
             onHeightChanged: onHeightChanged,
             onTap:
-                arkNotice != null
+                recovery
+                    ? _onArkRecoveryBannerTapped
+                    : arkNotice != null
                     ? () => _onArkExpiryBannerTapped(needsUnlock: arkNotice.needsUnlock)
                     : warning == WalletDetailSecurityWarningType.unbackedHotWallet
                     ? _onBackupBannerTapped
@@ -997,6 +1006,29 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
               detail.dismissSecurityWarning(warning);
             },
           ),
+    );
+  }
+
+  Future<void> _onArkRecoveryBannerTapped() async {
+    final wallet = _viewModel.focusedWallet;
+    final overlay = OverlayEntry(builder: (_) => const CoconutLoadingOverlay(applyFullScreen: true));
+    bool? found;
+    try {
+      found = await _viewModel.retryArkRecovery(wallet, () async {
+        final seed = await unlockArkSeed(context, wallet);
+        if (seed != null && mounted) Overlay.of(context).insert(overlay);
+        return seed;
+      });
+    } catch (error) {
+      Logger.error('WalletCardDetailScreen: retrying Ark recovery failed: $error');
+      found = false;
+    } finally {
+      if (overlay.mounted) overlay.remove();
+    }
+    if (found == null || !mounted) return;
+    CoconutToast.showToast(
+      context: context,
+      text: found ? t.ark.wallet_info.recovery_retry_done : t.ark.wallet_info.recovery_retry_failed,
     );
   }
 

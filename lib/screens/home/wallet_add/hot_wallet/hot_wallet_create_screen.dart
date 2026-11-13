@@ -734,6 +734,10 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
       loadFeeGuide: context.read<ArkProvider>().feeGuide,
       initialAutoRefresh: _viewModel.arkAutoRefresh,
     );
+    // 시트가 닫히면 마지막으로 포커스된 입력 칸이 다시 포커스됨
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) FocusScope.of(context).unfocus();
+    });
     if (consent == null) return;
     _viewModel.setArk(useArk: true, autoRefresh: consent.autoRefresh);
   }

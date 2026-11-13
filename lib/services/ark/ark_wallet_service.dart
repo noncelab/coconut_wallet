@@ -140,9 +140,58 @@ class ArkWalletService {
         // Left behind by an incomplete lifecycle operation, or recreated to retry recovery.
         await _deleteLocked(fingerprint);
       }
-      await _open(fingerprint, seedHex, create: true, runRecovery: restore);
+      // 응답 없는 서버에서는 bark 복구가 끝없이 기다리므로 건너뛰고 나중에 다시 찾게 함
+      final runRecovery = restore && await canReachServer();
+      await _open(fingerprint, seedHex, create: true, runRecovery: runRecovery);
+      if (!restore) return;
+      final recovery =
+          runRecovery ? _describeRecovery(_openWallets[_key(fingerprint)]!.recoveryStatus()) : ArkRecovery.pending;
+      Logger.log('ArkWalletService: seed recovery of $fingerprint: ${recovery.description}');
+      if (recovery.state == ArkRecoveryState.completed) await _settleRecoveredExits(_openWallets[_key(fingerprint)]!);
+      // bark는 복구 결과를 메모리에만 두므로 끝나지 않은 복구를 지갑 폴더에 표시
+      if (recovery.state != ArkRecoveryState.completed) await File(_recoveryPendingPath(datadir)).create();
     });
   }
+
+  /// 아크 서버 주소로 직접 연결해 응답이 오는지 봄(연결만 받고 멈춘 서버도 걸러 냄)
+  static Future<bool> canReachServer() async {
+    final uri = Uri.tryParse(CoconutWalletApp.kArkServerUrl);
+    if (uri == null || uri.host.isEmpty) return true;
+    Socket? socket;
+    try {
+      const limit = Duration(seconds: 5);
+      socket =
+          uri.scheme == 'https'
+              ? await SecureSocket.connect(uri.host, uri.port, timeout: limit)
+              : await Socket.connect(uri.host, uri.port, timeout: limit);
+      socket.write('HEAD / HTTP/1.1\r\nHost: ${uri.host}\r\nConnection: close\r\n\r\n');
+      await socket.first.timeout(limit);
+      return true;
+    } catch (error) {
+      Logger.error('ArkWalletService: Ark server unreachable: $error');
+      return false;
+    } finally {
+      socket?.destroy();
+    }
+  }
+
+  /// 복구가 딸려 온 지난 출금은 처음에 받을 수 있는 출금으로 남아 아크 잔액에 잡히고, 출금 상태를
+  /// 몇 번 확인해야 끝난 것으로 바뀜. 복원 직후 없는 잔액이 보이지 않게 미리 확인
+  static Future<void> _settleRecoveredExits(bark.Wallet wallet) async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      final exits = await wallet.getExitVtxos();
+      if (exits.every((exit) => exit.state is bark.ClaimedExitState || exit.state is bark.CanceledExitState)) return;
+      try {
+        await wallet.syncExits();
+      } catch (error) {
+        Logger.error('ArkWalletService: checking recovered exits failed: $error');
+        return;
+      }
+    }
+  }
+
+  String _recoveryPendingPath(Directory datadir) => '${datadir.path}/$_recoveryPendingFile';
+  static const _recoveryPendingFile = 'coconut_recovery_pending';
 
   /// Opens an existing Ark wallet, e.g. after an app restart.
   Future<void> open(String fingerprint, String seedHex) {
@@ -181,10 +230,14 @@ class ArkWalletService {
   Future<void> syncAndProgressRounds(String fingerprint) => withWallet(fingerprint, (wallet) async {
     await wallet.sync_();
     await wallet.progressPendingRounds();
+    await wallet.syncExits();
   });
 
   /// A lighter sync without refresh scheduling, e.g. while waiting for a Lightning payment.
-  Future<void> sync(String fingerprint) => withWallet(fingerprint, (wallet) => wallet.sync_());
+  Future<void> sync(String fingerprint) => withWallet(fingerprint, (wallet) async {
+    await wallet.sync_();
+    await wallet.syncExits();
+  });
 
   /// Reads everything Coconut caches. Keeps [address] (the one already shown to the user) until
   /// a movement has received on it, and only then derives a new one, so restores stay inside
@@ -207,14 +260,23 @@ class ArkWalletService {
       final balance = ArkBalance.fromBark(await wallet.balance());
       final vtxos = (await wallet.vtxos()).map(ArkVtxo.fromBark).toList();
       final movements = (await wallet.history()).map(ArkMovement.fromBark).toList();
-      final recovery = _describeRecovery(wallet.recoveryStatus());
+      var recovery = _describeRecovery(wallet.recoveryStatus());
+      if (recovery.state == ArkRecoveryState.notRun &&
+          await File(_recoveryPendingPath(await _datadir(fingerprint))).exists()) {
+        recovery = ArkRecovery.pending;
+      }
 
       var currentAddress = address;
       var currentIndex = addressIndex;
       if (currentAddress == null || _hasReceivedOn(movements, currentAddress)) {
-        final next = await wallet.newAddressWithIndex();
-        currentAddress = next.address;
-        currentIndex = next.index;
+        try {
+          final next = await wallet.newAddressWithIndex();
+          currentAddress = next.address;
+          currentIndex = next.index;
+        } catch (error) {
+          // 서버 없이 만든 지갑은 서버에 처음 닿기 전까지 주소를 못 만듦
+          Logger.error('ArkWalletService: no new Ark address for $fingerprint yet: $error');
+        }
       }
 
       return ArkSnapshot(

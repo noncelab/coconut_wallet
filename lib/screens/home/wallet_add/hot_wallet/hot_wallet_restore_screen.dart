@@ -1128,6 +1128,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
       loadFeeGuide: context.read<ArkProvider>().feeGuide,
       initialAutoRefresh: viewModel.arkAutoRefresh,
     );
+    // 시트가 닫히면 마지막으로 포커스된 단어 칸이 다시 포커스됨
+    _unfocusAfterDialogDismissed();
     if (consent == null) return;
     viewModel.setArk(useArk: true, autoRefresh: consent.autoRefresh);
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,7 @@ enum _StatusPhase { none, waitingForConnection, connected, updating, completed }
 class HomeConnectionStatusViewModel extends ChangeNotifier {
   final ConnectivityProvider _connectivityProvider;
   final NodeProvider _nodeProvider;
+  final ArkProvider? _arkProvider;
   final ValueListenable<List<WalletItemBase>> _walletItemListNotifier;
   StreamSubscription<NodeSyncState>? _syncNodeStateSubscription;
 
@@ -30,6 +32,7 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
   Timer? _phaseTimer;
   bool _waitForDisconnect = false;
   Future<void>? _refreshing;
+  bool _startingRefresh = false;
   bool _isRefreshing = false;
   bool _isDisposed = false;
 
@@ -37,8 +40,9 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
     this._connectivityProvider,
     this._nodeProvider,
     this._walletItemListNotifier, {
+    ArkProvider? arkProvider,
     bool showsInitialStatus = true,
-  }) {
+  }) : _arkProvider = arkProvider {
     _initialErrorDisplayDelayTimer = Timer(kHomeErrorDisplayDelayDuration, () {
       _initialErrorDisplayDelayTimer = null;
       _refreshElectrumRecoveryNotice();
@@ -59,11 +63,20 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
   Future<void> refresh() {
     final refreshing = _refreshing;
     if (refreshing != null) return refreshing;
-    final walletsRefresh = _nodeProvider.refreshWallets();
-    return _refreshing ??= _followRefresh(walletsRefresh);
+    _startingRefresh = true;
+    try {
+      final walletsRefresh = _nodeProvider.refreshWallets();
+      final arkRefresh = Future.wait([
+        for (final wallet in _walletItemListNotifier.value)
+          if (_arkProvider?.isOpen(wallet.id) ?? false) _arkProvider!.syncNow(wallet.id),
+      ]);
+      return _refreshing ??= _followRefresh(walletsRefresh, arkRefresh);
+    } finally {
+      _startingRefresh = false;
+    }
   }
 
-  Future<void> _followRefresh(Future<bool> walletsRefresh) async {
+  Future<void> _followRefresh(Future<bool> walletsRefresh, [Future<List<void>>? arkRefresh]) async {
     _isRefreshing = true;
     if (_phase == _StatusPhase.none || _phase == _StatusPhase.completed) {
       if (_hasWallets && _nodeSyncState == NodeSyncState.syncing && _nodeProvider.isConnected) {
@@ -76,7 +89,15 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
     notifyListeners();
     var refreshed = false;
     try {
-      refreshed = await walletsRefresh;
+      await Future.wait<void>([
+        () async {
+          refreshed = await walletsRefresh;
+        }(),
+        if (arkRefresh != null)
+          () async {
+            await arkRefresh;
+          }(),
+      ]);
     } finally {
       _isRefreshing = false;
       _refreshing = null;
@@ -139,7 +160,7 @@ class HomeConnectionStatusViewModel extends ChangeNotifier {
 
   void _onNodeProviderChanged() {
     final walletsRefresh = _nodeProvider.walletsRefresh;
-    if (walletsRefresh != null && _refreshing == null) {
+    if (walletsRefresh != null && _refreshing == null && !_startingRefresh) {
       _refreshing = _followRefresh(walletsRefresh);
     }
     if (_nodeProvider.hasConnectionError &&

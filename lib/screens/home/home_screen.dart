@@ -283,6 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 context.read<ConnectivityProvider>(),
                 context.read<NodeProvider>(),
                 context.read<WalletProvider>().walletItemListNotifier,
+                arkProvider: context.readArkProviderOrNull(),
               ),
         ),
       ],

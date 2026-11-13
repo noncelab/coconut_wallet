@@ -23,6 +23,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -89,6 +90,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
       context.read<WalletProvider>(),
       context.read<TransactionProvider>(),
       context.read<NodeProvider>(),
+      arkProvider: context.readArkProviderOrNull(),
       initialUnit: context.read<PreferenceProvider>().currentUnit,
     );
     _playTargetFireworksOnEntry = _viewModel.isTargetReached;

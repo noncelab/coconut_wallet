@@ -13,6 +13,9 @@ class ArkRecovery {
     'Not run (new wallet, or the Ark server was unreachable).',
   );
 
+  /// 복원할 때 돌린 복구가 끝나지 않았음(서버에 닿지 못했거나 실패), 앱을 다시 켠 뒤
+  static const pending = ArkRecovery(ArkRecoveryState.failed, 'Did not complete when the wallet was restored.');
+
   final ArkRecoveryState state;
   final String description;
 }
@@ -43,6 +46,9 @@ class ArkSnapshot {
   /// loses nothing.
   bool get canRetryRecovery =>
       recovery.state != ArkRecoveryState.completed && movements.isEmpty && vtxos.isEmpty && balance.total == 0;
+
+  /// 복원할 때 이전 아크 잔액을 찾지 못해 다시 찾아볼 수 있음
+  bool get needsRecoveryRetry => recovery.state == ArkRecoveryState.failed && canRetryRecovery;
 
   /// Whether [other] would show the same thing, ignoring [syncedAt].
   bool hasSameContent(ArkSnapshot other) => _contentKey == other._contentKey;

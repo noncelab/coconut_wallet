@@ -69,6 +69,20 @@ class WalletInfoViewModel extends ChangeNotifier {
   bool get isArkAutoRefreshOn => _arkProvider?.isAutoRefreshOn(_walletId) ?? true;
   bool get canTurnOffArk => _arkProvider?.canTurnOff(_walletId) ?? false;
   bool get isArkBusy => _isArkBusy;
+  ArkDeleteBlock? get arkDeleteBlock => _arkProvider?.deleteBlock(_walletId);
+  bool get needsArkRecoveryRetry => _arkProvider?.needsRecoveryRetry(_walletId) ?? false;
+
+  /// 끝났으면 true, 이번에도 못 찾았으면 false, 취소하면 null
+  Future<bool?> retryArkRecovery(Future<String?> Function() unlockSeed) async {
+    final arkProvider = _arkProvider;
+    if (arkProvider == null) return false;
+    _setArkBusy(true);
+    try {
+      return await arkProvider.retryRecovery(_walletId, unlockSeed);
+    } finally {
+      _setArkBusy(false);
+    }
+  }
 
   /// 사용자가 취소하면 false
   Future<bool> turnOnArk(Future<String?> Function() unlockSeed, {required bool autoRefresh}) async {

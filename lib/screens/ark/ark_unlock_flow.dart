@@ -53,6 +53,11 @@ Future<void> openArkWalletsAfterAppEntrance(BuildContext context) async {
   }
   await arkProvider.arkWalletsLoaded;
   for (final wallet in walletProvider.walletItemList) {
+    if (!arkProvider.supportsArk(wallet)) continue;
+    if (arkProvider.isOpen(wallet.id)) {
+      unawaited(arkProvider.syncNow(wallet.id));
+      continue;
+    }
     final metadata = wallet.hotWalletMetadata;
     if (metadata == null || metadata.enterPassphraseWhenSigning || !arkProvider.shouldAutoUnlock(wallet.id)) continue;
     unawaited(arkProvider.open(wallet.id, () => _seedAfterAuthentication(metadata.secureStorageKey)));

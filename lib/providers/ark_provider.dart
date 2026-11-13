@@ -5,7 +5,6 @@ import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
 import 'package:collection/collection.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
-import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -43,6 +42,8 @@ import 'package:provider/provider.dart';
 /// - 포그라운드에서 열린 지갑을 [syncInterval]마다, 결제를 기다리는 화면에서는 [fastSyncInterval]마다
 ///   동기화. 만료 [ArkRefreshDue.noticeBlocks] 전부터 [refreshDue]로 알리고 사용자 승인 후 [refreshDelegated].
 ///   bark 갱신 기한까지 갱신하지 않았고 자동 갱신에 동의한 지갑만 자금 보호를 위해 자동 갱신
+enum ArkDeleteBlock { hasFunds, exitInProgress }
+
 class ArkProvider extends ChangeNotifier {
   ArkProvider(
     this._walletProvider,
@@ -145,34 +146,10 @@ class ArkProvider extends ChangeNotifier {
     return reachable;
   }
 
-  /// 아크 서버 주소로 직접 연결해 응답이 오는지 봄(연결만 받고 멈춘 서버도 걸러 냄)
-  static Future<bool> _canReachServer() async {
-    final uri = Uri.tryParse(CoconutWalletApp.kArkServerUrl);
-    if (uri == null || uri.host.isEmpty) return true;
-    Socket? socket;
-    try {
-      const limit = Duration(seconds: 5);
-      socket =
-          uri.scheme == 'https'
-              ? await SecureSocket.connect(uri.host, uri.port, timeout: limit)
-              : await Socket.connect(uri.host, uri.port, timeout: limit);
-      socket.write('HEAD / HTTP/1.1\r\nHost: ${uri.host}\r\nConnection: close\r\n\r\n');
-      await socket.first.timeout(limit);
-      return true;
-    } catch (error) {
-      Logger.error('ArkProvider: Ark server unreachable: $error');
-      return false;
-    } finally {
-      socket?.destroy();
-    }
-  }
+  static Future<bool> _canReachServer() => ArkWalletService.canReachServer();
 
-  /// 진행 중인 직접 출금이 있는지(시작한 세션이 끝나지 않았거나 bark 출금 내역이 끝나지 않음)
-  bool hasPendingDirectExit(int walletId) =>
-      (exitSession(walletId)?.isActive ?? false) ||
-      (snapshot(walletId)?.movements ?? const []).any(
-        (movement) => movement.subsystemName == 'bark.exit' && movement.status == ArkMovementStatus.pending,
-      );
+  /// 앱이 시작하고 추적 중인 직접 출금
+  bool hasPendingDirectExit(int walletId) => exitSession(walletId)?.isActive ?? false;
 
   late final Map<int, ArkExitSession> _exitSessions = _loadExitSessions();
   final Set<int> _advancingExits = {};
@@ -581,6 +558,15 @@ class ArkProvider extends ChangeNotifier {
   }
 
   /// 아크 잔액이 남아 있으면 끌 수 없음
+  /// 지갑을 지우면 안 되는 아크 상태, 지워도 되면 null. 아크 잔액은 시드로 복원해도 모두 돌아온다는
+  /// 보장이 없음(회수된 만료 잔액, 진행 중인 갱신·출금)
+  ArkDeleteBlock? deleteBlock(int walletId) {
+    if (!supportsArkById(walletId)) return null;
+    if (hasPendingDirectExit(walletId)) return ArkDeleteBlock.exitInProgress;
+    if (totalSats(walletId) > 0) return ArkDeleteBlock.hasFunds;
+    return null;
+  }
+
   bool canTurnOff(int walletId) => supportsArkById(walletId) && totalSats(walletId) == 0;
 
   /// [walletId]의 아크를 끄고 bark 데이터와 캐시를 지움
@@ -671,15 +657,23 @@ class ArkProvider extends ChangeNotifier {
     }
   }
 
-  /// Recreates the unused Ark wallet so bark's seed recovery runs again.
-  Future<void> retryRecovery(int walletId, String seedHex) async {
-    if (!(snapshot(walletId)?.canRetryRecovery ?? false)) return;
+  /// 복원 때 이전 아크 잔액을 찾지 못해 다시 찾아볼 수 있는지
+  bool needsRecoveryRetry(int walletId) =>
+      supportsArkById(walletId) && (snapshot(walletId)?.needsRecoveryRetry ?? false);
+
+  /// Recreates the unused Ark wallet so bark's seed recovery runs again. 끝났으면 true, 이번에도
+  /// 끝나지 않았으면 false, 잠금 해제를 취소했으면 null
+  Future<bool?> retryRecovery(int walletId, Future<String?> Function() unlockSeed) async {
+    if (!(snapshot(walletId)?.canRetryRecovery ?? false)) return false;
+    final seedHex = await unlockSeed();
+    if (seedHex == null) return null;
     await _walletProvider.runHotWalletLifecycleOperation(() async {
       final fingerprint = _fingerprint(walletId);
       if (fingerprint == null) return;
       await _arkWalletService.create(fingerprint, seedHex, restore: true);
     });
     await syncNow(walletId);
+    return !needsRecoveryRetry(walletId);
   }
 
   /// Syncs [walletId] and refreshes its cache. [withRounds]면 이미 참여한 라운드도 진행.
@@ -1406,9 +1400,8 @@ class ArkProvider extends ChangeNotifier {
     if (_isForeground && _timer != null) return;
     _isForeground = true;
     if (!isEnabled || _disposed) return;
-    // Unlock prompts briefly pause the app too; the tick below only syncs what is due.
     _startTimer();
-    _tick();
+    _tick(forceSync: true);
   }
 
   void _startTimer() {
@@ -1416,7 +1409,7 @@ class ArkProvider extends ChangeNotifier {
     _timer = Timer.periodic(fastSyncInterval, (_) => _tick());
   }
 
-  void _tick() {
+  void _tick({bool forceSync = false}) {
     if (!_isForeground || _disposed) return;
     final now = DateTime.now();
     for (final wallet in _walletProvider.walletItemList) {
@@ -1428,9 +1421,12 @@ class ArkProvider extends ChangeNotifier {
           (lastExitAdvance == null || now.difference(lastExitAdvance) >= _exitAdvanceInterval)) {
         unawaited(_advanceExit(wallet.id));
       }
-      if (_syncing.contains(wallet.id)) continue;
+      if (_syncing.contains(wallet.id)) {
+        if (forceSync) _syncAgain.add(wallet.id);
+        continue;
+      }
       final last = _lastSync[wallet.id];
-      if (last == null || now.difference(last) >= syncInterval) {
+      if (forceSync || last == null || now.difference(last) >= syncInterval) {
         unawaited(syncNow(wallet.id));
       } else if (_fastSync.containsKey(wallet.id) || _awaitedInvoices.containsKey(wallet.id)) {
         unawaited(syncNow(wallet.id, withRounds: false));

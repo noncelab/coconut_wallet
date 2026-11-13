@@ -146,6 +146,13 @@ class WalletCardDetailViewModel extends ChangeNotifier {
     };
   }
 
+  /// 복원 때 이전 아크 잔액을 찾지 못해 다시 찾아볼 수 있는지
+  bool needsArkRecoveryRetry(WalletItemBase wallet) => _arkProvider?.needsRecoveryRetry(wallet.id) ?? false;
+
+  /// 끝났으면 true, 이번에도 못 찾았으면 false, 취소하면 null
+  Future<bool?> retryArkRecovery(WalletItemBase wallet, Future<String?> Function() unlockSeed) async =>
+      await _arkProvider?.retryRecovery(wallet.id, unlockSeed) ?? false;
+
   /// 지갑 상세 카드 아래에 보여 줄 직접 출금 진입점, 필요 없으면 null
   ArkExitEntry? arkExitEntryOf(WalletItemBase wallet, {required bool isInternetOn}) {
     final ark = _arkProvider;
@@ -222,6 +229,7 @@ class WalletCardDetailViewModel extends ChangeNotifier {
       _walletProvider,
       _transactionProvider,
       _nodeProvider,
+      arkProvider: _arkProvider,
       initialUnit: _preferenceProvider.currentUnit,
     );
     detail.addListener(notifyListeners);
