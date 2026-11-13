@@ -163,10 +163,6 @@ class GoalAmountSummary extends StatelessWidget {
     final targeted = targetedOf(shares);
     // 목표가 여러 지갑에 걸쳐 있으면 지갑별 색으로 나누고, 한 지갑뿐이면 예전 목표 막대 색 하나로 채운다.
     final multiple = targeted.length > 1;
-    final numberStyle = CoconutTypography.body2_14_Number.copyWith(
-      color: colors.secondaryTextStrong,
-      fontFeatures: const [FontFeature.tabularFigures()],
-    );
     final animatedBalance = (goal.balance * reveal).round();
     final remaining = goal.target - goal.balance;
     final appearances = context.watchWalletAppearance();
@@ -220,14 +216,14 @@ class GoalAmountSummary extends StatelessWidget {
           },
         ),
         CoconutLayout.spacing_200h,
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            amountText(goal.target),
-            key: const Key('goal-target-amount'),
-            style: CoconutTypography.heading3_21_NumberBold.copyWith(color: colors.primaryText),
-          ),
+        // 진행 먼저: 모은 수량 / 목표 → 달성률 → 막대 → 남은 수량. 홈 목표 위젯·지갑별 목표 줄과 같은 순서다.
+        _ProgressLine(
+          balance: amountNumber(animatedBalance),
+          // 배치는 최종 수량·최종 달성률로 정한다(차오르는 동안 줄이 바뀌지 않게).
+          layoutBalance: amountNumber(goal.balance),
+          target: amountText(goal.target),
+          percent: formatGoalPercentOf(animatedBalance, goal.target),
+          layoutPercent: formatGoalPercentOf(goal.balance, goal.target),
         ),
         // 같은 계정에 서로 다른 목표가 있으면 합계 바로 아래에 계산 기준과 정리 버튼(결정 ⑦)
         if (hasConflictingGoals) ...[
@@ -241,57 +237,21 @@ class GoalAmountSummary extends StatelessWidget {
             onAction: onTidyGoals,
           ),
         ],
-        CoconutLayout.spacing_400h,
+        CoconutLayout.spacing_300h,
         GoalSegmentsBar(
           shares: targeted,
           target: goal.target,
           reveal: reveal,
           singleColor: multiple ? null : colors.success,
         ),
-        CoconutLayout.spacing_200h,
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Expanded(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(amountText(animatedBalance), key: const Key('goal-progress-amount'), style: numberStyle),
-              ),
-            ),
-            CoconutLayout.spacing_300w,
-            Text(
-              formatGoalPercent(goal.ratio * reveal),
-              key: const Key('goal-progress-percent'),
-              style: CoconutTypography.body2_14_NumberBold.copyWith(
-                color: colors.primaryText,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Divider(height: 1, thickness: 0.5, color: colors.border),
-        ),
-        _RemainingLine(remaining: remaining, pending: awaitingConfirmation, amountText: amountText),
-        if (hasUnsettledAccounts) ...[
-          CoconutLayout.spacing_200h,
-          InlineNotice(
-            key: const Key('goal-amount-unsettled'),
-            icon: CupertinoIcons.clock,
-            message: balancesDiffer ? t.hodl_insights.goal_unsettled_smaller : t.hodl_insights.goal_unsettled_syncing,
-          ),
-        ],
         if (multiple) ...[
-          CoconutLayout.spacing_300h,
+          CoconutLayout.spacing_200h,
+          // 막대 조각이 어느 지갑인지만 알려 준다. 지갑별 진행은 아래 '지갑별 목표'가 맡는다.
           Wrap(
             key: const Key('goal-legend'),
             spacing: 12,
-            runSpacing: 6,
+            runSpacing: 4,
             children: [
-              // Wrap은 항목에 자기 폭까지만 준다. 넘치는 이름은 줄여 보여 주고 비율은 늘 보인다.
               for (final share in targeted)
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -306,24 +266,124 @@ class GoalAmountSummary extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
-                        share.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        // 지갑 이름은 한글일 수 있어 숫자 글꼴이 아닌 본문 글꼴로 쓴다.
-                        style: CoconutTypography.caption_10.copyWith(color: colors.secondaryTextStrong),
-                      ),
-                    ),
-                    Text(
-                      ' ${formatGoalPercent(goal.balance <= 0 ? 0 : share.balance / goal.balance)}',
-                      style: CoconutTypography.caption_10_Number.copyWith(color: colors.secondaryTextStrong),
+                      child: Text(share.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: secondaryStyle),
                     ),
                   ],
                 ),
             ],
           ),
         ],
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Divider(height: 1, thickness: 0.5, color: colors.border),
+        ),
+        _RemainingLine(remaining: remaining, pending: awaitingConfirmation, amountText: amountText),
+        if (hasUnsettledAccounts) ...[
+          CoconutLayout.spacing_200h,
+          InlineNotice(
+            key: const Key('goal-amount-unsettled'),
+            icon: CupertinoIcons.clock,
+            message: balancesDiffer ? t.hodl_insights.goal_unsettled_smaller : t.hodl_insights.goal_unsettled_syncing,
+          ),
+        ],
       ],
+    );
+  }
+}
+
+/// '0.0135 / 0.03 BTC        45.0%'. 한 줄에 안 들어가면 모은 수량을 첫 줄에, '/ 목표'와 달성률을 둘째 줄에 둔다.
+/// 배치는 최종 수량·최종 달성률(초과 달성이면 100%보다 넓다)로 잰다. 차오르는 동안의 수량은 끝자리가 길어
+/// 최종보다 넓을 수 있어서(0.455 → 0.1234 5678), 한 줄일 때는 최종 폭 안에서 줄여 보인다.
+class _ProgressLine extends StatelessWidget {
+  final String balance;
+  final String layoutBalance;
+  final String target;
+  final String percent;
+  final String layoutPercent;
+
+  const _ProgressLine({
+    required this.balance,
+    required this.layoutBalance,
+    required this.target,
+    required this.percent,
+    required this.layoutPercent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    const tabular = [FontFeature.tabularFigures()];
+    final balanceStyle = CoconutTypography.heading3_21_NumberBold.copyWith(
+      color: colors.primaryText,
+      fontFeatures: tabular,
+    );
+    final targetStyle = CoconutTypography.body2_14_Number.copyWith(
+      color: colors.secondaryTextStrong,
+      fontFeatures: tabular,
+    );
+    final percentStyle = CoconutTypography.body2_14_NumberBold.copyWith(
+      color: colors.primaryText,
+      fontFeatures: tabular,
+    );
+    final targetLabel = '/ $target';
+    final balanceText = Text(balance, key: const Key('goal-progress-amount'), maxLines: 1, style: balanceStyle);
+    final targetText = Text(targetLabel, key: const Key('goal-target-amount'), maxLines: 1, style: targetStyle);
+    final percentText = Text(percent, key: const Key('goal-progress-percent'), maxLines: 1, style: percentStyle);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final balanceWidth = LabelValueRow.widthOf(context, layoutBalance, balanceStyle);
+        // 줄여 보일 때도 줄 높이는 그대로 둔다(카드 높이가 차오르는 동안 흔들리면 아래 구역이 움직인다).
+        final balanceHeight = LabelValueRow.lineHeightOf(context, balanceStyle);
+        final percentWidth = LabelValueRow.widthOf(context, layoutPercent, percentStyle);
+        final oneLine =
+            balanceWidth + 6 + LabelValueRow.widthOf(context, targetLabel, targetStyle) + 12 + percentWidth <=
+            constraints.maxWidth;
+        if (oneLine) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              SizedBox(
+                width: balanceWidth + 1,
+                height: balanceHeight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: balanceText,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(child: targetText),
+              const SizedBox(width: 12),
+              percentText,
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: balanceHeight,
+              child: FittedBox(fit: BoxFit.scaleDown, alignment: AlignmentDirectional.centerStart, child: balanceText),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: targetText,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                percentText,
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

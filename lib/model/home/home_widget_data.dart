@@ -108,7 +108,7 @@ class HomeSavingsGoal {
   /// 실제 달성 비율. 초과 달성이면 1보다 크다.
   double get ratio => target <= 0 ? 0 : balance / target;
 
-  String get percentText => formatGoalPercent(ratio);
+  String get percentText => formatGoalPercentOf(balance, target);
 }
 
 /// 목표 수량 화면의 지갑 하나. [target]이 없으면 목표를 정하지 않은 지갑이다.
@@ -280,4 +280,10 @@ class HomeGoalSum {
   bool get awaitingConfirmation => accounts.isNotEmpty && balance >= target && !reached;
 }
 
-String formatGoalPercent(double ratio) => '${(ratio * 100).toStringAsFixed(1)}%';
+/// 달성률 문구. 소수 첫째 자리까지 보이고 그 아래는 버린다(지갑 상세 목표 카드와 같은 정수 셈).
+/// 목표에 1 sat이라도 모자라면 100.0%가 되지 않는다. 반올림이던 때보다 0.1%p 낮게 보일 수 있다(42.39% → 42.3%).
+String formatGoalPercentOf(int balance, int target) {
+  if (target <= 0) return '0.0%';
+  final tenths = (balance < 0 ? 0 : balance) * 1000 ~/ target;
+  return '${tenths ~/ 10}.${tenths % 10}%';
+}

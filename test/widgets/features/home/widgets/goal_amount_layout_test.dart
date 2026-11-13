@@ -97,8 +97,11 @@ void main() {
           ),
         );
         expect(tester.takeException(), isNull);
-        // 이름을 줄여도 지갑마다 비율은 보인다.
-        expect(find.textContaining('%'), findsNWidgets(_names.length + 1));
+        // 범례는 색 점과 이름만 보인다. %는 진행 줄의 달성률 하나뿐이다.
+        expect(find.textContaining('%'), findsOneWidget);
+        for (final name in _names) {
+          expect(find.text(name), findsOneWidget);
+        }
       });
 
       testWidgets('saving plan card stays inside the screen ($label)', (tester) async {
