@@ -66,9 +66,10 @@ class UtxoSyncService {
       final transactionMap = {for (var realmTx in realmTransactions) realmTx.transactionHash: realmTx};
       final realmLockedUtxos = _utxoRepository.getUtxosByStatus(walletItem.id, UtxoStatus.locked);
       final lockedUtxoMap = {for (final utxo in realmLockedUtxos) getUtxoId(utxo.transactionHash, utxo.index): utxo};
-      return unspentResList
-      // 이미 사용된 UTXO는 필터링하여 제외
-      .map((e) {
+      // 거래 기록이 없는 미확정 출력은 넣지 않는다(서명을 확인하지 못해 넣지 않은 거래의 출력 등).
+      // 기록이 저장되면 다음 조회에서 들어온다. 확정 출력은 아래처럼 기록이 없어도 넣는다
+      final storable = unspentResList.where((e) => e.height > 0 || transactionMap.containsKey(e.txHash));
+      return storable.map((e) {
         // 정상적으로는 이 UTXO를 만든 트랜잭션이 바로 앞의 트랜잭션 fetch 단계에서 이미
         // RealmTransaction으로 저장돼 있어야 하지만, 대량 콜드 스캔(전체 재동기화 등) 상황에서
         // 드물게 아직 반영되지 않은 채로 조회되는 경우가 있다. 이 하나 때문에 해당 주소의

@@ -702,6 +702,181 @@ void main() {
     });
   });
 
+  // PR #789 리뷰 2: 넣지 않은 거래의 출력이 서버 listunspent에 있으면 기록 없는 받는 중 코인으로 저장됐음
+  group('3. 서버 동작: 넣지 않은 거래의 출력이 listunspent에 있음 (p2wpkh 핫 지갑)', () {
+    final signer = walletSigners(0x10).first;
+    late SyncedWallet wallet;
+    late Transaction deposit;
+    late UtxoState coin;
+
+    setUp(() async {
+      wallet = SyncedWallet(realm, signer.item, purpose: signer.purpose);
+      final funded = signer.funded([100000], 1);
+      deposit = funded.funding;
+      coin = funded.coins.single;
+      wallet.publish([deposit]);
+      await wallet.sync([history(deposit, 100)], unspentList: wallet.unspent(deposit, 100));
+    });
+
+    /// 남이 내 받기 주소 [index]로 40,000 sats를 보내는 정상 미확정 거래
+    Transaction incomingTo(int index) {
+      final foreign = _vault(0x55);
+      final funding = fundingTransaction([(foreign.getAddress(0), 50000)], 93);
+      final tx = Transaction.withInputsAndOutputs(
+        [TransactionInput.forPayment(funding.transactionHash, 0)],
+        [TransactionOutput.forPayment(40000, wallet.address(index))],
+        AddressType.p2wpkh,
+      );
+      signP2wpkhInput(tx, 0, funding.outputs.single, _receiveKey(foreign, 0));
+      wallet.publish([funding, tx]);
+      return tx;
+    }
+
+    /// 내 코인을 [남 60,000 + 내 잔돈 주소 39,000]으로 쓰는 서명 틀린 가짜
+    Transaction fakeWithMyChange() {
+      final fake = withGarbageSignatures(signer.pay([coin], {shop: 30000}), attacker, AddressType.p2wpkh);
+      fake.outputs
+        ..clear()
+        ..addAll([
+          TransactionOutput.forPayment(60000, attacker),
+          TransactionOutput.forPayment(39000, wallet.address(0, isChange: true)),
+        ]);
+      wallet.publish([fake]);
+      return fake;
+    }
+
+    test('가짜가 내 잔돈 주소로 보내는 출력은 받는 중 코인으로 넣지 않는다(앱을 다시 켜도)', () async {
+      final fake = fakeWithMyChange();
+      final changeUnspent = wallet.unspent(fake, 0, isChange: true);
+      expect(changeUnspent.single.value, 39000);
+
+      await wallet.sync([history(deposit, 100), history(fake, 0)]);
+      await wallet.sync([history(fake, 0)], unspentList: changeUnspent, isChange: true);
+      expect(wallet.leavesNoTrace(fake.transactionHash), isTrue);
+
+      wallet.callbacks = ScriptCallbackService();
+      await wallet.sync([history(fake, 0)], unspentList: changeUnspent, isChange: true);
+
+      expect(wallet.leavesNoTrace(fake.transactionHash), isTrue);
+      expect(wallet.coin(coin.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    test('가짜가 출력을 내 받기 주소로 바꿔도 그 출력은 받는 중 코인으로 넣지 않는다', () async {
+      final fake = withGarbageSignatures(signer.pay([coin], {shop: 30000}), wallet.address(0), AddressType.p2wpkh);
+      wallet.publish([fake]);
+
+      await wallet.sync([history(deposit, 100), history(fake, 0)], unspentList: wallet.unspent(fake, 0));
+
+      expect(wallet.leavesNoTrace(fake.transactionHash), isTrue);
+      expect(wallet.coin(coin.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    test('정상 받는 거래의 미확정 출력은 같은 동기화에서 받는 중 코인으로 넣는다', () async {
+      final incoming = incomingTo(1);
+
+      await wallet.sync([history(incoming, 0)], unspentList: wallet.unspent(incoming, 0, index: 1), index: 1);
+
+      expect(wallet.txs.getTransactionRecord(walletId, incoming.transactionHash), isNotNull);
+      expect(wallet.coin(incoming.transactionHash, 0)?.status, UtxoStatus.incoming);
+    });
+
+    test('증인만 바꿔 번호가 같은 원문이 다시 와도(앱 재시작) 저장된 내 결제의 잔돈 코인은 그대로다', () async {
+      final own = signer.pay([coin], {shop: 30000});
+      wallet.publish([own]);
+      final changeUnspent = wallet.unspent(own, 0, isChange: true);
+      await wallet.sync([history(deposit, 100), history(own, 0)]);
+      await wallet.sync([history(own, 0)], unspentList: changeUnspent, isChange: true);
+      final change = wallet.coin(own.transactionHash, changeUnspent.single.txPos);
+      expect(change?.status, UtxoStatus.incoming);
+      final stripped = Transaction.parse(own.serialize());
+      for (final input in stripped.inputs) {
+        input.witnessList = [];
+      }
+      expect(stripped.transactionHash, own.transactionHash);
+      wallet.server.rawByHash[own.transactionHash] = stripped.serialize();
+      wallet.callbacks = ScriptCallbackService();
+
+      await wallet.sync([history(own, 0)], unspentList: changeUnspent, isChange: true);
+
+      final after = wallet.coin(own.transactionHash, changeUnspent.single.txPos);
+      expect(after?.status, UtxoStatus.incoming);
+      expect(after?.amount, change!.amount);
+    });
+
+    test('기록이 없는 확정 출력은 지금처럼 코인으로 넣는다(대량 스캔 복구)', () async {
+      final unseen = fundingTransaction([(wallet.address(2), 50000)], 95);
+
+      await wallet.sync([], unspentList: wallet.unspent(unseen, 90, index: 2), index: 2);
+
+      expect(wallet.txs.getTransactionRecord(walletId, unseen.transactionHash), isNull);
+      expect(wallet.coin(unseen.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    test('전체 동기화(거래 → UTXO → 정리)에서도 가짜 출력은 넣지 않고 정상 출력은 넣는다', () async {
+      final fake = fakeWithMyChange();
+      final incoming = incomingTo(1);
+
+      await wallet.syncBatch([
+        (history: [history(deposit, 100), history(fake, 0)], unspent: [], index: 0, isChange: false),
+        (history: [history(fake, 0)], unspent: wallet.unspent(fake, 0, isChange: true), index: 0, isChange: true),
+        (history: [history(incoming, 0)], unspent: wallet.unspent(incoming, 0, index: 1), index: 1, isChange: false),
+      ]);
+
+      expect(wallet.leavesNoTrace(fake.transactionHash), isTrue);
+      expect(wallet.coin(incoming.transactionHash, 0)?.status, UtxoStatus.incoming);
+      expect(wallet.coin(coin.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    test('전체 동기화에서 증인을 뺀 같은 번호의 원문을 먼저 받아도, 나중에 받은 서명 맞는 결제의 잔돈은 확정 뒤까지 코인으로 들어온다', () async {
+      final own = signer.pay([coin], {shop: 30000});
+      final stripped = Transaction.parse(own.serialize());
+      for (final input in stripped.inputs) {
+        input.witnessList = [];
+      }
+      expect(stripped.transactionHash, own.transactionHash);
+      wallet.server.rawByHash[own.transactionHash] = stripped.serialize();
+      final changeUnspent = wallet.unspent(own, 0, isChange: true);
+      final changeIndex = changeUnspent.single.txPos;
+
+      // 전체 동기화는 끝에서 기록 없는 받는 중 코인을 지운 것으로 표시하고, 지운 코인은 다시 넣지 않는다
+      await wallet.syncBatch([
+        (history: [history(deposit, 100), history(own, 0)], unspent: [], index: 0, isChange: false),
+        (history: [history(own, 0)], unspent: changeUnspent, index: 0, isChange: true),
+      ]);
+      expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash), isNull);
+
+      wallet.server.rawByHash[own.transactionHash] = own.serialize();
+      wallet.callbacks = ScriptCallbackService();
+      await wallet.sync([history(deposit, 100), history(own, 0)]);
+      await wallet.sync([history(own, 0)], unspentList: changeUnspent, isChange: true);
+      expect(wallet.coin(own.transactionHash, changeIndex)?.status, UtxoStatus.incoming);
+
+      await wallet.sync([history(deposit, 100), history(own, 101)]);
+      await wallet.sync([history(own, 101)], unspentList: wallet.unspent(own, 101, isChange: true), isChange: true);
+      expect(wallet.coin(own.transactionHash, changeIndex)?.status, UtxoStatus.unspent);
+    });
+
+    test('정상 받는 거래의 원문 조회가 실패한 회차 뒤 다시 동기화하면 받는 중 코인으로 넣는다', () async {
+      final incoming = incomingTo(1);
+      final unspent = wallet.unspent(incoming, 0, index: 1);
+      wallet.server.transactionSource = (txHash) async {
+        if (txHash == incoming.transactionHash) throw const SocketException('Connection reset by peer');
+        return wallet.server.rawByHash[txHash]!;
+      };
+
+      await expectLater(
+        wallet.sync([history(incoming, 0)], unspentList: unspent, index: 1),
+        throwsA(isA<SocketException>()),
+      );
+      expect(wallet.leavesNoTrace(incoming.transactionHash), isTrue);
+
+      wallet.server.transactionSource = null;
+      await wallet.sync([history(incoming, 0)], unspentList: unspent, index: 1);
+
+      expect(wallet.coin(incoming.transactionHash, 0)?.status, UtxoStatus.incoming);
+    });
+  });
+
   group('N1: 코인 목록에 아직 없는 내 미확정 잔돈을 쓰는 거래', () {
     final signer = walletSigners(0x10).first;
     late SyncedWallet wallet;

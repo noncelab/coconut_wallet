@@ -383,16 +383,12 @@ class SyncedWallet {
         ListUnspentRes(height: height, txHash: tx.transactionHash, txPos: i, value: output.amount),
   ];
 
-  Future<void> sync(
-    List<GetTxHistoryRes> historyList, {
-    List<ListUnspentRes> unspentList = const [],
-    int index = 0,
-    bool isChange = false,
-  }) async {
+  /// 서버가 이 주소에 [historyList]·[unspentList]를 돌려주게 하고, 그 주소의 상태를 만든다
+  ScriptStatus _serve(List<GetTxHistoryRes> historyList, List<ListUnspentRes> unspentList, int index, bool isChange) {
     final target = address(index, isChange: isChange);
     server.historyByAddress[target] = historyList;
     server.unspentByAddress[target] = unspentList;
-    final status = ScriptStatus(
+    return ScriptStatus(
       scriptPubKey: target,
       status: historyList.map((h) => '${h.txHash}:${h.height}').join(','),
       timestamp: DateTime.now(),
@@ -401,19 +397,45 @@ class SyncedWallet {
       index: index,
       isChange: isChange,
     );
+  }
+
+  TransactionSyncService _transactionSync() =>
+      TransactionSyncService(server, txs, TransactionRecordService(server, addresses), NoopState(), utxos, callbacks);
+
+  UtxoSyncService _utxoSync() => UtxoSyncService(server, NoopState(), utxos, txs, addresses);
+
+  Future<void> sync(
+    List<GetTxHistoryRes> historyList, {
+    List<ListUnspentRes> unspentList = const [],
+    int index = 0,
+    bool isChange = false,
+  }) async {
+    final status = _serve(historyList, unspentList, index, isChange);
     callbacks.registerFetchUtxosCallback(getScriptKey(walletId, status.derivationPath), () async {
       utxoFetches++;
-      await UtxoSyncService(server, NoopState(), utxos, txs, addresses).fetchScriptUtxo(item, status);
+      await _utxoSync().fetchScriptUtxo(item, status);
     });
-    final result = await TransactionSyncService(
-      server,
-      txs,
-      TransactionRecordService(server, addresses),
-      NoopState(),
-      utxos,
-      callbacks,
-    ).fetchScriptTransaction(item, status, now: DateTime(2026, 11, 11));
+    final result = await _transactionSync().fetchScriptTransaction(item, status, now: DateTime(2026, 11, 11));
     await callbacks.registerTransactionDependency(item, status, result.txHashes);
+  }
+
+  /// 전체 동기화(ScriptSyncService.syncBatchScriptStatusList)의 거래·UTXO 단계와 같은 순서로 여러 주소를 처리한다:
+  /// 모든 주소의 거래 → 모든 주소의 UTXO → 보내는 중 코인 만들기 → 기록 없는 코인 정리. 잔액·구독 단계는 없다
+  Future<void> syncBatch(
+    List<({List<GetTxHistoryRes> history, List<ListUnspentRes> unspent, int index, bool isChange})> scripts,
+  ) async {
+    final statuses = [for (final s in scripts) _serve(s.history, s.unspent, s.index, s.isChange)];
+    final transactionSync = _transactionSync();
+    await Future.wait(
+      statuses.map(
+        (status) =>
+            transactionSync.fetchScriptTransaction(item, status, inBatchProcess: true, now: DateTime(2026, 11, 11)),
+      ),
+    );
+    final utxoSync = _utxoSync();
+    await Future.wait(statuses.map((status) => utxoSync.fetchScriptUtxo(item, status, inBatchProcess: true)));
+    await utxoSync.createOutgoingUtxos(item);
+    await utxoSync.cleanupOrphanedUtxos(item);
   }
 
   UtxoState? coin(String txHash, int index) => utxos.getUtxoState(walletId, getUtxoId(txHash, index));
