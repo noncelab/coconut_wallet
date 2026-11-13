@@ -4,6 +4,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/app/router/route_args.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
@@ -455,8 +457,9 @@ Future<void> _openFeeBumpingRoute(
   _Scenario scenario,
   TransactionRecord pending,
   UtxoRepository utxos,
-  GlobalKey<NavigatorState> navigator,
-) async {
+  GlobalKey<NavigatorState> navigator, {
+  Map<String, WidgetBuilder> routes = const {},
+}) async {
   final previous = HttpOverrides.current;
   HttpOverrides.global = _FeeHttpOverrides();
   addTearDown(() => HttpOverrides.global = previous);
@@ -489,6 +492,7 @@ Future<void> _openFeeBumpingRoute(
                   walletName: scenario.wallet.name,
                 ),
               ),
+          ...routes,
         },
       ),
     ),
@@ -606,5 +610,88 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(observed.reads, readsAtClose, reason: '닫은 뒤에는 UTXO를 다시 읽지 않는다');
     expect(viewModel.isInitializedSuccess, isNot(true), reason: '늦게 끝난 결과는 버린다');
+  });
+
+  // PR #789 재리뷰 3: 서버에 없는 보내는 중 거래에서 빨리 보내기를 누르면 일반 오류 뒤 화면이 닫혀 빠져나갈 길이 없었음
+  group('원래 거래를 서버에서 받지 못할 때', () {
+    late TestRealmManager realm;
+    late _Scenario scenario;
+
+    setUp(() {
+      realm = TestRealmManager();
+      scenario = _Scenario(realm, _Signer.hot);
+    });
+    tearDown(() => realm.dispose());
+
+    /// 내 결제를 보내는 중으로 넣고, 서버가 그 원문을 [raw]로 돌려주게 한 뒤(null이면 없음) 이전 화면 위에 수수료 올리기를 연다
+    Future<GlobalKey<NavigatorState>> open(WidgetTester tester, {String? raw}) async {
+      final own = scenario.ownPayment();
+      await tester.runAsync(() async {
+        await scenario.start();
+        await scenario.sync(own, 'own');
+      });
+      final pending = scenario.txs.getTransactionRecord(_walletId, own.transactionHash)!;
+      if (raw == null) {
+        scenario.server.rawByHash.remove(own.transactionHash);
+      } else {
+        scenario.server.rawByHash[own.transactionHash] = raw;
+      }
+      final navigator = GlobalKey<NavigatorState>();
+      await _openFeeBumpingRoute(
+        tester,
+        scenario,
+        pending,
+        scenario.utxos,
+        navigator,
+        routes: {
+          AppRouteNames.walletResync:
+              (context) => Text('resync ${(ModalRoute.of(context)!.settings.arguments! as WalletResyncRouteArgs).id}'),
+        },
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      return navigator;
+    }
+
+    Finder inDialog(Finder finder) => find.descendant(of: find.byType(Dialog), matching: finder);
+
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    testWidgets('재동기화 안내를 띄우고, [재동기화]는 수수료 올리기 화면 대신 이 지갑의 재동기화 화면을 연다', (tester) async {
+      final navigator = await open(tester);
+
+      expect(inDialog(_text(t.transaction_fee_bumping_screen.dialog.original_not_found_title)), findsOneWidget);
+      expect(inDialog(_text(t.transaction_fee_bumping_screen.dialog.original_not_found)), findsOneWidget);
+      expect(_text(t.alert.error_occurs), findsNothing);
+      await tester.tap(inDialog(_text(t.transaction_fee_bumping_screen.dialog.resync)));
+      await settle(tester);
+
+      expect(find.text('resync $_walletId'), findsOneWidget);
+      navigator.currentState!.pop();
+      await settle(tester);
+      expect(find.text('previous route'), findsOneWidget, reason: '수수료 올리기 화면은 재동기화 화면으로 바뀌었다');
+    });
+
+    testWidgets('[닫기]는 안내와 수수료 올리기 화면을 함께 닫는다', (tester) async {
+      await open(tester);
+
+      await tester.tap(inDialog(_text(t.close)));
+      await settle(tester);
+
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text('previous route'), findsOneWidget);
+    });
+
+    testWidgets('원래 거래는 받았지만 다른 오류가 나면 지금처럼 일반 오류 안내를 띄운다', (tester) async {
+      await open(tester, raw: 'zz');
+
+      expect(inDialog(_text(t.alert.error_occurs)), findsOneWidget);
+      expect(inDialog(_text(t.transaction_fee_bumping_screen.dialog.resync)), findsNothing);
+    });
   });
 }

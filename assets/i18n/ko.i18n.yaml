@@ -1511,6 +1511,9 @@ transaction_fee_bumping_screen:
     utxo_not_found: "거래에 사용한 UTXO를 찾을 수 없어요."
     unverified_original_title: "서명 확인 불가"
     unverified_original: "이 거래의 서명을 확인할 수 없어 수수료를 올릴 수 없어요. 연결한 서버를 확인해 주세요."
+    original_not_found_title: "거래를 찾을 수 없음"
+    original_not_found: "서버에서 이 거래를 받지 못해 수수료를 올릴 수 없어요. 지갑을 재동기화하면 서버에 있는 내역으로 다시 불러와요."
+    resync: "재동기화"
   toast:
     insufficient_utxo: "잔액이 부족하여 새 거래를 생성할 수 없어요"
 

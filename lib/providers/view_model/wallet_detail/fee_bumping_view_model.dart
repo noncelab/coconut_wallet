@@ -312,7 +312,7 @@ class FeeBumpingViewModel extends ChangeNotifier {
   Future<RbfBuilder?> _initRbfBuilder() async {
     final txResult = await _nodeProvider.getTransaction(_pendingTx.transactionHash);
     if (txResult.isFailure) {
-      throw Exception('Failed to get transaction');
+      throw const OriginalTransactionNotFoundException();
     }
     if (_isDisposed) return null;
 

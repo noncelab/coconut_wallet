@@ -1506,6 +1506,9 @@ transaction_fee_bumping_screen:
     utxo_not_found: "Cannot find the UTXO used in the transaction."
     unverified_original_title: "Signature Not Verified"
     unverified_original: "We couldn't verify this transaction's signature, so its fee can't be bumped. Please check the server you're connected to."
+    original_not_found_title: "Transaction Not Found"
+    original_not_found: "We couldn't get this transaction from the server, so its fee can't be bumped. Resync your wallet to reload its history from the server."
+    resync: "Resync"
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 

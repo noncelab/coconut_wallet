@@ -40,6 +40,11 @@ class UnverifiedOriginalTransactionException extends RbfCreationException {
   });
 }
 
+/// Exception thrown when the original transaction could not be fetched from the server (e.g. dropped from the mempool)
+class OriginalTransactionNotFoundException extends RbfCreationException {
+  const OriginalTransactionNotFoundException({super.message = 'The original transaction could not be fetched.'});
+}
+
 class UtxoNotFoundException extends RbfCreationException {
   final String utxoId;
 
