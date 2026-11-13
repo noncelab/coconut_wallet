@@ -69,6 +69,10 @@ void main() {
       when(
         ScriptSyncServiceMock.electrumService.getBalance(any, farAddress.address),
       ).thenAnswer((_) async => GetBalanceRes(confirmed: 50000, unconfirmed: 0));
+      // 미사용 주소는 거래 이력으로 찾는다. 잔액이 있는 주소의 이력에는 그 입금 거래가 있다.
+      when(
+        ScriptSyncServiceMock.electrumService.getHistory(any, farAddress.address),
+      ).thenAnswer((_) async => [GetTxHistoryRes(height: 100, txHash: 'f' * 64)]);
 
       final scriptSyncService = ScriptSyncServiceMock.createMockScriptSyncService();
       scriptSyncService.subscribeWallet = ScriptSyncServiceMock.subscribeWallet;

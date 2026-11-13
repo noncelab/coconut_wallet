@@ -30,6 +30,9 @@ class ScriptSyncService {
   final Set<int> _failedWalletSyncs = {};
   final Map<(int, String), ScriptStatus> _failedScriptSyncs = {};
   final Map<int, DateTime> _lastDormantSyncAt = {};
+  final Set<(int, String)> _failedDormantChecks = {};
+  final Set<(int, String)> _failedViewedChecks = {};
+  final Map<(int, String), String> _resyncedDormantHistory = {};
   final Map<String, DateTime> _lastAddressCheckAt = {};
 
   static const Duration _electrumIndexingDelay = Duration(seconds: 1);
@@ -74,8 +77,9 @@ class ScriptSyncService {
     await _unsubscribeAddress(walletItem, address);
   }
 
-  /// dormant 주소(실시간 구독에서 제외된, 과거 사용됐지만 잔액이 없던 주소)와 구멍(사용 인덱스 앞의 미사용 주소)의
-  /// 잔액을 배치로 다시 확인한다. 재사용이나 리오그, 구멍 입금으로 잔액이 생긴 주소가 있으면 재구독한다.
+  /// dormant 주소(실시간 구독에서 제외된, 과거 사용됐지만 잔액이 없던 주소)와 구멍(사용 인덱스 앞의 미사용 주소)을
+  /// 거래 이력으로 배치 재확인한다. 받고 다 쓴 주소는 잔액으로는 안 보이므로 이력을 보고, 기록과 맞지 않는 주소만
+  /// 다시 동기화한다. 동기화 뒤 잔액이나 미확정 거래가 남은 주소만 구독에 남는다.
   /// 짧은 시간 안에 여러 화면에서 중복 호출되는 것을 막기 위해 지갑별로 스로틀한다.
   Future<void> syncDormantAddresses(WalletItemBase walletItem) async {
     final lastSyncAt = _lastDormantSyncAt[walletItem.id];
@@ -88,36 +92,37 @@ class ScriptSyncService {
       ..._addressRepository.getDormantUsedAddresses(walletItem.id),
       ..._addressRepository.getUnusedAddressesBelowUsedIndex(walletItem.id),
     ];
+    _failedDormantChecks.removeWhere((entry) => entry.$1 == walletItem.id);
     if (dormantAddresses.isEmpty) {
       return;
     }
 
-    final dormantScriptStatuses =
-        dormantAddresses
-            .map(
-              (addr) => ScriptStatus(
-                derivationPath: addr.derivationPath,
-                address: addr.address,
-                index: addr.index,
-                isChange: addr.isChange,
-                scriptPubKey: '',
-                status: null,
-                timestamp: DateTime.now(),
-              ),
-            )
-            .toList();
-
-    await _balanceSyncService.fetchScriptBalanceBatch(walletItem, dormantScriptStatuses);
+    final (:toResync, :failed) = await _transactionSyncService.findDormantAddressesToResync(
+      walletItem,
+      dormantAddresses,
+    );
+    // 조회에 실패한 주소는 사용 표시도 동기화도 하지 않는다. 다음 재확인에서 다시 조회하고, 그때까지 지갑 동기화는 실패로 둔다.
+    _failedDormantChecks.addAll(failed.map((address) => (walletItem.id, address)));
+    // 이번에 확인한 주소는 주소 목록에서 실패했던 표시도 지운다(같은 주소만).
+    for (final addr in dormantAddresses) {
+      if (!failed.contains(addr.address)) {
+        _failedViewedChecks.remove((walletItem.id, addr.address));
+      }
+    }
 
     for (final addr in dormantAddresses) {
-      if (!_addressRepository.isAddressActive(walletItem.id, addr.address)) {
+      final history = toResync[addr.address];
+      final key = (walletItem.id, addr.address);
+      // 앱이 켜져 있는 동안 같은 이력으로 이미 맞춘 주소는 다시 하지 않는다(기록이 불완전해도 재확인마다 반복하지 않게).
+      if (history == null || _resyncedDormantHistory[key] == history) {
         continue;
       }
-      // 구멍에서 찾은 주소는 사용됨으로 표시해야 다음 실행부터 활성 주소로 구독된다.
+      // 이력이 있는 구멍은 사용됨으로 표시해야 다음 실행부터 활성 주소로 구독된다.
       if (!addr.isUsed) {
         await _addressRepository.setWalletAddressUsed(walletItem, addr.index, addr.isChange);
       }
 
+      // 동기화하는 동안 오는 알림을 놓치지 않게 먼저 구독한다. 끝난 뒤 잔액·미확정 거래가 없으면 처리 끝에서 다시 해제된다.
       await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
 
       await _processScriptStatus(
@@ -135,12 +140,16 @@ class ScriptSyncService {
         ),
         DateTime.now(),
       );
+      if (!_failedScriptSyncs.containsKey(key)) {
+        _resyncedDormantHistory[key] = history;
+      }
     }
   }
 
-  /// 사용자가 화면에서 실제로 보고 있는(스크롤로 로드된) 주소들의 잔액을 온디맨드로 확인한다.
+  /// 사용자가 화면에서 실제로 보고 있는(스크롤로 로드된) 주소들을 온디맨드로 확인한다.
   /// 최근에 이미 확인한 주소는 세션 내 짧은 시간 동안 다시 확인하지 않는다.
-  /// gap 윈도우 밖이라 아직 미사용으로 표시된 주소에서 잔액이 발견되면, usedIndex(모니터링 윈도우)는
+  /// 사용 주소는 잔액을 다시 받는다. 쉬고 있던 사용 주소에 돈이 다시 들어왔으면 구독하고 거래까지 받는다.
+  /// 미사용 주소는 받고 다 쓴 경우도 찾도록 잔액 대신 거래 이력을 묻는다. 이력이 있으면 usedIndex(모니터링 윈도우)는
   /// 그대로 두고 그 주소만 개별적으로 사용됨으로 표시 + 구독 대상에 추가한다.
   /// 새로 사용이 발견된 주소 목록을 반환
   Future<List<WalletAddress>> syncViewedAddresses(WalletItemBase walletItem, List<WalletAddress> addresses) async {
@@ -159,34 +168,68 @@ class ScriptSyncService {
       _lastAddressCheckAt[addr.address] = now;
     }
 
-    final scriptStatuses =
-        addressesToCheck
-            .map(
-              (addr) => ScriptStatus(
-                derivationPath: addr.derivationPath,
-                address: addr.address,
-                index: addr.index,
-                isChange: addr.isChange,
-                scriptPubKey: '',
-                status: null,
-                timestamp: now,
-              ),
-            )
-            .toList();
-
-    await _balanceSyncService.fetchScriptBalanceBatch(walletItem, scriptStatuses);
+    final usedAddresses = [
+      for (final addr in addressesToCheck)
+        if (addr.isUsed) addr,
+    ];
+    final unusedAddresses = [
+      for (final addr in addressesToCheck)
+        if (!addr.isUsed) addr,
+    ];
+    if (usedAddresses.isNotEmpty) {
+      await _balanceSyncService.fetchScriptBalanceBatch(walletItem, [
+        for (final addr in usedAddresses)
+          ScriptStatus(
+            derivationPath: addr.derivationPath,
+            address: addr.address,
+            index: addr.index,
+            isChange: addr.isChange,
+            scriptPubKey: '',
+            status: null,
+            timestamp: now,
+          ),
+      ]);
+    }
+    var addressesWithHistory = <String>{};
+    var failedAddresses = <String>{};
+    if (unusedAddresses.isNotEmpty) {
+      final (:toResync, :failed) = await _transactionSyncService.findDormantAddressesToResync(
+        walletItem,
+        unusedAddresses,
+      );
+      addressesWithHistory = toResync.keys.toSet();
+      failedAddresses = failed;
+    }
+    // 조회에 실패한 주소는 다음에 볼 때 다시 묻고, 그때까지 지갑 동기화는 실패로 둔다. 이번에 확인한 주소의 실패만 고친다.
+    // 그사이 다른 경로로 사용 주소가 돼 잔액으로 확인한 주소도 지운다.
+    for (final addr in addressesToCheck) {
+      final key = (walletItem.id, addr.address);
+      if (failedAddresses.contains(addr.address)) {
+        _failedViewedChecks.add(key);
+      } else {
+        _failedViewedChecks.remove(key);
+      }
+    }
 
     final discoveredAddresses = <WalletAddress>[];
     for (final addr in addressesToCheck) {
-      if (addr.isUsed) {
+      final isNewlyUsed = !addr.isUsed && addressesWithHistory.contains(addr.address);
+      // 쉬고 있던 사용 주소에 돈이 다시 들어왔으면 거래까지 받고 구독한다. 잔액만 오르면 휴면 재확인 대상에서도 빠진다.
+      final isRefunded =
+          addr.isUsed &&
+          addr.total == 0 &&
+          addr.unconfirmed == 0 &&
+          _addressRepository.isAddressActive(walletItem.id, addr.address);
+      if (!isNewlyUsed && !isRefunded) {
         continue;
       }
-      if (!_addressRepository.isAddressActive(walletItem.id, addr.address)) {
-        continue;
+      if (isNewlyUsed) {
+        await _addressRepository.setWalletAddressUsed(walletItem, addr.index, addr.isChange);
       }
-      await _addressRepository.setWalletAddressUsed(walletItem, addr.index, addr.isChange);
       await _subscribeAddress(walletItem, addr.index, addr.address, addr.isChange);
-      discoveredAddresses.add(addr);
+      if (isNewlyUsed) {
+        discoveredAddresses.add(addr);
+      }
 
       await _processScriptStatus(
         SubscribeScriptStreamDto(
@@ -235,6 +278,8 @@ class ScriptSyncService {
         final failed =
             _failedWalletSyncs.remove(walletId) ||
             _failedScriptSyncs.keys.any((entry) => entry.$1 == walletId) ||
+            _failedDormantChecks.any((entry) => entry.$1 == walletId) ||
+            _failedViewedChecks.any((entry) => entry.$1 == walletId) ||
             _balanceSyncService.hasBalanceFetchFailures(walletId);
         _stateManager.setWalletSyncQueueState(
           walletId,
@@ -340,6 +385,8 @@ class ScriptSyncService {
       }
 
       _failedScriptSyncs.remove((dto.walletItem.id, dto.scriptStatus.address));
+      // 이 주소를 서버 기준으로 다시 맞췄으니 주소 목록에서 실패했던 표시도 지운다.
+      _failedViewedChecks.remove((dto.walletItem.id, dto.scriptStatus.address));
     } catch (e, stackTrace) {
       _failedScriptSyncs[(dto.walletItem.id, dto.scriptStatus.address)] = dto.scriptStatus;
       Logger.error('Failed to handle script status change: $e');
@@ -464,6 +511,7 @@ class ScriptSyncService {
 
       for (final script in scriptStatuses) {
         _failedScriptSyncs.remove((walletItem.id, script.address));
+        _failedViewedChecks.remove((walletItem.id, script.address));
       }
       _failedWalletSyncs.remove(walletItem.id);
 
