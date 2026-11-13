@@ -1,14 +1,18 @@
+import 'dart:convert';
 import 'dart:isolate';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
+import 'package:coconut_wallet/model/node/script_status.dart';
+import 'package:coconut_wallet/model/utxo/utxo_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/providers/node_provider/balance_sync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/isolate/isolate_enum.dart';
+import 'package:coconut_wallet/providers/node_provider/resync/wallet_resync_service.dart';
 import 'package:coconut_wallet/providers/node_provider/state/isolate_state_manager.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_sync_service.dart';
@@ -56,6 +60,9 @@ class _FakeElectrum extends Fake implements ElectrumService {
 
   /// get_balance를 실패시킬 주소
   final failedBalances = <String>{};
+
+  /// 구독 요청을 실패시킬 주소
+  final failedSubscribes = <String>{};
 
   /// 받은 요청(종류, 주소나 거래 해시)
   final requests = <(String, String)>[];
@@ -120,6 +127,7 @@ class _FakeElectrum extends Fake implements ElectrumService {
     required Function(String, String?) onUpdate,
   }) async {
     requests.add(('subscribe', address));
+    if (failedSubscribes.contains(address)) throw StateError('injected subscribe failure');
     (callbacks[address] ??= {})[walletId] = onUpdate;
     await Future<void>.delayed(const Duration(milliseconds: 1));
     return _status(address);
@@ -226,6 +234,9 @@ class _App {
   late final transactions = TransactionRepository(realmManager);
   late IsolateStateManager state;
   late SubscriptionService subscriptions;
+  late ScriptSyncService scripts;
+  late ScriptCallbackService callbacks;
+  late BalanceSyncService balances;
   final base = SingleSignatureWallet.fromDescriptor(_descriptor);
   final external = WalletMock.createMultiSigWalletItem().walletBase.getAddress(0);
   late int walletId;
@@ -254,31 +265,39 @@ class _App {
   Future<void> launch() async {
     electrum.callbacks.clear();
     state = IsolateStateManager(port.sendPort);
-    final callbacks = ScriptCallbackService();
-    subscriptions = SubscriptionService(
-      electrum,
+    callbacks = ScriptCallbackService();
+    scripts = ScriptSyncService(
       state,
-      addresses,
-      SubscriptionRepository(realmManager),
-      ScriptSyncService(
+      balances = BalanceSyncService(electrum, state, addresses, wallets),
+      TransactionSyncService(
+        electrum,
+        transactions,
+        TransactionRecordService(electrum, addresses),
         state,
-        BalanceSyncService(electrum, state, addresses, wallets),
-        TransactionSyncService(
-          electrum,
-          transactions,
-          TransactionRecordService(electrum, addresses),
-          state,
-          utxos,
-          callbacks,
-        ),
-        UtxoSyncService(electrum, state, utxos, transactions, addresses),
-        addresses,
+        utxos,
         callbacks,
       ),
+      UtxoSyncService(electrum, state, utxos, transactions, addresses),
+      addresses,
+      callbacks,
     );
+    subscriptions = SubscriptionService(electrum, state, addresses, SubscriptionRepository(realmManager), scripts);
     state.initWalletUpdateStatus(walletId);
     await subscriptions.subscribeWallet(await copy());
     await drain();
+  }
+
+  Future<void> resync({bool succeeds = true}) async {
+    final result = await WalletResyncService(
+      wallets,
+      utxos,
+      addresses,
+      subscriptions,
+      state,
+      callbacks,
+    ).resyncWallet(await copy());
+    await drain();
+    expect(result.isSuccess, succeeds);
   }
 
   /// 앱 복귀·홈 새로고침·지갑 상세 새로고침이 부르는 휴면 재확인
@@ -329,6 +348,28 @@ class _App {
   /// [transactions] 중 지갑 내역에 있는 거래 수
   int recorded(Iterable<Transaction> txs) =>
       transactions.getRealmTransactionListByHashes(walletId, {for (final tx in txs) tx.transactionHash}).length;
+
+  /// 주소 목록 화면이 [cursor] 다음 번호부터 [count]개를 불러와 확인한다.
+  Future<void> view(int cursor, int count) async {
+    await subscriptions.syncViewedAddresses(
+      await copy(),
+      await addresses.getWalletAddressList(await copy(), cursor, count, false, false),
+    );
+    await drain();
+  }
+
+  /// 이 주소에 남은 동기화·확인 실패 표시가 있는지
+  bool failed(String address) => scripts.hasSyncFailure(walletId, address);
+
+  /// 저장된 주소 잔액을 바꾼다(다른 경로로는 만들기 어려운 상태를 만들 때만)
+  void setStoredBalance(String address, int amount) {
+    final realm = realmManager.realm;
+    final row = realm.query<RealmWalletAddress>(r'walletId == $0 AND address == $1', [walletId, address]).single;
+    realm.write(() {
+      row.confirmed = amount;
+      row.total = amount;
+    });
+  }
 
   bool isUsed(String address) =>
       realmManager.realm
@@ -844,6 +885,541 @@ void main() {
     expect(app.electrum.isListening(r[1], app.walletId), isTrue);
     expect(app.balance, app.chain);
   }, timeout: const Timeout(Duration(seconds: 60)));
+
+  group('실패 표시 풀기: 그 주소를 확인하거나 맞추면 그 주소의 실패만 풀린다', () {
+    /// #1·#2를 받고 다 써서 빈 사용 주소로, #0·#3은 잔액이 남은 주소로 두고 다시 켠다.
+    Future<(_App, List<String>)> twoEmptied() async {
+      final app = _App();
+      addTearDown(app.dispose);
+      await app.setUp();
+      final r = [for (var i = 0; i < 4; i++) app.base.getAddress(i)];
+      app.pay(r[0], 300000);
+      app.pay(r[1], 100000);
+      app.pay(r[2], 100000);
+      app.pay(r[3], 150000);
+      await app.launch();
+      app.spendAll(r[1]);
+      app.spendAll(r[2]);
+      await app.drain();
+      await app.launch();
+      return (app, r);
+    }
+
+    /// #0·#3에 잔액이 남고 #1·#2는 빈 구멍인 지갑
+    Future<(_App, List<String>)> twoHoles() async {
+      final app = _App();
+      addTearDown(app.dispose);
+      await app.setUp();
+      final r = [for (var i = 0; i < 4; i++) app.base.getAddress(i)];
+      app.pay(r[0], 300000);
+      app.pay(r[3], 150000);
+      await app.launch();
+      await app.launch();
+      return (app, r);
+    }
+
+    test('R2 P2 재동기화로 빈 구멍을 실제로 확인하면 휴면 실패가 풀린다', () async {
+      final (app, r) = await twoHoles();
+      app.electrum.failedHistories.addAll([r[1], r[2]]);
+      await app.recheck();
+      expect([app.failed(r[1]), app.failed(r[2])], [true, true]);
+      app.electrum.failedHistories.clear();
+
+      // 일반 재구독은 사용 인덱스 앞의 구멍을 확인하지 않으므로 그대로 남긴다.
+      app.electrum.requests.clear();
+      expect((await app.subscriptions.subscribeWallet(await app.copy())).isSuccess, isTrue);
+      await app.drain();
+      expect(app.electrum.requestsFor(r[1]), isEmpty);
+      expect([app.failed(r[1]), app.failed(r[2])], [true, true]);
+      expect(app.queueEnds.last, isNull);
+
+      app.electrum.requests.clear();
+      await app.resync();
+      expect(app.electrum.requestsFor(r[1]), ['subscribe']);
+      expect(app.electrum.requestsFor(r[2]), ['subscribe']);
+      expect([app.failed(r[1]), app.failed(r[2])], [false, false]);
+      expect(app.balance, 450000);
+      expect(app.balance, app.chain);
+      expect(app.queueEnds.last, app.balance);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    Future<(_App, List<String>)> failedOutsideGap() async {
+      final app = _App();
+      addTearDown(app.dispose);
+      await app.setUp();
+      await app.addresses.ensureAddressesExist(walletItemBase: await app.copy(), cursor: 0, count: 60, isChange: false);
+      final r = [for (var i = 0; i < 42; i++) app.base.getAddress(i)];
+      app.pay(r[0], 300000);
+      await app.launch();
+      app.electrum.failedHistories.addAll([r[40], r[41]]);
+      await app.view(39, 2);
+      expect([app.failed(r[40]), app.failed(r[41])], [true, true]);
+      expect(app.queueEnds.last, isNull);
+      return (app, r);
+    }
+
+    for (final resync in [false, true]) {
+      test('R2 P3 ${resync ? '재동기화는' : '다시 구독은'} gap 밖 주소도 다시 확인하고 실패한 주소만 남긴다', () async {
+        final (app, r) = await failedOutsideGap();
+        app.electrum.failedHistories.remove(r[40]);
+        app.electrum.requests.clear();
+        if (resync) {
+          // 주소 목록 실패 직후 재동기화해야 DB에서 그 주소 행이 지워지는 순서를 검증한다.
+          await app.resync();
+        } else {
+          expect((await app.subscriptions.subscribeWallet(await app.copy())).isSuccess, isTrue);
+          await app.drain();
+        }
+        expect(app.electrum.requestsFor(r[40]), ['get_history']);
+        expect(app.electrum.requestsFor(r[41]), ['get_history']);
+        expect([app.failed(r[40]), app.failed(r[41])], [false, true]);
+        expect(app.queueEnds.last, isNull, reason: '확인 못 한 #41의 실패는 남겨야 한다');
+        expect(app.balance, app.chain);
+
+        app.electrum.failedHistories.clear();
+        app.electrum.requests.clear();
+        expect((await app.subscriptions.subscribeWallet(await app.copy())).isSuccess, isTrue);
+        await app.drain();
+        expect(app.electrum.requestsFor(r[40]), isEmpty, reason: '이미 성공한 주소는 다시 묻지 않는다');
+        expect(app.electrum.requestsFor(r[41]), ['get_history']);
+        expect(app.failed(r[41]), isFalse);
+        expect(app.queueEnds.last, app.balance);
+      }, timeout: const Timeout(Duration(seconds: 60)));
+    }
+
+    test('R2 P3 입금된 gap 밖 주소의 행을 재동기화 뒤 복원하고 거래와 잔액을 맞춘다', () async {
+      final (app, r) = await failedOutsideGap();
+      final received = app.pay(r[40], 70000);
+      final spent = app.spendAll(r[40]);
+      final kept = app.pay(r[41], 60000);
+      app.electrum.failedHistories.clear();
+      await app.resync();
+      expect([app.failed(r[40]), app.failed(r[41])], [false, false]);
+      expect([app.isUsed(r[40]), app.isUsed(r[41])], [true, true]);
+      expect(app.recorded([received, spent, kept]), 3);
+      expect(app.balance, 360000);
+      expect(app.balance, app.chain);
+      expect(app.addresses.getUsedIndexes(app.walletId).$1, 0);
+      expect(app.queueEnds.last, app.balance);
+      expect(app.electrum.isListening(r[40], app.walletId), isFalse);
+      expect(app.electrum.isListening(r[41], app.walletId), isTrue);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('R2C 주소 목록 실패 재확인은 모든 주소 행을 복원한 뒤 같은 확정 거래의 입금액을 합산한다', () async {
+      final (app, r) = await failedOutsideGap();
+      final funding = _tx([('1'.padLeft(64, 'e'), 0)], [(160000, app.external)]);
+      app.put(funding, 200);
+      final payment = _tx([(funding.transactionHash, 0)], [(70000, r[40]), (80000, r[41]), (9000, app.external)]);
+      app.put(payment, 201);
+      app.electrum.failedHistories.clear();
+
+      await app.resync();
+
+      final record = app.transactions.getRealmTransactionListByHashes(app.walletId, {payment.transactionHash}).single;
+      expect(record.amount, 150000, reason: '같은 확정 거래의 #40·#41 출력을 모두 내 입금으로 세어야 한다');
+      expect([app.failed(r[40]), app.failed(r[41])], [false, false]);
+      expect([app.isUsed(r[40]), app.isUsed(r[41])], [true, true]);
+      expect(app.balance, 450000);
+      expect(app.balance, app.chain);
+      expect(app.queueEnds.last, app.balance);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('R2B Q1 주소 목록 실패 재확인의 구독 오류는 재동기화 성공과 UTXO 잠금을 보존하고 그 주소의 실패만 남긴다', () async {
+      final (app, r) = await failedOutsideGap();
+      final coin = app.utxos.getUtxosByStatus(app.walletId, UtxoStatus.unspent).single;
+      await app.utxos.toggleUtxoLockStatus(app.walletId, coin.utxoId);
+      expect(app.utxos.snapshotLockedUtxoIds(app.walletId), {coin.utxoId});
+
+      app.pay(r[40], 70000);
+      app.electrum.failedHistories.clear();
+      app.electrum.failedSubscribes.add(r[40]);
+      await app.resync();
+
+      expect(app.utxos.snapshotLockedUtxoIds(app.walletId), {coin.utxoId});
+      expect([app.failed(r[40]), app.failed(r[41]), app.failed(r[0])], [true, false, false]);
+      expect(app.queueEnds.last, isNull);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('R2 P3b gap 안 빈 주소의 구독 캐시는 성공으로 보지 않고 이력으로 다시 확인한다', () async {
+      final app = _App();
+      addTearDown(app.dispose);
+      await app.setUp();
+      app.pay(app.base.getAddress(0), 300000);
+      await app.launch();
+      final address = app.base.getAddress(5);
+      final wallet = await app.copy();
+      expect((await app.subscriptions.subscribeWallet(wallet)).isSuccess, isTrue);
+      app.electrum.failedHistories.add(address);
+      await app.view(4, 1);
+      expect(app.failed(address), isTrue);
+
+      app.electrum.requests.clear();
+      expect((await app.subscriptions.subscribeWallet(wallet)).isSuccess, isTrue);
+      await app.drain();
+      expect(app.electrum.requestsFor(address), ['get_history'], reason: '캐시 재사용은 새 서버 확인이 아니다');
+      expect(app.failed(address), isTrue);
+      expect(app.queueEnds.last, isNull);
+
+      app.electrum.failedHistories.clear();
+      app.electrum.requests.clear();
+      expect((await app.subscriptions.subscribeWallet(wallet)).isSuccess, isTrue);
+      await app.drain();
+      expect(app.electrum.requestsFor(address), ['get_history']);
+      expect(app.failed(address), isFalse);
+      expect(app.queueEnds.last, app.balance);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('R2 F2 같은 키 두 지갑의 첫 확인은 독립적이고 각 지갑의 1분 제한은 유지된다', () async {
+      final (app, r) = await twoHoles();
+      final other = await app.wallets.addSinglesigWallet(
+        WatchOnlyWallet('same key', 1, 1, _descriptor, null, null, 'coconutVault'),
+      );
+      await app.addresses.ensureAddressesInit(walletItemBase: other);
+      app.state.initWalletUpdateStatus(other.id);
+      expect((await app.subscriptions.subscribeWallet(other)).isSuccess, isTrue);
+      await app.drain();
+      app.electrum.failedHistories.add(r[1]);
+      await app.recheck();
+      expect(app.failed(r[1]), isTrue);
+      app.electrum.failedHistories.clear();
+      final otherAddresses = await app.addresses.getWalletAddressList(other, 0, 1, false, false);
+      app.electrum.requests.clear();
+      await app.subscriptions.syncViewedAddresses(other, otherAddresses);
+      expect(app.electrum.requestsFor(r[1]), ['get_history']);
+      expect(app.scripts.hasSyncFailure(other.id, r[1]), isFalse);
+      expect(app.failed(r[1]), isTrue, reason: '다른 지갑의 확인으로 이 지갑의 실패를 지우지 않는다');
+
+      app.electrum.requests.clear();
+      await app.view(0, 1);
+      expect(app.electrum.requestsFor(r[1]), ['get_history']);
+      expect(app.failed(r[1]), isFalse);
+      expect(app.queueEnds.last, app.balance);
+      app.electrum.requests.clear();
+      await app.view(0, 1);
+      await app.subscriptions.syncViewedAddresses(other, otherAddresses);
+      expect(app.electrum.requestsFor(r[1]), isEmpty, reason: '각 지갑에서 1분 내 다시 보는 것은 제한한다');
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('R2 F3 재동기화 전 이력 기억으로 현재 잔액 실패를 풀지 않는다', () async {
+      final (app, r) = await twoHoles();
+      final received = app.pay(r[1], 50000);
+      await app.recheck();
+      expect(app.balance, 500000);
+      expect(app.failed(r[1]), isFalse);
+
+      app.electrum.failedBalances.add(r[1]);
+      await app.resync(succeeds: false);
+      expect(app.balances.hasBalanceFetchFailure(app.walletId, r[1]), isTrue);
+      final before = (await app.addresses.getWalletAddressList(await app.copy(), 0, 1, false, false)).single;
+      expect(before.total, 0);
+      app.electrum.failedBalances.clear();
+      await Future<void>.delayed(const Duration(seconds: 31));
+      app.electrum.requests.clear();
+      await app.recheck();
+      final after = (await app.addresses.getWalletAddressList(await app.copy(), 0, 1, false, false)).single;
+      expect(after.total, 50000, reason: 'DB를 지우기 전 이력 기억은 현재 잔액을 증명하지 못한다');
+      expect(app.balances.hasBalanceFetchFailure(app.walletId, r[1]), isFalse);
+      expect(app.electrum.requestsFor(r[1]), contains('get_balance'));
+      expect(app.recorded([received]), 1);
+      expect(app.balance, app.chain);
+    }, timeout: const Timeout(Duration(seconds: 90)));
+
+    test('주소 목록에서 잔액 조회가 실패한 빈 사용 주소는 휴면 재확인이 기록과 맞는 것을 확인하면 실패가 풀린다', () async {
+      final (app, r) = await emptiedApp();
+      app.electrum.failedBalances.add(r[1]);
+      await app.view(0, 1);
+      expect(app.queueEnds.last, isNull);
+
+      app.electrum.failedBalances.clear();
+      await app.recheck();
+      expect(app.balance, app.chain);
+      expect(app.queueEnds.last, app.balance, reason: '같은 주소를 이력으로 확인했으니 잔액 조회 실패도 풀려야 함');
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('휴면 재확인이 확인하지 않은 다른 주소의 잔액 조회 실패는 남는다', () async {
+      final (app, r) = await emptiedApp();
+      // #0(잔액이 남은 주소, 휴면 재확인 대상 아님)과 #1(빈 사용 주소)의 잔액 조회가 실패했다.
+      app.electrum.failedBalances.addAll([r[0], r[1]]);
+      await app.view(-1, 2);
+      expect(app.queueEnds.last, isNull);
+
+      app.electrum.failedBalances.clear();
+      await app.recheck();
+      expect(app.queueEnds.last, isNull, reason: '#1만 확인했으니 #0의 실패는 남아야 함');
+      expect(app.failed(r[0]), isTrue);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('휴면 재확인에서 실패한 주소를 주소 목록이 다시 맞추면 실패가 풀린다', () async {
+      final (app, r) = await emptiedApp();
+      final again = app.pay(r[1], 50000);
+      await app.drain();
+      app.electrum.failedHistories.add(r[1]);
+      await app.recheck();
+      expect(app.queueEnds.last, isNull);
+
+      app.electrum.failedHistories.clear();
+      await app.view(0, 1);
+      expect(app.recorded([again]), 1);
+      expect(app.balance, app.chain);
+      expect(app.queueEnds.last, app.balance, reason: '같은 주소를 다시 맞췄으니 휴면 재확인 실패도 풀려야 함');
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('다시 맞춘 주소가 아닌 다른 주소의 휴면 재확인 실패는 남는다', () async {
+      final app = _App();
+      addTearDown(app.dispose);
+      await app.setUp();
+      final r = [for (var i = 0; i < 3; i++) app.base.getAddress(i)];
+      app.pay(r[0], 300000);
+      app.pay(r[1], 100000);
+      app.pay(r[2], 100000);
+      await app.launch();
+      app.spendAll(r[1]);
+      app.spendAll(r[2]);
+      await app.drain();
+      await app.launch();
+      // 빈 사용 주소 #1에만 다시 입금됐고, #1·#2 모두 휴면 재확인의 이력 조회가 실패했다.
+      app.pay(r[1], 40000);
+      app.electrum.failedHistories.addAll([r[1], r[2]]);
+      await app.recheck();
+      expect(app.queueEnds.last, isNull);
+
+      app.electrum.failedHistories.clear();
+      await app.view(0, 1);
+      expect(app.balance, app.chain);
+      expect(app.queueEnds.last, isNull, reason: '#1만 다시 맞췄으니 #2의 실패는 남아야 함');
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('입금 알림으로 맞춘 주소는 그 주소의 휴면 재확인 실패가 풀린다', () async {
+      final app = _App();
+      addTearDown(app.dispose);
+      await app.setUp();
+      final r = [for (var i = 0; i < 4; i++) app.base.getAddress(i)];
+      app.pay(r[0], 300000);
+      await app.launch();
+      // 같은 실행에서 #3에 먼저 입금돼 #1·#2가 구멍이 됐다. 이 실행의 gap 구독은 아직 #1을 듣는다.
+      app.pay(r[3], 50000);
+      await app.drain();
+      expect(app.electrum.isListening(r[1], app.walletId), isTrue);
+      app.electrum.failedHistories.add(r[1]);
+      await app.recheck();
+      expect(app.failed(r[1]), isTrue);
+      app.electrum.failedHistories.clear();
+      app.pay(r[1], 20000);
+      await app.drain();
+      expect(app.failed(r[1]), isFalse);
+      expect(app.balance, app.chain);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('배치 동기화로 다시 맞춘 주소는 휴면 재확인 실패가 풀리고, 배치에 없던 주소의 실패는 남는다', () async {
+      final (app, r) = await twoEmptied();
+      app.electrum.failedHistories.addAll([r[1], r[2]]);
+      await app.recheck();
+      expect([app.failed(r[1]), app.failed(r[2])], [true, true]);
+      app.electrum.failedHistories.clear();
+      // 지갑 구독·재동기화가 쓰는 배치 동기화로 #1만 다시 맞춘다.
+      final row = (await app.addresses.getWalletAddressList(await app.copy(), 0, 1, false, false)).single;
+      expect(row.address, r[1]);
+      await app.subscriptions.runExclusive(
+        app.walletId,
+        () async => app.scripts.syncBatchScriptStatusList(
+          walletItem: await app.copy(),
+          scriptStatuses: [
+            ScriptStatus(
+              derivationPath: row.derivationPath,
+              address: row.address,
+              index: row.index,
+              isChange: row.isChange,
+              scriptPubKey: '',
+              status: null,
+              timestamp: DateTime.now(),
+            ),
+          ],
+        ),
+      );
+      expect([app.failed(r[1]), app.failed(r[2])], [false, true]);
+      expect(app.balance, app.chain);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('R2 P1 주소 목록의 잔액 성공만으로 놓친 거래의 휴면 이력 실패를 풀지 않는다', () async {
+      final (app, r) = await emptiedApp();
+      final received = app.pay(r[1], 50000);
+      final spent = app.spendAll(r[1]);
+      await app.drain();
+      expect(app.recorded([received, spent]), 0);
+      app.electrum.failedHistories.add(r[1]);
+      await app.recheck();
+      expect(app.failed(r[1]), isTrue);
+      expect(app.queueEnds.last, isNull);
+
+      app.electrum.failedHistories.clear();
+      app.electrum.requests.clear();
+      await app.view(0, 1);
+      expect(app.electrum.requestsFor(r[1]), ['get_balance']);
+      expect(app.balance, app.chain);
+      expect(app.recorded([received, spent]), 0);
+      expect(app.failed(r[1]), isTrue, reason: '잔액이 맞아도 거래 이력은 확인하지 못했다');
+      expect(app.queueEnds.last, isNull);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('주소 목록에서 본 사용 주소가 아닌 다른 주소의 휴면 재확인 실패는 남는다', () async {
+      final (app, r) = await twoEmptied();
+      app.electrum.failedHistories.addAll([r[1], r[2]]);
+      await app.recheck();
+      app.electrum.failedHistories.clear();
+      await app.view(0, 1);
+      expect(app.failed(r[2]), isTrue);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    /// #0·#1에 잔액이 남은 지갑에서 [flagged] 주소들에 휴면 재확인 실패를 남긴다.
+    /// 잔액이 남은 주소는 휴면 재확인 대상이 아니라, 잠깐 저장 잔액을 0으로 바꿔 실패를 남긴 뒤 되돌린다.
+    Future<(_App, List<String>)> coSpentWallet(List<int> flagged) async {
+      final app = _App();
+      addTearDown(app.dispose);
+      await app.setUp();
+      final r = [for (var i = 0; i < 3; i++) app.base.getAddress(i)];
+      app.pay(r[0], 300000);
+      app.pay(r[1], 100000);
+      app.pay(r[2], 80000);
+      await app.launch();
+      await app.launch();
+      final kept = {for (final i in flagged) i: app.electrum.balanceOf(r[i])};
+      for (final i in flagged) {
+        app.setStoredBalance(r[i], 0);
+        app.electrum.failedHistories.add(r[i]);
+      }
+      await app.recheck();
+      app.electrum.failedHistories.clear();
+      for (final i in flagged) {
+        app.setStoredBalance(r[i], kept[i]!);
+        expect(app.failed(r[i]), isTrue);
+      }
+      return (app, r);
+    }
+
+    /// #0의 알림으로만 기록되는 거래가 #0과 #1의 코인을 함께 쓴다(#1 자신의 알림은 오지 않음).
+    Future<void> coSpend(_App app, List<String> r) async {
+      final coins = [
+        for (final i in [0, 1])
+          for (final coin in app.electrum._outputsTo(r[i]))
+            if (!app.electrum._spent(coin.$1, coin.$2)) (coin.$1, coin.$2),
+      ];
+      final total = app.electrum.balanceOf(r[0]) + app.electrum.balanceOf(r[1]);
+      app.put(_tx(coins, [(total - 1000, app.external)]), 190);
+      app.electrum.notify(r[0]);
+      await app.drain();
+    }
+
+    test('R2 G2 함께 소비된 주소의 잔액 성공만으로 휴면 이력 실패를 풀지 않는다', () async {
+      final (app, r) = await coSpentWallet([1]);
+      await coSpend(app, r);
+      expect(app.electrum.balanceOf(r[1]), 0);
+      expect(app.failed(r[1]), isTrue);
+      expect(app.balance, app.chain);
+      expect(app.queueEnds.last, isNull);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('함께 소비되지 않은 다른 주소의 휴면 재확인 실패는 남는다', () async {
+      final (app, r) = await coSpentWallet([1, 2]);
+      await coSpend(app, r);
+      expect(app.failed(r[2]), isTrue);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('주소 목록에서 빈 미사용 주소의 이력을 확인하면 그 주소의 휴면 재확인 실패가 풀린다', () async {
+      final (app, r) = await twoHoles();
+      app.electrum.failedHistories.add(r[1]);
+      await app.recheck();
+      expect(app.failed(r[1]), isTrue);
+      app.electrum.failedHistories.clear();
+      await app.view(0, 1);
+      expect(app.failed(r[1]), isFalse);
+      expect(app.queueEnds.last, app.balance);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    test('주소 목록에서 본 미사용 주소가 아닌 다른 구멍의 휴면 재확인 실패는 남는다', () async {
+      final (app, r) = await twoHoles();
+      app.electrum.failedHistories.addAll([r[1], r[2]]);
+      await app.recheck();
+      app.electrum.failedHistories.clear();
+      await app.view(0, 1);
+      expect(app.failed(r[2]), isTrue);
+    }, timeout: const Timeout(Duration(seconds: 60)));
+
+    /// 빈 사용 주소 #1의 옛 출금 기록에서 #1이 낸 금액을 틀리게 바꾼다(기록이 서버와 어긋난 채 남은 모양).
+    /// 그러면 #1은 재확인마다 다시 동기화 대상으로 골라지고, 첫 동기화 뒤로는 같은 이력이라 건너뛴다.
+    Future<(_App, List<String>)> skippedApp() async {
+      final (app, r) = await emptiedApp();
+      final spend = app.electrum._all
+          .map((item) => item.$1)
+          .firstWhere(
+            (tx) => tx.inputs.any(
+              (input) => app.electrum
+                  ._outputsTo(r[1])
+                  .any((output) => output.$1 == input.transactionHash && output.$2 == input.index),
+            ),
+          );
+      final realm = app.realmManager.realm;
+      final row =
+          realm.query<RealmTransaction>(r'walletId == $0 AND transactionHash == $1', [
+            app.walletId,
+            spend.transactionHash,
+          ]).single;
+      realm.write(() {
+        row.inputAddressList
+          ..clear()
+          ..add(jsonEncode({'address': r[1], 'amount': 90000}));
+      });
+      await app.recheck();
+      expect(app.failed(r[1]), isFalse);
+      return (app, r);
+    }
+
+    test('같은 이력으로 이미 맞춰 건너뛴 주소는 그사이 생긴 잔액 조회 실패가 풀린다', () async {
+      final (app, r) = await skippedApp();
+      app.electrum.failedBalances.add(r[1]);
+      await app.view(0, 1);
+      expect(app.failed(r[1]), isTrue);
+      app.electrum.failedBalances.clear();
+      await Future<void>.delayed(const Duration(seconds: 31));
+      app.electrum.requests.clear();
+      await app.recheck();
+      expect(app.electrum.requestsFor(r[1]), ['get_history'], reason: '같은 이력이라 다시 동기화하지 않음');
+      expect(app.failed(r[1]), isFalse);
+    }, timeout: const Timeout(Duration(seconds: 90)));
+
+    test('건너뛴 주소가 아닌 다른 주소의 잔액 조회 실패는 남는다', () async {
+      final (app, r) = await skippedApp();
+      app.electrum.failedBalances.addAll([r[0], r[1]]);
+      await app.view(-1, 2);
+      expect([app.failed(r[0]), app.failed(r[1])], [true, true]);
+      app.electrum.failedBalances.clear();
+      await Future<void>.delayed(const Duration(seconds: 31));
+      await app.recheck();
+      expect(app.failed(r[0]), isTrue);
+    }, timeout: const Timeout(Duration(seconds: 90)));
+
+    test('휴면 재확인은 이번에 확인하지 않은 주소의 실패를 지우지 않는다', () async {
+      final (app, r) = await twoEmptied();
+      app.electrum.failedHistories.addAll([r[1], r[2]]);
+      await app.recheck();
+      expect([app.failed(r[1]), app.failed(r[2])], [true, true]);
+      // #2가 다른 경로에서 잔액이 생겨 휴면 대상이 아니게 됐지만, 그 경로는 #2를 끝까지 맞추지 못했다.
+      app.setStoredBalance(r[2], 1000);
+      app.electrum.failedHistories.clear();
+      await Future<void>.delayed(const Duration(seconds: 31));
+      await app.recheck();
+      expect([app.failed(r[1]), app.failed(r[2])], [false, true]);
+    }, timeout: const Timeout(Duration(seconds: 90)));
+
+    test('휴면 재확인은 이번에 다시 확인한 주소의 실패만 갈아끼운다', () async {
+      final (app, r) = await twoEmptied();
+      app.electrum.failedHistories.addAll([r[1], r[2]]);
+      await app.recheck();
+      app.electrum.failedHistories.remove(r[1]);
+      await Future<void>.delayed(const Duration(seconds: 31));
+      await app.recheck();
+      expect([app.failed(r[1]), app.failed(r[2])], [false, true]);
+    }, timeout: const Timeout(Duration(seconds: 90)));
+  });
 
   group('휴면 재확인 조회 수', () {
     test('보통 지갑: 쉬고 있는 주소 26개를 이력 조회 26번으로 확인하고 그 밖의 요청은 없다', () async {

@@ -78,6 +78,7 @@ class WalletResyncService {
       // 백그라운드에서 도는 이 지갑의 일반 subscribeWallet(재연결 시 자동 재구독 등)과 같은 지갑별 큐를 공유
       // 지우는 도중에 그쪽이 동시에 같은 지갑 데이터를 쓰지 않도록(데드락 방지) 도착 순서대로 직렬화한다.
       await _subscriptionService.runExclusive(walletId, () async {
+        _subscriptionService.clearDormantHistory(walletId);
         await _walletRepository.resetWalletForResync(walletId);
 
         // resetWalletForResync는 Realm DB(usedReceiveIndex 등)만 리셋한다.
