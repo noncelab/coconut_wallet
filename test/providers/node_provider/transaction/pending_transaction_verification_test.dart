@@ -44,6 +44,21 @@ SingleSignatureVault _vault(int byte) => SingleSignatureVault.fromEntropy(Uint8L
 /// 받기 주소 [index]의 키(SIGHASH_ALL 수동 서명용)
 HDWallet _receiveKey(SingleSignatureVault vault, int index) => vault.keyStore.hdWallet.derive(0).derive(index);
 
+/// 남이 [wallet]의 받기 주소 [index]로 [amount] sats를 보내는 정상 미확정 거래. [tag]로 이전 거래를 구별한다
+/// (같은 [tag]면 같은 코인을 쓰므로, 금액을 바꾸면 보낸 쪽의 RBF 대체 거래가 된다)
+Transaction _paidToMe(SyncedWallet wallet, int index, int tag, {int amount = 40000}) {
+  final foreign = _vault(0x55);
+  final funding = fundingTransaction([(foreign.getAddress(0), 50000)], tag);
+  final tx = Transaction.withInputsAndOutputs(
+    [TransactionInput.forPayment(funding.transactionHash, 0)],
+    [TransactionOutput.forPayment(amount, wallet.address(index))],
+    AddressType.p2wpkh,
+  );
+  signP2wpkhInput(tx, 0, funding.outputs.single, _receiveKey(foreign, 0));
+  wallet.publish([funding, tx]);
+  return tx;
+}
+
 void main() {
   NetworkType.setNetworkType(NetworkType.regtest);
   final shop = _vault(0x77).getAddress(0);
@@ -464,6 +479,19 @@ void main() {
         await expectDropped(wallet, fake, () => wallet.sync([history(incoming, 0), history(fake, 0)]));
         expect(wallet.coin(incoming.transactionHash, 0)?.status, UtxoStatus.incoming);
       });
+
+      test('받는 중 거래의 원문 조회가 실패해도 내 자식 거래와 CPFP 기록을 지우지 않는다', () async {
+        wallet.publish([child]);
+        await wallet.sync([history(incoming, 0), history(child, 0)]);
+        final other = _paidToMe(wallet, 2, 96);
+        wallet.server.rawByHash.remove(incoming.transactionHash);
+
+        await wallet.sync([history(other, 0)], unspentList: wallet.unspent(other, 0, index: 2), index: 2);
+
+        expect(wallet.txs.getTransactionRecord(walletId, child.transactionHash)?.blockHeight, 0);
+        expect(wallet.coin(incoming.transactionHash, 0)?.spentByTransactionHash, child.transactionHash);
+        expect(wallet.snapshot()['cpfp'], ['${incoming.transactionHash}>${child.transactionHash}']);
+      });
     });
 
     test('입력 100개짜리 내 결제를 넣는다', () async {
@@ -677,34 +705,148 @@ void main() {
       expect(wallet.coin(coin.transactionHash, 0)?.spentByTransactionHash, own.transactionHash);
     });
 
-    // PR #789 2라운드: getTransaction이 다른 거래에 FormatException을 던지면서, 받는 RBF 확인이 이를 "대체됨"으로 봤음
-    test('받는 RBF 확인에서 서버가 받는 중 거래 번호에 다른 거래를 주면(FormatException) 그 받는 중 코인을 지우지 않는다', () async {
-      final foreign = _vault(0x55);
-      final funding = fundingTransaction([(foreign.getAddress(0), 50000), (foreign.getAddress(1), 50000)], 94);
-      Transaction payMe(int input, int index) {
-        final tx = Transaction.withInputsAndOutputs(
-          [TransactionInput.forPayment(funding.transactionHash, input)],
-          [TransactionOutput.forPayment(40000, wallet.address(index))],
-          AddressType.p2wpkh,
-        );
-        signP2wpkhInput(tx, 0, funding.outputs[input], _receiveKey(foreign, input));
-        return tx;
-      }
-
-      final first = payMe(0, 1);
-      final second = payMe(1, 2);
-      wallet.publish([funding, first, second]);
+    /// 받기 주소 1의 받는 중 거래 하나를 넣고, 그 원문 조회를 [error]로 실패시킨 채 받기 주소 2에 새 받는 거래를 동기화한다
+    Future<Transaction> receiveThenFailFetch(Object Function(String txHash) error) async {
+      final first = _paidToMe(wallet, 1, 94);
+      final second = _paidToMe(wallet, 2, 95);
       await wallet.sync([history(first, 0)], unspentList: wallet.unspent(first, 0, index: 1), index: 1);
       expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.incoming);
       wallet.server.transactionSource = (txHash) async {
-        if (txHash == first.transactionHash) throw FormatException('Received a different transaction for $txHash');
+        if (txHash == first.transactionHash) throw error(txHash);
         return wallet.server.rawByHash[txHash] ?? (throw StateError('unavailable $txHash'));
       };
-
       await wallet.sync([history(second, 0)], unspentList: wallet.unspent(second, 0, index: 2), index: 2);
-
       expect(wallet.coin(second.transactionHash, 0)?.status, UtxoStatus.incoming);
+      wallet.server.transactionSource = null;
+      return first;
+    }
+
+    // PR #789 2라운드: getTransaction이 다른 거래에 FormatException을 던지면서, 받는 RBF 확인이 이를 "대체됨"으로 봤음
+    test('받는 RBF 확인에서 서버가 받는 중 거래 번호에 다른 거래를 주면(FormatException) 그 받는 중 코인을 지우지 않는다', () async {
+      final first = await receiveThenFailFetch(
+        (txHash) => FormatException('Received a different transaction for $txHash'),
+      );
+
       expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.incoming);
+      expect(wallet.txs.getTransactionRecord(walletId, first.transactionHash)?.blockHeight, 0);
+      await wallet.sync([history(first, 101)], unspentList: wallet.unspent(first, 101, index: 1), index: 1);
+      expect(wallet.coin(first.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    // 이 PR 전과 같은 동작(별도 이슈): 남이 보낸 거래는 원문 조회 실패를 대체로 보고, 지운 것으로 표시된 코인은 다시 넣지 않는다
+    test('받는 중 거래의 원문 조회가 일반 오류로 실패하면 지금처럼 그 받는 중 코인을 지우고, 확정 뒤에도 코인은 돌아오지 않는다', () async {
+      final first = await receiveThenFailFetch((txHash) => StateError('unavailable $txHash'));
+
+      expect(wallet.coin(first.transactionHash, 0), isNull);
+      expect(wallet.txs.getTransactionRecord(walletId, first.transactionHash), isNull);
+      await wallet.sync([history(first, 101)], unspentList: wallet.unspent(first, 101, index: 1), index: 1);
+      expect(wallet.txs.getTransactionRecord(walletId, first.transactionHash)?.blockHeight, 101);
+      expect(wallet.coin(first.transactionHash, 0), isNull);
+    });
+
+    test('보낸 쪽이 RBF로 바꾼 받는 거래는, 이전 거래 원문을 못 받으면 대체됨으로 보고 새 거래만 받는 중으로 남긴다', () async {
+      final first = _paidToMe(wallet, 1, 99);
+      final replacement = _paidToMe(wallet, 1, 99, amount: 39000);
+      await wallet.sync([history(first, 0)], unspentList: wallet.unspent(first, 0, index: 1), index: 1);
+      wallet.server.rawByHash.remove(first.transactionHash);
+
+      await wallet.sync([history(replacement, 0)], unspentList: wallet.unspent(replacement, 0, index: 1), index: 1);
+
+      expect(wallet.txs.getTransactionRecord(walletId, first.transactionHash), isNull);
+      expect(wallet.coin(first.transactionHash, 0), isNull);
+      expect(wallet.coin(replacement.transactionHash, 0)?.status, UtxoStatus.incoming);
+      await wallet.sync([history(replacement, 101)], unspentList: wallet.unspent(replacement, 101, index: 1), index: 1);
+      expect(wallet.coin(replacement.transactionHash, 0)?.status, UtxoStatus.unspent);
+    });
+
+    test('내 결제 A의 원문 조회가 실패해도 A에서 나온 내 잔돈 코인을 지우지 않고, A가 확정되면 그대로 쓸 수 있다', () async {
+      final changeUnspent = wallet.unspent(own, 0, isChange: true);
+      final changeIndex = changeUnspent.single.txPos;
+      await wallet.sync([history(own, 0)], unspentList: changeUnspent, isChange: true);
+      expect(wallet.coin(own.transactionHash, changeIndex)?.status, UtxoStatus.incoming);
+      final other = _paidToMe(wallet, 1, 97);
+      wallet.server.rawByHash.remove(own.transactionHash);
+
+      await wallet.sync([history(other, 0)], unspentList: wallet.unspent(other, 0, index: 1), index: 1);
+
+      expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash)?.blockHeight, 0);
+      expect(wallet.coin(own.transactionHash, changeIndex)?.status, UtxoStatus.incoming);
+      wallet.publish([own]);
+      await wallet.sync([history(deposit, 100), history(own, 101)]);
+      await wallet.sync([history(own, 101)], unspentList: wallet.unspent(own, 101, isChange: true), isChange: true);
+      expect(wallet.coin(own.transactionHash, changeIndex)?.status, UtxoStatus.unspent);
+    });
+
+    test('가짜 B를 넣지 않은 회차에 A 원문 조회가 실패해도 A를 지우지 않는다', () async {
+      final fake = withGarbageSignatures(own, attacker, AddressType.p2wpkh);
+      wallet.publish([fake]);
+      wallet.server.rawByHash.remove(own.transactionHash);
+
+      await wallet.sync([history(deposit, 100), history(fake, 0)]);
+
+      expect(wallet.leavesNoTrace(fake.transactionHash), isTrue);
+      expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash)?.blockHeight, 0);
+      expect(wallet.coin(coin.transactionHash, 0)?.spentByTransactionHash, own.transactionHash);
+    });
+
+    test('B 없이 다른 주소에 정상 입금만 와도 A 원문 조회가 실패하면 A를 지우지 않는다. 대체 없이 빠진 A는 보내는 중으로 남는다', () async {
+      final other = _paidToMe(wallet, 1, 97);
+      wallet.server.rawByHash.remove(own.transactionHash);
+
+      await wallet.sync([history(other, 0)], unspentList: wallet.unspent(other, 0, index: 1), index: 1);
+
+      expect(wallet.txs.getTransactionRecord(walletId, other.transactionHash), isNotNull);
+      expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash)?.blockHeight, 0);
+      expect(wallet.coin(coin.transactionHash, 0)?.status, UtxoStatus.outgoing);
+      expect(wallet.coin(coin.transactionHash, 0)?.spentByTransactionHash, own.transactionHash);
+    });
+
+    test('B를 넣지 않은 다음 회차(B 없음, 새 입금)에도 A를 지우지 않고, A 원문이 다시 오면 그대로다', () async {
+      final fake = withGarbageSignatures(own, attacker, AddressType.p2wpkh);
+      wallet.publish([fake]);
+      wallet.server.rawByHash.remove(own.transactionHash);
+      await wallet.sync([history(deposit, 100), history(fake, 0)]);
+      final next = _paidToMe(wallet, 0, 98);
+
+      await wallet.sync([history(deposit, 100), history(next, 0)], unspentList: wallet.unspent(next, 0));
+      expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash)?.blockHeight, 0);
+
+      wallet.publish([own]);
+      await wallet.sync([
+        history(deposit, 100),
+        history(own, 0),
+        history(next, 0),
+      ], unspentList: wallet.unspent(next, 0));
+
+      expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash)?.blockHeight, 0);
+      expect(wallet.coin(coin.transactionHash, 0)?.spentByTransactionHash, own.transactionHash);
+    });
+
+    test('정상 RBF: 내가 수수료를 올린 대체 거래가 오면, 원문을 못 받는 A도 대체됨으로 표시한다', () async {
+      final replacement = signer.pay([coin], {shop: 30000}, feeRate: 10);
+      wallet.publish([replacement]);
+      wallet.server.rawByHash.remove(own.transactionHash);
+
+      await wallet.sync([history(deposit, 100), history(replacement, 0)]);
+
+      expect(wallet.txs.getTransactionRecord(walletId, replacement.transactionHash)?.blockHeight, 0);
+      expect(wallet.coin(coin.transactionHash, 0)?.spentByTransactionHash, replacement.transactionHash);
+      expect(wallet.snapshot()['rbf'], contains('${own.transactionHash}>${replacement.transactionHash}'));
+      expect(
+        wallet.txs.getUnconfirmedTransactionRecordList(walletId, excludeReplaced: true).map((r) => r.transactionHash),
+        [replacement.transactionHash],
+      );
+    });
+
+    test('A가 쓰던 코인을 다른 거래가 확정으로 쓰면, A 원문을 못 받아도 A를 지운다', () async {
+      final conflict = signer.pay([coin], {shop: 20000}, feeRate: 5);
+      wallet.publish([conflict]);
+      wallet.server.rawByHash.remove(own.transactionHash);
+
+      await wallet.sync([history(deposit, 100), history(conflict, 101)]);
+
+      expect(wallet.txs.getTransactionRecord(walletId, conflict.transactionHash)?.blockHeight, 101);
+      expect(wallet.txs.getTransactionRecord(walletId, own.transactionHash), isNull);
     });
   });
 
@@ -748,20 +890,6 @@ void main() {
       await wallet.sync([history(deposit, 100)], unspentList: wallet.unspent(deposit, 100));
     });
 
-    /// 남이 내 받기 주소 [index]로 40,000 sats를 보내는 정상 미확정 거래
-    Transaction incomingTo(int index) {
-      final foreign = _vault(0x55);
-      final funding = fundingTransaction([(foreign.getAddress(0), 50000)], 93);
-      final tx = Transaction.withInputsAndOutputs(
-        [TransactionInput.forPayment(funding.transactionHash, 0)],
-        [TransactionOutput.forPayment(40000, wallet.address(index))],
-        AddressType.p2wpkh,
-      );
-      signP2wpkhInput(tx, 0, funding.outputs.single, _receiveKey(foreign, 0));
-      wallet.publish([funding, tx]);
-      return tx;
-    }
-
     /// 내 코인을 [남 60,000 + 내 잔돈 주소 39,000]으로 쓰는 서명 틀린 가짜
     Transaction fakeWithMyChange() {
       final fake = withGarbageSignatures(signer.pay([coin], {shop: 30000}), attacker, AddressType.p2wpkh);
@@ -802,7 +930,7 @@ void main() {
     });
 
     test('정상 받는 거래의 미확정 출력은 같은 동기화에서 받는 중 코인으로 넣는다', () async {
-      final incoming = incomingTo(1);
+      final incoming = _paidToMe(wallet, 1, 93);
 
       await wallet.sync([history(incoming, 0)], unspentList: wallet.unspent(incoming, 0, index: 1), index: 1);
 
@@ -844,7 +972,7 @@ void main() {
 
     test('전체 동기화(거래 → UTXO → 정리)에서도 가짜 출력은 넣지 않고 정상 출력은 넣는다', () async {
       final fake = fakeWithMyChange();
-      final incoming = incomingTo(1);
+      final incoming = _paidToMe(wallet, 1, 93);
 
       await wallet.syncBatch([
         (history: [history(deposit, 100), history(fake, 0)], unspent: [], index: 0, isChange: false),
@@ -887,7 +1015,7 @@ void main() {
     });
 
     test('정상 받는 거래의 원문 조회가 실패한 회차 뒤 다시 동기화하면 받는 중 코인으로 넣는다', () async {
-      final incoming = incomingTo(1);
+      final incoming = _paidToMe(wallet, 1, 93);
       final unspent = wallet.unspent(incoming, 0, index: 1);
       wallet.server.transactionSource = (txHash) async {
         if (txHash == incoming.transactionHash) throw const SocketException('Connection reset by peer');

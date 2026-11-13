@@ -451,6 +451,18 @@ class TransactionSyncService {
         );
         continue;
       } catch (e) {
+        if (const {TransactionType.sent, TransactionType.self}.contains(localUnconfirmedTxRecord.transactionType)) {
+          // 내가 보낸 거래는 조회 실패(연결 끊김, 없음 등)만으로 대체됐다고 보지 않고 다음 동기화에서 다시 확인한다.
+          // 이번에 받은 확정 거래가 이 거래가 쓰던 내 코인을 썼을 때만 지운다
+          if (_isSpentByConfirmed(walletId, localUnconfirmedTxRecord.transactionHash, newTxs, confirmedTxHashes)) {
+            toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
+          } else {
+            Logger.error(
+              '[$walletId] Transaction ${localUnconfirmedTxRecord.transactionHash} kept: could not fetch ($e)',
+            );
+          }
+          continue;
+        }
         // 언컨펌 트랜잭션을 다시 조회해서 실패한 경우 대체된 것으로 간주
         Logger.log('Transaction ${localUnconfirmedTxRecord.transactionHash} not found, marking for deletion.');
         toDeleteTxs.add(localUnconfirmedTxRecord.transactionHash);
@@ -490,6 +502,21 @@ class TransactionSyncService {
         Logger.log('[$walletId] Deleted orphaned unconfirmed transactions: $toDeleteTxs');
       }
     }
+  }
+
+  /// 이번에 받은 확정 거래 중 [txHash]가 쓰던 내 코인을 쓴 것이 있는지. 확정 거래가 쓴 코인은 지운 것으로 표시돼도
+  /// 그 코인을 쓰던 미확정 거래 번호(spentByTransactionHash)는 남아 있다
+  bool _isSpentByConfirmed(int walletId, String txHash, List<Transaction> newTxs, Set<String> confirmedTxHashes) {
+    return newTxs
+        .where((tx) => confirmedTxHashes.contains(tx.transactionHash))
+        .expand((tx) => tx.inputs)
+        .any(
+          (input) =>
+              _utxoRepository
+                  .getUtxoState(walletId, getUtxoId(input.transactionHash, input.index), includeDeleted: true)
+                  ?.spentByTransactionHash ==
+              txHash,
+        );
   }
 
   /// 8. 마무리 단계: 상태 업데이트 및 완료 등록
