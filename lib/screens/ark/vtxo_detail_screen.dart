@@ -206,20 +206,14 @@ class _VtxoDetailScreenState extends State<VtxoDetailScreen> {
       children: [
         UnderlineButtonItemCard(
           label: t.ark.vtxo.vtxo_id,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: CopyTextContainer(text: vtxo.id, textStyle: valueStyle),
-          ),
+          child: CopyTextContainer(text: vtxo.id, textStyle: valueStyle),
         ),
         UnderlineButtonItemCard(
           label: t.ark.vtxo.state,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: _VtxoStateChip(
-              isLocked: vtxo.isLocked,
-              isLightning: vtxo.kind.startsWith('ServerHtlc'),
-              isRefreshing: context.readArkProviderOrNull()?.isRefreshingVtxo(vtxo.id) ?? false,
-            ),
+          child: _VtxoStateChip(
+            isLocked: vtxo.isLocked,
+            isLightning: vtxo.kind.startsWith('ServerHtlc'),
+            isRefreshing: context.readArkProviderOrNull()?.isRefreshingVtxo(vtxo.id) ?? false,
           ),
         ),
         UnderlineButtonItemCard(

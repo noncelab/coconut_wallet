@@ -154,6 +154,12 @@ class _AppGuardState extends State<AppGuard> {
   }
 
   void _onNotificationTap(String payload) {
+    if (payload.startsWith(ArkProvider.arkExitPayloadPrefix)) {
+      final walletId = int.tryParse(payload.substring(ArkProvider.arkExitPayloadPrefix.length));
+      if (walletId == null) return;
+      widget.navigatorKey?.currentState?.pushNamed(AppRouteNames.arkExit, arguments: ArkExitRouteArgs(id: walletId));
+      return;
+    }
     if (!payload.startsWith(ArkProvider.arkExpiryPayloadPrefix)) return;
     final walletId = int.tryParse(payload.substring(ArkProvider.arkExpiryPayloadPrefix.length));
     if (walletId == null) return;

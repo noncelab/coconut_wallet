@@ -405,12 +405,12 @@ class WalletDetailCard extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '${t.ark.balance.onchain} ${unit.displayBitcoinAmount(parts.onchain, withUnit: true)}',
+                                  '${t.ark.balance.onchain} ${unit.displayBitcoinAmount(parts.onchain)}',
                                   style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
                                 ),
                                 ..._pendingIcons(onchainPending, 'onchain'),
                                 Text(
-                                  '  ·  ${t.ark.balance.ark} ${unit.displayBitcoinAmount(parts.ark, withUnit: true)}',
+                                  '  ·  ${t.ark.balance.ark} ${unit.displayBitcoinAmount(parts.ark)}',
                                   style: CoconutTypography.body3_12_Number.copyWith(color: colors.secondaryText),
                                 ),
                                 ..._pendingIcons(arkPending, 'ark'),

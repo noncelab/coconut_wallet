@@ -1,5 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
+import 'package:collection/collection.dart';
+import 'package:coconut_wallet/app.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
@@ -8,6 +13,7 @@ import 'dart:async';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/model/ark/ark_balance.dart';
 import 'package:coconut_wallet/model/ark/ark_board.dart';
+import 'package:coconut_wallet/model/ark/ark_exit.dart';
 import 'package:coconut_wallet/model/ark/ark_fee_guide.dart';
 import 'package:coconut_wallet/model/ark/ark_lightning_invoice.dart';
 import 'package:coconut_wallet/model/ark/ark_movement.dart';
@@ -54,9 +60,7 @@ class ArkProvider extends ChangeNotifier {
     _walletProvider.walletItemListNotifier.addListener(_onWalletListChanged);
     _currentBlock?.addListener(_onCurrentBlockChanged);
     _walletProvider.setOffchainBalanceSource(totalSats);
-    _walletProvider.setOffchainMovementsSource(
-      (walletId) => supportsArkById(walletId) ? snapshot(walletId)?.movements ?? const [] : null,
-    );
+    _walletProvider.setOffchainMovementsSource((walletId) => supportsArkById(walletId) ? movements(walletId) : null);
     cacheRevision.addListener(_walletProvider.notifyOffchainBalanceChanged);
     if (isEnabled) arkWalletsLoaded = _loadArkWallets();
     if (startTimer && isEnabled) _startTimer();
@@ -113,6 +117,337 @@ class ArkProvider extends ChangeNotifier {
   final Map<int, ArkBoardFunding> _boardFunding = {};
   ArkBoardTerms? _boardTerms;
   final Map<int, int> _fastSync = {};
+
+  /// 아크 서버 동기화가 연속으로 실패하기 시작한 시각
+  final Map<int, DateTime> _syncFailingSince = {};
+
+  /// 서버가 이만큼 연속으로 응답하지 않으면 직접 출금 진입점을 보여 줌(regtest는 시험용으로 짧게)
+  static Duration get serverDownNoticeAfter =>
+      NetworkType.currentNetworkType == NetworkType.regtest ? const Duration(minutes: 1) : const Duration(minutes: 30);
+
+  /// 아크 서버가 [serverDownNoticeAfter] 넘게 계속 응답하지 않는지
+  bool isServerDown(int walletId) {
+    final since = _syncFailingSince[walletId];
+    return since != null && DateTime.now().difference(since) >= serverDownNoticeAfter;
+  }
+
+  /// 보내기 실패나 직접 출금 화면에서 서버에 닿는지 바로 확인. 닿지 않으면 서버 장애가 시작된 것으로 기록
+  Future<bool> isServerReachable(int walletId) async {
+    final reachable = await _canReachServer();
+    if (reachable) {
+      _syncFailingSince.remove(walletId);
+    } else {
+      _syncFailingSince.putIfAbsent(walletId, DateTime.now);
+    }
+    _notify();
+    return reachable;
+  }
+
+  /// 아크 서버 주소로 직접 연결해 응답이 오는지 봄(연결만 받고 멈춘 서버도 걸러 냄)
+  static Future<bool> _canReachServer() async {
+    final uri = Uri.tryParse(CoconutWalletApp.kArkServerUrl);
+    if (uri == null || uri.host.isEmpty) return true;
+    Socket? socket;
+    try {
+      const limit = Duration(seconds: 5);
+      socket =
+          uri.scheme == 'https'
+              ? await SecureSocket.connect(uri.host, uri.port, timeout: limit)
+              : await Socket.connect(uri.host, uri.port, timeout: limit);
+      socket.write('HEAD / HTTP/1.1\r\nHost: ${uri.host}\r\nConnection: close\r\n\r\n');
+      await socket.first.timeout(limit);
+      return true;
+    } catch (error) {
+      Logger.error('ArkProvider: Ark server unreachable: $error');
+      return false;
+    } finally {
+      socket?.destroy();
+    }
+  }
+
+  /// 진행 중인 직접 출금이 있는지(시작한 세션이 끝나지 않았거나 bark 출금 내역이 끝나지 않음)
+  bool hasPendingDirectExit(int walletId) =>
+      (exitSession(walletId)?.isActive ?? false) ||
+      (snapshot(walletId)?.movements ?? const []).any(
+        (movement) => movement.subsystemName == 'bark.exit' && movement.status == ArkMovementStatus.pending,
+      );
+
+  late final Map<int, ArkExitSession> _exitSessions = _loadExitSessions();
+  final Set<int> _advancingExits = {};
+  final Map<int, DateTime> _lastExitAdvance = {};
+  static const _exitAdvanceInterval = Duration(seconds: 15);
+  static const _exitNotificationIdBase = 73000;
+  static const arkExitPayloadPrefix = 'ark_exit:';
+  final Map<int, ({int done, int total})> _exitTxProgress = {};
+
+  /// 올릴 출금 거래 중 확정된 수, 남은 거래마다 블록 하나쯤 걸림
+  ({int done, int total, Duration remaining})? exitTxProgress(int walletId) {
+    final progress = _exitTxProgress[walletId];
+    if (progress == null || progress.total == 0) return null;
+    return (
+      done: progress.done,
+      total: progress.total,
+      remaining: _blockInterval * max(1, progress.total - progress.done),
+    );
+  }
+
+  /// 확인을 마친 직접 출금, 내역에서 관련 거래를 묶어 보여 주려고 남김
+  late final List<ArkExitSession> _exitHistory = _loadExitHistory();
+
+  /// [txid]가 딸린 아크 출금 내역
+  ArkMovement? exitMovementForTxid(int walletId, String txid) => movements(walletId).firstWhereOrNull(
+    (movement) =>
+        movement.kind == ArkMovementKind.exit &&
+        (movement.exitClaimTxid == txid || movement.exitRelatedTxids.contains(txid)),
+  );
+
+  /// 지갑의 아크 내역. 직접 출금에는 앱이 기록한 온체인 거래를 붙임
+  List<ArkMovement> movements(int walletId) {
+    final movements = snapshot(walletId)?.movements ?? const <ArkMovement>[];
+    final exits = [
+      if (_exitSessions[walletId] case final active?) active,
+      ..._exitHistory.where((session) => session.walletId == walletId),
+    ];
+    if (exits.isEmpty) return movements;
+    ArkMovement attach(ArkMovement movement) {
+      if (movement.kind != ArkMovementKind.exit) return movement;
+      final exit = exits.firstWhereOrNull(
+        (exit) => exit.vtxoIds.any((id) => movement.inputVtxoIds.contains(id) || movement.exitedVtxoIds.contains(id)),
+      );
+      return exit == null
+          ? movement
+          : movement.withExitTxids(
+            claimTxid: exit.claimTxid,
+            relatedTxids: exit.relatedTxids,
+            destination: exit.destination,
+          );
+    }
+
+    return [for (final movement in movements) attach(movement)];
+  }
+
+  /// 지갑의 직접 출금 세션, 완료·실패 후 사용자가 확인할 때까지 남김
+  ArkExitSession? exitSession(int walletId) => _exitSessions[walletId];
+
+  int? get _tipHeight => _currentBlock?.value?.height ?? _walletProvider.currentBlockHeightNotifier.value?.height;
+
+  /// 받을 수 있게 될 때까지 남은 블록
+  int? exitBlocksLeft(int walletId) {
+    final claimable = exitSession(walletId)?.claimableHeight;
+    final tip = _tipHeight;
+    if (claimable == null || tip == null) return null;
+    return max(0, claimable - tip);
+  }
+
+  /// 받을 수 있게 될 예상 시각
+  DateTime? exitClaimableAt(int walletId) {
+    final blocks = exitBlocksLeft(walletId);
+    return blocks == null ? null : DateTime.now().add(_blockInterval * blocks);
+  }
+
+  /// 수수료 준비 거래를 보낸 뒤 호출. 그 거래가 확정되면 출금을 시작함
+  Future<void> beginDirectExit(ArkExitSession session) async {
+    _exitSessions[session.walletId] = session;
+    await _saveExitSessions();
+    _notify();
+    unawaited(_advanceExit(session.walletId));
+  }
+
+  /// 끝난 출금 기록을 지움
+  Future<void> dismissDirectExit(int walletId) async {
+    final session = _exitSessions[walletId];
+    if (session == null || session.isActive) return;
+    _exitSessions.remove(walletId);
+    _exitHistory.add(session);
+    await _saveExitSessions();
+    _notify();
+  }
+
+  Future<void> _advanceExit(int walletId) async {
+    final session = _exitSessions[walletId];
+    final fingerprint = _fingerprint(walletId);
+    if (session == null || fingerprint == null || !_arkWalletService.isOpen(fingerprint)) return;
+    if (!_exitNeedsFollowUp(walletId, session)) return;
+    if (!_advancingExits.add(walletId)) return;
+    _lastExitAdvance[walletId] = DateTime.now();
+    try {
+      final next = await _nextExitState(fingerprint, session);
+      if (identical(next, session) || _exitSessions[walletId] != session) return;
+      _exitSessions[walletId] = next;
+      await _saveExitSessions();
+      await _scheduleExitNotification(next);
+      cacheRevision.value++;
+    } catch (error) {
+      Logger.error('ArkProvider: direct exit of wallet $walletId did not advance: $error');
+    } finally {
+      _advancingExits.remove(walletId);
+      _notify();
+    }
+  }
+
+  Future<ArkExitSession> _nextExitState(String fingerprint, ArkExitSession session) async {
+    final tip = _tipHeight;
+    final expired = tip != null && session.firstExpiryHeight != null && tip >= session.firstExpiryHeight!;
+    switch (session.phase) {
+      case ArkExitPhase.funding:
+        if (expired) return _returnExitFee(fingerprint, _failExit(session, ArkExitFailure.expired));
+        final balance = await _arkWalletService.exitFeeBalance(fingerprint);
+        if (balance.confirmedSats < session.fundingSats) return session;
+        await _arkWalletService.startExit(fingerprint, session.vtxoIds);
+        return _progressExit(fingerprint, session.copyWith(phase: ArkExitPhase.exiting), expired);
+      case ArkExitPhase.exiting:
+      case ArkExitPhase.waiting:
+        return _progressExit(fingerprint, session, expired);
+      case ArkExitPhase.claiming:
+        return _claimExit(fingerprint, session);
+      case ArkExitPhase.done:
+        // bark는 받은 거래가 확정된 뒤 출금 상태를 다시 읽어야 출금 내역을 끝냄
+        await _arkWalletService.progressExits(fingerprint, feeRateSatPerVb: session.feeRateSatPerVb);
+        unawaited(syncNow(session.walletId, withRounds: false));
+        return _returnExitFee(fingerprint, session);
+      case ArkExitPhase.failed:
+        return _returnExitFee(fingerprint, session);
+    }
+  }
+
+  Future<ArkExitSession> _progressExit(String fingerprint, ArkExitSession session, bool expired) async {
+    final statuses = await _arkWalletService.progressExits(fingerprint, feeRateSatPerVb: session.feeRateSatPerVb);
+    for (final status in statuses) {
+      if (status.error != null) Logger.error('ArkProvider: exit of ${status.vtxoId}: ${status.error}');
+    }
+    final exits = {for (final exit in await _arkWalletService.exitVtxos(fingerprint)) exit.vtxoId: exit};
+    final mine = [for (final id in session.vtxoIds) exits[id]];
+    final txs = [
+      for (final exit in mine)
+        if (exit?.state case final bark.ProcessingExitState processing) ...processing.transactions,
+    ];
+    _exitTxProgress[session.walletId] = (
+      done: txs.where((tx) => tx.status is bark.ConfirmedExitTxStatus).length,
+      total: txs.length,
+    );
+    if (mine.any((exit) => exit?.state is bark.VtxoAlreadySpentExitState || exit?.state is bark.CanceledExitState)) {
+      return _returnExitFee(fingerprint, _failExit(session, ArkExitFailure.spent));
+    }
+    final onChain = mine.every(
+      (exit) =>
+          exit != null &&
+          (exit.state is bark.AwaitingDeltaExitState ||
+              exit.state is bark.ClaimableExitState ||
+              exit.state is bark.ClaimInProgressExitState ||
+              exit.state is bark.ClaimedExitState),
+    );
+    // 출금 거래가 확정되기 전에 만료되면 서버가 회수함. bark는 이를 실패로 기록하지 않음
+    if (!onChain) {
+      return expired ? _returnExitFee(fingerprint, _failExit(session, ArkExitFailure.expired)) : session;
+    }
+    if (mine.every((exit) => exit!.isClaimable)) {
+      return _claimExit(fingerprint, session.copyWith(phase: ArkExitPhase.claiming));
+    }
+    final claimableHeight = await _arkWalletService.exitsClaimableAtHeight(fingerprint);
+    if (session.phase == ArkExitPhase.waiting && session.claimableHeight == claimableHeight) return session;
+    return session.copyWith(phase: ArkExitPhase.waiting, claimableHeight: claimableHeight);
+  }
+
+  Future<ArkExitSession> _claimExit(String fingerprint, ArkExitSession session) async {
+    final claim = await _arkWalletService.claimExits(
+      fingerprint,
+      session.destination,
+      feeRateSatPerVb: session.feeRateSatPerVb,
+    );
+    final claimed = session.copyWith(
+      phase: ArkExitPhase.done,
+      claimTxid: claim.txid,
+      receivedSats: session.amountSats - claim.feeSats,
+    );
+    try {
+      return await _returnExitFee(fingerprint, claimed);
+    } catch (error) {
+      Logger.error('ArkProvider: claimed, but the leftover exit fee was not returned yet: $error');
+      return claimed;
+    }
+  }
+
+  bool _exitNeedsFollowUp(int walletId, ArkExitSession session) =>
+      session.isActive ||
+      !session.feeReturned ||
+      (session.phase == ArkExitPhase.done &&
+          (snapshot(walletId)?.movements ?? const []).any(
+            (movement) => movement.subsystemName == 'bark.exit' && movement.status == ArkMovementStatus.pending,
+          ));
+
+  ArkExitSession _failExit(ArkExitSession session, ArkExitFailure failure) =>
+      session.copyWith(phase: ArkExitPhase.failed, failure: failure);
+
+  /// 남은 수수료를 받을 주소로 돌려보냄. 수수료 지갑에 미확정 거래가 있으면 다음에 다시
+  Future<ArkExitSession> _returnExitFee(String fingerprint, ArkExitSession session) async {
+    if (session.feeReturned) return session;
+    final balance = await _arkWalletService.exitFeeBalance(fingerprint);
+    if (balance.pendingSats > 0) return session;
+    final txid = await _arkWalletService.returnExitFeeFunds(fingerprint, session.destination, session.feeRateSatPerVb);
+    Logger.log('ArkProvider: leftover exit fee returned: ${txid ?? 'nothing to return'}');
+    return session.copyWith(feeReturned: true, feeReturnTxid: txid);
+  }
+
+  Future<void> _scheduleExitNotification(ArkExitSession session) async {
+    final notifications = _notifications;
+    if (notifications == null) return;
+    final id = _exitNotificationIdBase + session.walletId;
+    try {
+      await notifications.cancel(id);
+      final at = exitClaimableAt(session.walletId);
+      if (session.phase != ArkExitPhase.waiting || at == null || !at.isAfter(DateTime.now())) return;
+      await notifications.schedule(
+        id: id,
+        channelId: 'ark_exit',
+        channelName: t.ark.exit.notification_channel,
+        channelDescription: t.ark.exit.notification_channel_description,
+        title: t.ark.exit.notification_title,
+        body: t.ark.exit.notification_body(wallet: _findWallet(session.walletId)?.name ?? ''),
+        payload: '$arkExitPayloadPrefix${session.walletId}',
+        at: at,
+      );
+    } catch (error) {
+      Logger.error('ArkProvider: failed to schedule the exit notification of wallet ${session.walletId}: $error');
+    }
+  }
+
+  Map<int, ArkExitSession> _loadExitSessions() {
+    try {
+      final raw = _sharedPrefs.getStringOrNull(SharedPrefKeys.kArkExitSessions);
+      if (raw == null || raw.isEmpty) return {};
+      final sessions = [
+        for (final json in jsonDecode(raw) as List) ArkExitSession.fromJson(json as Map<String, dynamic>),
+      ];
+      return {for (final session in sessions) session.walletId: session};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  List<ArkExitSession> _loadExitHistory() {
+    try {
+      final raw = _sharedPrefs.getStringOrNull(SharedPrefKeys.kArkExitHistory);
+      if (raw == null || raw.isEmpty) return [];
+      return [for (final json in jsonDecode(raw) as List) ArkExitSession.fromJson(json as Map<String, dynamic>)];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _saveExitSessions() async {
+    try {
+      await _sharedPrefs.setStringAndConfirm(
+        SharedPrefKeys.kArkExitSessions,
+        jsonEncode([for (final session in _exitSessions.values) session.toJson()]),
+      );
+      await _sharedPrefs.setStringAndConfirm(
+        SharedPrefKeys.kArkExitHistory,
+        jsonEncode([for (final session in _exitHistory) session.toJson()]),
+      );
+    } catch (error) {
+      Logger.error('ArkProvider: failed to save direct exits: $error');
+    }
+  }
 
   /// 만든 인보이스가 결제되면 바로 수령하도록, 지갑별로 기다리는 결제 해시와 기한
   final Map<int, Map<String, DateTime>> _awaitedInvoices = {};
@@ -316,10 +651,17 @@ class ArkProvider extends ChangeNotifier {
           await _arkWalletService.sync(fingerprint);
         }
         _syncErrors.remove(walletId);
+        // bark 동기화는 서버 장애에도 성공으로 끝남
+        if (await _canReachServer()) {
+          _syncFailingSince.remove(walletId);
+        } else {
+          _syncFailingSince.putIfAbsent(walletId, DateTime.now);
+        }
       } catch (error) {
         // Offline or the server is down: still refresh the cache from bark's local state.
         Logger.error('ArkProvider: sync of wallet $walletId failed: $error');
         _syncErrors[walletId] = error.toString();
+        _syncFailingSince.putIfAbsent(walletId, DateTime.now);
       }
       final previous = snapshot(walletId);
       final next = await _arkWalletService.snapshot(
@@ -672,6 +1014,42 @@ class ArkProvider extends ChangeNotifier {
 
   /// The on-chain cost of exiting [vtxoId] on its own at [feeRateSatPerVb]: broadcasting its exit
   /// transactions (already-confirmed ones cost nothing) and claiming the output.
+  /// 직접 출금 확인 정보: 출금할 VTXO, 만료 잔액, 추정 수수료
+  Future<ArkExitEstimate> estimateDirectExit(int walletId) async {
+    final fingerprint = _requireFingerprint(walletId);
+    final tip = _currentBlock?.value?.height ?? _walletProvider.currentBlockHeightNotifier.value?.height;
+    final usable = (snapshot(walletId)?.vtxos ?? const []).where(
+      (vtxo) => !vtxo.isLocked && !isRefreshingVtxo(vtxo.id),
+    );
+    final live = [
+      for (final vtxo in usable)
+        if (tip == null || vtxo.expiryHeight > tip) vtxo,
+    ];
+    final expiredSats = usable.where((vtxo) => !live.contains(vtxo)).fold<int>(0, (sum, v) => sum + v.amountSats);
+    final feeRate = await _arkWalletService.exitFeeRate(fingerprint);
+    var feeSats = 0;
+    var txCount = 0;
+    if (live.isNotEmpty) {
+      final estimate = await _arkWalletService.estimateExitFee(fingerprint, [for (final v in live) v.id], feeRate);
+      feeSats = estimate.totalFeeSats;
+      txCount = estimate.txsToBroadcast;
+    }
+    final firstExpiry = live.isEmpty ? null : live.map((v) => v.expiryHeight).reduce((a, b) => a < b ? a : b);
+    return ArkExitEstimate(
+      vtxoIds: [for (final v in live) v.id],
+      amountSats: live.fold<int>(0, (sum, v) => sum + v.amountSats),
+      expiredSats: expiredSats,
+      feeSats: feeSats,
+      txCount: txCount,
+      feeRateSatPerVb: feeRate,
+      blocksUntilFirstExpiry: firstExpiry == null || tip == null ? null : firstExpiry - tip,
+      firstExpiryHeight: firstExpiry,
+    );
+  }
+
+  /// 직접 출금 수수료를 옮겨 둘 내장 지갑 주소
+  Future<String> directExitFeeAddress(int walletId) => _arkWalletService.exitFeeAddress(_requireFingerprint(walletId));
+
   Future<int> estimateExitFee(int walletId, String vtxoId, int feeRateSatPerVb) async =>
       (await _arkWalletService.estimateExitFee(_requireFingerprint(walletId), [vtxoId], feeRateSatPerVb)).totalFeeSats;
 
@@ -917,7 +1295,15 @@ class ArkProvider extends ChangeNotifier {
     if (!_isForeground || _disposed) return;
     final now = DateTime.now();
     for (final wallet in _walletProvider.walletItemList) {
-      if (!supportsArk(wallet) || !isOpen(wallet.id) || _syncing.contains(wallet.id)) continue;
+      if (!supportsArk(wallet) || !isOpen(wallet.id)) continue;
+      final exit = _exitSessions[wallet.id];
+      final lastExitAdvance = _lastExitAdvance[wallet.id];
+      if (exit != null &&
+          _exitNeedsFollowUp(wallet.id, exit) &&
+          (lastExitAdvance == null || now.difference(lastExitAdvance) >= _exitAdvanceInterval)) {
+        unawaited(_advanceExit(wallet.id));
+      }
+      if (_syncing.contains(wallet.id)) continue;
       final last = _lastSync[wallet.id];
       if (last == null || now.difference(last) >= syncInterval) {
         unawaited(syncNow(wallet.id));

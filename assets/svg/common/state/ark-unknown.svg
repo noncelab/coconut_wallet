@@ -1,0 +1,14 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="cut" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+<rect width="24" height="24" fill="white"/>
+<circle cx="18.5" cy="18.5" r="6" fill="black"/>
+</mask>
+<g transform="translate(-1.2 -1.2)">
+<g mask="url(#cut)">
+<path transform="translate(1.2 0.6) scale(0.82)" d="M5 11V14C5 16.3 5.5 18.1 6.4 19.5Q8.27 21.3 10.13 19.5Q12 21.3 13.87 19.5Q15.73 21.3 17.6 19.5C18.5 18.1 19 16.3 19 14V11M5 13H19M2.67 19.5Q4.53 21.3 6.4 19.5M17.6 19.5Q19.47 21.3 21.33 19.5M6.5 7.5L12 3.5L17.5 7.5M8 13V6.4M16 13V6.4" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<circle cx="18.5" cy="18.5" r="4.5" stroke="white" stroke-width="1.6"/>
+<path d="M17.1 17.3C17.1 16.5 17.7 16 18.5 16C19.3 16 19.9 16.5 19.9 17.2C19.9 18.2 18.5 18.2 18.5 19.2" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="18.5" cy="21" r="0.85" fill="white"/>
+</g>
+</svg>

@@ -480,6 +480,11 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
           toggle: toggle(viewModel.isArkAutoRefreshOn, (on) => _setArkAutoRefresh(viewModel, on)),
           onPressed: () => _setArkAutoRefresh(viewModel, !viewModel.isArkAutoRefreshOn),
         ),
+        _walletInfoMenu(
+          title: t.ark.exit.title,
+          onPressed:
+              () => Navigator.pushNamed(context, AppRouteNames.arkExit, arguments: ArkExitRouteArgs(id: widget.id)),
+        ),
       ],
     ];
   }

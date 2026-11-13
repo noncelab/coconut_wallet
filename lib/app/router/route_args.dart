@@ -19,6 +19,11 @@ class ReceiveAddressRouteArgs {
   const ReceiveAddressRouteArgs({required this.id});
 }
 
+class ArkExitRouteArgs {
+  final int id;
+  const ArkExitRouteArgs({required this.id});
+}
+
 class VtxoListRouteArgs {
   final int id;
   final bool startRefresh;

@@ -48,6 +48,7 @@ import 'package:coconut_wallet/widgets/features/transaction/card/underline_butto
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
+import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
@@ -159,6 +160,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
                         _buildTxInputOutputDetail(context, tx, viewModel),
                         CoconutLayout.spacing_800h,
                         _buildTxId(tx, viewModel),
+                        _buildArkExitLink(tx),
                         _buildFeeRate(tx),
                         _buildTxMemo(context, txMemo, viewModel),
                         _buildBlockHeight(tx, viewModel),
@@ -696,7 +698,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
       onTapUnderlineButton: null,
       showDivider: false,
       child: Padding(
-        padding: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.only(top: 4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -779,6 +781,29 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> with 
         text: viewModel.isSendType! ? tx.transactionHash : widget.txHash,
         textStyle: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
+    );
+  }
+
+  /// 아크 출금에 딸린 거래면 그 출금으로 가는 링크
+  Widget _buildArkExitLink(TransactionRecord tx) {
+    final movement = context.readArkProviderOrNull()?.exitMovementForTxid(widget.id, tx.transactionHash);
+    if (movement == null) return const SizedBox.shrink();
+    final role =
+        movement.exitClaimTxid == tx.transactionHash
+            ? t.ark.movement.exit_claim_tx
+            : movement.exitRelatedTxids.first == tx.transactionHash
+            ? t.ark.movement.exit_fee_tx
+            : t.ark.movement.exit_refund_tx;
+    return UnderlineButtonItemCard(
+      label: t.ark.activity.exit,
+      underlineButtonLabel: t.ark.movement.view_exit,
+      onTapUnderlineButton:
+          () => Navigator.pushNamed(
+            context,
+            AppRouteNames.arkMovementDetail,
+            arguments: ArkMovementDetailRouteArgs(id: widget.id, movementId: movement.id),
+          ),
+      child: Text(role, style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText)),
     );
   }
 

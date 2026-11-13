@@ -53,7 +53,12 @@ sealed class WalletActivity {
     for (final movement in movements.where((movement) => movement.isVisibleInHistory)) {
       final linkedTx = transactionsById[movement.linkedTxid];
       if (linkedTx != null) linkedIds.add(linkedTx.transactionHash);
-      arkActivities.add(ArkActivity(movement, linkedTx: linkedTx));
+      final relatedTxs = [
+        for (final txid in movement.exitRelatedTxids)
+          if (transactionsById[txid] case final tx?) tx,
+      ];
+      linkedIds.addAll(relatedTxs.map((tx) => tx.transactionHash));
+      arkActivities.add(ArkActivity(movement, linkedTx: linkedTx, relatedTxs: relatedTxs));
     }
     return [
       ...transactions.where((tx) => !linkedIds.contains(tx.transactionHash)).map(OnchainActivity.new),
@@ -105,12 +110,17 @@ class OnchainActivity extends WalletActivity {
 }
 
 class ArkActivity extends WalletActivity {
-  const ArkActivity(this.movement, {this.linkedTx});
+  const ArkActivity(this.movement, {this.linkedTx, this.relatedTxs = const []});
 
   final ArkMovement movement;
 
   /// This wallet's on-chain side of a move between on-chain and Ark, when it has one.
   final TransactionRecord? linkedTx;
+
+  /// 직접 출금에 딸린 이 지갑의 다른 온체인 거래(수수료 준비, 남은 수수료 돌려받기)
+  final List<TransactionRecord> relatedTxs;
+
+  int get _onchainAmount => (linkedTx?.amount ?? 0) + relatedTxs.fold<int>(0, (sum, tx) => sum + tx.amount);
 
   bool get isMove => linkedTx != null;
 
@@ -119,7 +129,7 @@ class ArkActivity extends WalletActivity {
 
   /// For a move, both sides together: what changed overall is the fees.
   @override
-  int get amount => movement.effectiveBalanceSats + (linkedTx?.amount ?? 0);
+  int get amount => movement.effectiveBalanceSats + _onchainAmount;
 
   /// For a move, what arrived on the other side: in Ark for a board, on-chain for an offboard.
   @override
@@ -133,7 +143,10 @@ class ArkActivity extends WalletActivity {
   DateTime get time => movement.timestamp;
 
   @override
-  bool get isPending => movement.isPending || (linkedTx != null && linkedTx!.blockHeight == 0);
+  bool get isPending =>
+      movement.isPending ||
+      (linkedTx != null && linkedTx!.blockHeight == 0) ||
+      relatedTxs.any((tx) => tx.blockHeight == 0);
 
   @override
   TransactionStatus get status {
@@ -150,11 +163,13 @@ class ArkActivity extends WalletActivity {
   String? get memo => null;
 
   /// Which network it went over, shown next to the status. A payment from Ark to a Bitcoin
-  /// address (and an exit) lands on-chain, so it gets the on-chain pill like any transaction.
+  /// address lands on-chain, so it gets the on-chain pill like any transaction. 아크 출금은 받은
+  /// 거래가 생기기 전까지 아크 잔액에서 나가는 중이라 아크
   @override
   ArkRail get rail => switch (movement.kind) {
     ArkMovementKind.lightningSend || ArkMovementKind.lightningReceive => ArkRail.lightning,
-    ArkMovementKind.offboard || ArkMovementKind.sendOnchain || ArkMovementKind.exit => ArkRail.onchain,
+    ArkMovementKind.offboard || ArkMovementKind.sendOnchain => ArkRail.onchain,
+    ArkMovementKind.exit => linkedTx == null ? ArkRail.ark : ArkRail.onchain,
     _ => ArkRail.ark,
   };
 
@@ -181,5 +196,6 @@ class ArkActivity extends WalletActivity {
     movement.effectiveBalanceSats,
     movement.updatedAt.microsecondsSinceEpoch,
     linkedTx?.contentHashCode,
+    Object.hashAll(relatedTxs.map((tx) => tx.contentHashCode)),
   );
 }

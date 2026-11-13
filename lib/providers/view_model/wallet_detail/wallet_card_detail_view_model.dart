@@ -24,6 +24,9 @@ import 'package:flutter/foundation.dart';
 ///
 /// - 동기화·새로고침·잔액 단위·목표·보안 경고는 가운데 지갑의 [WalletDetailViewModel]을 그대로 쓴다.
 /// - 최근 거래·UTXO 현황·저축 목표는 홈 위젯 데이터를 이 지갑 하나로 좁혀 쓴다(가짜 잔액 없음).
+/// 지갑 상세 카드 아래 직접 출금 진입점: 서버가 계속 응답하지 않을 때, 출금이 진행 중일 때
+enum ArkExitEntry { serverDown, inProgress }
+
 class WalletCardDetailViewModel extends ChangeNotifier {
   final WalletProvider _walletProvider;
   final TransactionProvider _transactionProvider;
@@ -141,6 +144,15 @@ class WalletCardDetailViewModel extends ChangeNotifier {
       ArkRefreshNotice.locked => (text: t.ark.expiry.locked, danger: false, needsUnlock: true, beforeBackup: false),
       ArkRefreshNotice.notice => (text: t.ark.expiry.notice, danger: false, needsUnlock: false, beforeBackup: false),
     };
+  }
+
+  /// 지갑 상세 카드 아래에 보여 줄 직접 출금 진입점, 필요 없으면 null
+  ArkExitEntry? arkExitEntryOf(WalletItemBase wallet, {required bool isInternetOn}) {
+    final ark = _arkProvider;
+    if (ark == null || !ark.supportsArk(wallet)) return null;
+    if (ark.hasPendingDirectExit(wallet.id)) return ArkExitEntry.inProgress;
+    if (isInternetOn && ark.isServerDown(wallet.id) && ark.sendableSats(wallet.id) > 0) return ArkExitEntry.serverDown;
+    return null;
   }
 
   bool isArkLocked(WalletItemBase wallet) {

@@ -8,6 +8,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType;
 import 'package:coconut_wallet/screens/ark/ark_unlock_flow.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/analytics/backup_analytics.dart';
@@ -404,9 +405,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                         curve: Curves.easeInOutCubic,
                         alignment: Alignment.topCenter,
                         child: IgnorePointer(
-                          ignoring:
-                              !viewModel.focusedWallet.hasLocalKey ||
-                              viewModel.onchainBalanceOf(viewModel.focusedWallet) <= 0,
+                          ignoring: !_showsVault && _arkExitEntry == null,
                           child: AnimatedSwitcher(
                             duration: const Duration(milliseconds: 250),
                             switchInCurve: Curves.easeInOut,
@@ -423,11 +422,14 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
                                   child: ScaleTransition(scale: animation, child: child),
                                 ),
                             child:
-                                viewModel.focusedWallet.hasLocalKey &&
-                                        viewModel.onchainBalanceOf(viewModel.focusedWallet) > 0
+                                _showsVault || _arkExitEntry != null
                                     ? KeyedSubtree(
-                                      key: const Key('wallet-detail-vault-visible'),
-                                      child: _buildMoveToVault(context),
+                                      key: Key('wallet-detail-actions-$_showsVault-$_arkExitEntry'),
+                                      child: _buildActionPills(
+                                        context,
+                                        showsVault: _showsVault,
+                                        arkExitEntry: _arkExitEntry,
+                                      ),
                                     )
                                     : const SizedBox.shrink(key: Key('wallet-detail-vault-hidden')),
                           ),
@@ -872,46 +874,88 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     );
   }
 
-  Widget _buildMoveToVault(BuildContext context) {
-    final colors = context.coconutColors;
+  bool get _showsVault =>
+      _viewModel.focusedWallet.hasLocalKey && _viewModel.onchainBalanceOf(_viewModel.focusedWallet) > 0;
+
+  ArkExitEntry? get _arkExitEntry => _viewModel.arkExitEntryOf(
+    _viewModel.focusedWallet,
+    isInternetOn: context.read<ConnectivityProvider>().isInternetOn == true,
+  );
+
+  Widget _buildActionPills(BuildContext context, {required bool showsVault, required ArkExitEntry? arkExitEntry}) {
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 12),
       child: Center(
-        child: _lifted(
-          radius: 100,
-          ShrinkAnimationButton(
-            key: const Key('wallet-detail-move-to-vault'),
-            onPressed: _onMoveToVaultPressed,
-            defaultColor: colors.homeSurface,
-            pressedOverlayColor: colors.homeSurfacePressOverlay,
-            pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-            borderRadius: 100,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SvgPicture.asset(
-                    FeatureWalletIconPath.vault,
-                    width: 18,
-                    height: 18,
-                    colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    t.wallet_detail_screen.move_to_vault,
-                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
-                  ),
-                  const SizedBox(width: 8),
-                  SvgPicture.asset(
-                    CommonNavigationIconPath.arrowRight,
-                    width: 6,
-                    height: 10,
-                    colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
-                  ),
-                ],
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (arkExitEntry != null)
+              _buildActionPill(
+                context,
+                key: const Key('wallet-detail-ark-exit'),
+                iconPath: CommonStateIconPath.withdraw,
+                text: arkExitEntry == ArkExitEntry.inProgress ? t.ark.exit.in_progress_entry : t.ark.exit.entry,
+                onPressed:
+                    () => Navigator.pushNamed(
+                      context,
+                      AppRouteNames.arkExit,
+                      arguments: ArkExitRouteArgs(id: _viewModel.focusedWallet.id),
+                    ),
               ),
-            ),
+            if (showsVault)
+              _buildActionPill(
+                context,
+                key: const Key('wallet-detail-move-to-vault'),
+                iconPath: FeatureWalletIconPath.vault,
+                text: t.wallet_detail_screen.move_to_vault_button,
+                onPressed: _onMoveToVaultPressed,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionPill(
+    BuildContext context, {
+    required Key key,
+    required String iconPath,
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    final colors = context.coconutColors;
+    return _lifted(
+      radius: 100,
+      ShrinkAnimationButton(
+        key: key,
+        onPressed: onPressed,
+        defaultColor: colors.homeSurface,
+        pressedOverlayColor: colors.homeSurfacePressOverlay,
+        pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
+        borderRadius: 100,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                iconPath,
+                width: 18,
+                height: 18,
+                colorFilter: ColorFilter.mode(colors.iconPrimary, BlendMode.srcIn),
+              ),
+              const SizedBox(width: 8),
+              Text(text, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+              const SizedBox(width: 8),
+              SvgPicture.asset(
+                CommonNavigationIconPath.arrowRight,
+                width: 6,
+                height: 10,
+                colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
+              ),
+            ],
           ),
         ),
       ),

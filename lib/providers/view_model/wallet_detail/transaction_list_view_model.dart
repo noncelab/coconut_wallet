@@ -174,7 +174,7 @@ class TransactionListViewModel extends ChangeNotifier {
     if (_activityList == null || !identical(_activityTxSource, transactions)) {
       _activityTxSource = transactions;
       _activityList = List.unmodifiable(
-        WalletActivity.merge(transactions, _arkProvider?.snapshot(_walletId)?.movements ?? const []),
+        WalletActivity.merge(transactions, _arkProvider?.movements(_walletId) ?? const []),
       );
     }
     return _activityList!;

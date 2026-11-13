@@ -91,6 +91,8 @@ class SharedPrefKeys {
   static String walletArkAutoRefreshOff(int walletId) => 'WALLET_ARK_AUTO_REFRESH_OFF_$walletId';
   static const String kArkRefreshingVtxos = 'ARK_REFRESHING_VTXOS';
   static const String kArkPaymentMemos = 'ARK_PAYMENT_MEMOS';
+  static const String kArkExitSessions = 'ARK_EXIT_SESSIONS';
+  static const String kArkExitHistory = 'ARK_EXIT_HISTORY';
 
   /// 지갑별 마지막 재동기화 완료 시각 - Map<walletId, epochMillis> JSON
   static const String kWalletLastResyncMap = "WALLET_LAST_RESYNC_MAP";

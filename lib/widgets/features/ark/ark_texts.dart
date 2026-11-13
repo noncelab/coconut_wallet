@@ -27,8 +27,15 @@ String? arkActivityLabelText(ArkActivityLabel? label) {
   };
 }
 
-/// 목록·최근 거래·상세에서 같은 이름을 쓰도록, 갱신은 진행 상태까지 담음
+/// 목록·최근 거래·상세에서 같은 이름을 쓰도록, 갱신과 아크 출금은 진행 상태까지 담음
 String? arkActivityText(ArkActivity activity) {
+  if (activity.label == ArkActivityLabel.exit) {
+    return switch (activity.movement.status) {
+      ArkMovementStatus.failed || ArkMovementStatus.canceled => t.ark.activity.exit_failed,
+      _ when activity.isPending => t.ark.activity.exit_pending,
+      _ => t.ark.activity.exit_done,
+    };
+  }
   if (activity.label != ArkActivityLabel.refresh) return arkActivityLabelText(activity.label);
   return switch (activity.movement.status) {
     ArkMovementStatus.pending => t.ark.activity.refresh_pending,

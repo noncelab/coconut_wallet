@@ -374,31 +374,41 @@ class _CoconutToastWidgetState extends State<_CoconutToastWidget> with SingleTic
                   borderRadius: BorderRadius.circular(11.5),
                 ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  // 아이콘은 첫 줄, 액션은 마지막 줄 오른쪽
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    if (widget.isVisibleIcon)
-                      Container(
-                        height: (widget.textStyle.fontSize ?? 14) * (widget.textStyle.height ?? 1.4),
-                        padding: EdgeInsets.only(right: widget.iconRightPadding),
-                        child: Center(
-                          child: SvgPicture.asset(
-                            widget.iconPath ?? 'packages/coconut_design_system/assets/svg/circle_info.svg',
-                            height: widget.iconSize,
-                            colorFilter: ColorFilter.mode(widget.iconColor, BlendMode.srcIn),
-                          ),
-                        ),
-                      )
-                    else
-                      SizedBox(height: widget.iconSize),
                     Flexible(
                       fit: widget.actionText == null ? FlexFit.loose : FlexFit.tight,
-                      child: Text(
-                        widget.text,
-                        style: widget.textStyle.copyWith(
-                          decoration: TextDecoration.none,
-                          color: widget.textColor ?? colors.primaryText,
-                          leadingDistribution: TextLeadingDistribution.even,
-                        ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.isVisibleIcon)
+                            Container(
+                              height: (widget.textStyle.fontSize ?? 14) * (widget.textStyle.height ?? 1.4),
+                              padding: EdgeInsets.only(right: widget.iconRightPadding),
+                              child: Center(
+                                child: SvgPicture.asset(
+                                  widget.iconPath ?? 'packages/coconut_design_system/assets/svg/circle_info.svg',
+                                  height: widget.iconSize,
+                                  colorFilter: ColorFilter.mode(widget.iconColor, BlendMode.srcIn),
+                                ),
+                              ),
+                            )
+                          else
+                            SizedBox(height: widget.iconSize),
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: Text(
+                              widget.text,
+                              style: widget.textStyle.copyWith(
+                                decoration: TextDecoration.none,
+                                color: widget.textColor ?? colors.primaryText,
+                                leadingDistribution: TextLeadingDistribution.even,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     if (widget.actionText != null)

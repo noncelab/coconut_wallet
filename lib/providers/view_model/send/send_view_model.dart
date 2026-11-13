@@ -328,6 +328,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   int? _arkFee;
   bool _isEstimatingArkFee = false;
   bool _arkFeeFailed = false;
+  bool _arkServerDown = false;
   ArkSendRoute? _estimatedRoute;
   int? _estimatedAmount;
   Timer? _arkFeeTimer;
@@ -528,28 +529,34 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       _arkFee = null;
       _isEstimatingArkFee = false;
       _arkFeeFailed = false;
+      _arkServerDown = false;
       return;
     }
     if (route == _estimatedRoute && amount == _estimatedAmount && (_arkFee != null || _isEstimatingArkFee)) return;
     _arkFeeTimer?.cancel();
     _arkFee = null;
     _arkFeeFailed = false;
+    _arkServerDown = false;
     _isEstimatingArkFee = true;
     _estimatedRoute = route;
     _estimatedAmount = amount;
     final walletId = _selectedWalletItem!.id;
     _arkFeeTimer = Timer(const Duration(milliseconds: 300), () async {
       int? fee;
+      var serverDown = false;
       try {
-        fee =
-            _isArkMaxMode && route.rail == ArkPaymentRail.onchain
-                ? await _arkProvider!.estimateMoveOnchainFee(walletId, route.destination)
-                : await _arkProvider!.estimatePaymentFee(
-                  walletId,
-                  route.rail,
-                  destination: route.destination,
-                  amountSats: amount,
-                );
+        serverDown = !await _arkProvider!.isServerReachable(walletId);
+        if (!serverDown) {
+          fee = await (_isArkMaxMode && route.rail == ArkPaymentRail.onchain
+                  ? _arkProvider.estimateMoveOnchainFee(walletId, route.destination)
+                  : _arkProvider.estimatePaymentFee(
+                    walletId,
+                    route.rail,
+                    destination: route.destination,
+                    amountSats: amount,
+                  ))
+              .timeout(const Duration(seconds: 20));
+        }
         Logger.log('SendViewModel: Ark fee ${route.rail.name} $amount sats = $fee');
       } catch (error) {
         Logger.error('SendViewModel: Ark fee estimate failed: $error');
@@ -557,6 +564,7 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
       if (_isDisposed || _estimatedRoute != route || _estimatedAmount != amount) return;
       _arkFee = fee;
       _arkFeeFailed = fee == null;
+      _arkServerDown = serverDown;
       _isEstimatingArkFee = false;
       if (_isArkMaxMode) _applyArkMaxAmount();
       _updateAmountValidationState();
@@ -1084,6 +1092,8 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
                 : _onchainCouldCover
                 ? t.ark.send.not_enough_ark_move
                 : t.ark.send.not_enough_ark;
+      } else if (_arkServerDown) {
+        message = t.ark.send.server_down;
       } else if (_arkFeeFailed) {
         message = t.ark.send.estimate_failed;
       }

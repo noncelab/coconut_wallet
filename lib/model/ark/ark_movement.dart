@@ -70,6 +70,9 @@ class ArkMovement {
     this.paymentHash,
     this.lightningInvoice,
     this.lightningOffer,
+    this.exitClaimTxid,
+    this.exitRelatedTxids = const [],
+    this.exitDestination,
   });
 
   factory ArkMovement.fromBark(bark.Movement movement) => ArkMovement(
@@ -118,6 +121,42 @@ class ArkMovement {
   final String? lightningInvoice;
   final String? lightningOffer;
 
+  /// 직접 출금을 받은 온체인 거래, bark는 기록하지 않아 앱이 붙임
+  final String? exitClaimTxid;
+
+  /// 직접 출금에 딸린 다른 온체인 거래(수수료 준비, 남은 수수료 돌려받기)
+  final List<String> exitRelatedTxids;
+
+  /// 직접 출금을 받을 이 지갑 주소(bark의 보낸 곳은 중간 출금 출력 주소)
+  final String? exitDestination;
+
+  /// 앱이 기록한 직접 출금 거래를 붙인 사본
+  ArkMovement withExitTxids({String? claimTxid, List<String> relatedTxids = const [], String? destination}) =>
+      ArkMovement(
+        id: id,
+        status: status,
+        subsystemName: subsystemName,
+        subsystemKind: subsystemKind,
+        metadataJson: metadataJson,
+        intendedBalanceSats: intendedBalanceSats,
+        effectiveBalanceSats: effectiveBalanceSats,
+        offchainFeeSats: offchainFeeSats,
+        sentTo: sentTo,
+        receivedOn: receivedOn,
+        inputVtxoIds: inputVtxoIds,
+        outputVtxoIds: outputVtxoIds,
+        exitedVtxoIds: exitedVtxoIds,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        completedAt: completedAt,
+        paymentHash: paymentHash,
+        lightningInvoice: lightningInvoice,
+        lightningOffer: lightningOffer,
+        exitClaimTxid: claimTxid,
+        exitRelatedTxids: relatedTxids,
+        exitDestination: destination,
+      );
+
   ArkMovementKind get kind {
     final isSend = subsystemKind == 'send';
     switch (subsystemName) {
@@ -142,8 +181,9 @@ class ArkMovement {
 
   bool get isPending => status == ArkMovementStatus.pending;
 
-  /// When the movement happened, for ordering next to on-chain transactions.
-  DateTime get timestamp => completedAt ?? createdAt;
+  /// When the movement happened, for ordering next to on-chain transactions. 직접 출금은 끝나기까지
+  /// 하루쯤 걸려 받은 거래보다 늦게 끝나므로 시작 시각
+  DateTime get timestamp => kind == ArkMovementKind.exit ? createdAt : completedAt ?? createdAt;
 
   List<ArkPaymentDestination> get sentToDestinations => sentTo.map(ArkPaymentDestination.parse).toList();
   List<ArkPaymentDestination> get receivedOnDestinations => receivedOn.map(ArkPaymentDestination.parse).toList();
@@ -165,7 +205,7 @@ class ArkMovement {
     if (anchor is String && anchor.contains(':')) return anchor.split(':').first;
     final offboardTxid = meta['offboard_txid'];
     if (offboardTxid is String) return offboardTxid;
-    return null;
+    return exitClaimTxid;
   }
 
   /// The signed on-chain transaction (hex) of an offboard or an on-chain payment from Ark, which

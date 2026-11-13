@@ -1169,6 +1169,12 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.generateAddress(wallet, index, isChange);
   }
 
+  /// 이 지갑 주소면 파생 경로, 아니면 null
+  String? derivationPathOf(int walletId, String address) {
+    final path = _addressRepository.getDerivationPath(walletId, address);
+    return path.isEmpty ? null : path;
+  }
+
   bool containsAddress(int walletId, String address, {bool? isChange}) {
     return _addressRepository.containsAddress(walletId, address, isChange: isChange);
   }

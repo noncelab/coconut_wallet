@@ -234,8 +234,9 @@ class _TransactionRow extends StatelessWidget {
         rail == null
             ? plainStatusLabel
             : Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(child: plainStatusLabel),
+                plainStatusLabel,
                 const SizedBox(width: 4),
                 CoconutChip(
                   key: ValueKey('recent-transactions-rail-${rail.name}'),
@@ -309,9 +310,10 @@ class _TransactionRow extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              Expanded(flex: 2, child: statusLabel),
+                              // 상태 문구는 다 보이고 수량이 남은 폭에 맞춰 줄어듦
+                              statusLabel,
                               const SizedBox(width: 8),
-                              Expanded(flex: 3, child: amountLabel),
+                              Expanded(child: amountLabel),
                             ],
                           ),
                           const SizedBox(height: 2),
@@ -334,16 +336,13 @@ class _TransactionRow extends StatelessWidget {
                       )
                       : Row(
                         children: [
-                          Expanded(
-                            flex: 2,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [statusLabel, const SizedBox(height: 2), timeLabel],
-                            ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [statusLabel, const SizedBox(height: 2), timeLabel],
                           ),
                           const SizedBox(width: 8),
-                          Expanded(flex: 3, child: amountLabel),
+                          Expanded(child: amountLabel),
                         ],
                       ),
             ),

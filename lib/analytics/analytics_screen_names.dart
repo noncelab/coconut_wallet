@@ -32,6 +32,7 @@ class AnalyticsScreenNames {
   static const String sendAddressListSheet = 'send-address-list-sheet';
   static const String sendLoadDraftSheet = 'send-load-draft-sheet';
   static const String sendHotWalletPassphraseSheet = 'send-hot-wallet-passphrase-sheet';
+  static const String arkExitPassphraseSheet = 'ark-exit-passphrase-sheet';
   static const String broadcastingCompleteReviewSurveySheet = 'broadcasting-complete-review-survey-sheet';
   static const String appInfoLicenseSheet = 'app-info-license-sheet';
   static const String appSettingsUnitSheet = 'app-settings-unit-sheet';

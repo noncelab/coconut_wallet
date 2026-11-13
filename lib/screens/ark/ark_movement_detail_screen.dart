@@ -29,6 +29,7 @@ import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/underline_button_item_card.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -137,7 +138,7 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
     final colors = context.coconutColors;
     return Consumer<ArkProvider>(
       builder: (context, arkProvider, _) {
-        final movement = arkProvider.snapshot(widget.id)?.movements.where((m) => m.id == widget.movementId).firstOrNull;
+        final movement = arkProvider.movements(widget.id).where((m) => m.id == widget.movementId).firstOrNull;
         if (movement != null) _loadOnchainTx(movement);
         return Scaffold(
           backgroundColor: colors.background,
@@ -183,6 +184,31 @@ class _MovementDetails extends StatelessWidget {
   final VoidCallback onToggleUnit;
 
   /// 인보이스·아크 주소·라이트닝 주소면 그 종류를, 비트코인 주소면 [fallback]을 이름으로
+  /// 온체인 트랜잭션 ID, 이 지갑 내역에 있으면 상세로 가는 링크
+  Widget _buildTxRow(BuildContext context, String label, String txid, TextStyle valueStyle) {
+    final known = context.read<TransactionProvider>().getTransactionRecord(walletId, txid) != null;
+    return UnderlineButtonItemCard(
+      label: label,
+      underlineButtonLabel: known ? t.ark.movement.view_transaction : null,
+      onTapUnderlineButton:
+          known
+              ? () => Navigator.pushNamed(
+                context,
+                AppRouteNames.transactionDetail,
+                arguments: TransactionDetailRouteArgs(id: walletId, txHash: txid),
+              )
+              : null,
+      child: CopyTextContainer(text: txid, textStyle: valueStyle),
+    );
+  }
+
+  /// 이 지갑 주소면 '파생 경로 · 지갑 이름'
+  String? _ownAddressSuffix(BuildContext context, String address) {
+    final wallets = context.read<WalletProvider>();
+    final path = wallets.derivationPathOf(walletId, address);
+    return path == null ? null : '$path · ${wallets.getWalletById(walletId).name}';
+  }
+
   String _destinationLabel(String value, String fallback) {
     return switch (PaymentRequest.parse(value, NetworkType.currentNetworkType).kind) {
       PaymentRequestKind.lightningInvoice => t.ark.movement.lightning_invoice,
@@ -194,15 +220,27 @@ class _MovementDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activity = ArkActivity(movement);
+    final transactions = context.read<TransactionProvider>();
+    final isExit = movement.kind == ArkMovementKind.exit;
+    final activity = ArkActivity(
+      movement,
+      linkedTx: isExit ? _record(transactions, movement.linkedTxid) : null,
+      relatedTxs: [
+        if (isExit)
+          for (final txid in movement.exitRelatedTxids)
+            if (_record(transactions, txid) case final tx?) tx,
+      ],
+    );
     final colors = context.coconutColors;
     final valueStyle = CoconutTypography.body2_14_Number.setColor(colors.primaryText);
     final linkedTxid = movement.linkedTxid;
     final hasLinkedTx =
         linkedTxid != null && context.read<TransactionProvider>().getTransactionRecord(walletId, linkedTxid) != null;
     final copyable = <(String, String)>[
-      for (final destination in movement.sentToDestinations)
-        (_destinationLabel(destination.value, t.ark.movement.sent_to), destination.value),
+      if (isExit && movement.exitDestination != null) (t.ark.movement.received_on, movement.exitDestination!),
+      if (!isExit)
+        for (final destination in movement.sentToDestinations)
+          (_destinationLabel(destination.value, t.ark.movement.sent_to), destination.value),
       for (final destination in movement.receivedOnDestinations)
         (_destinationLabel(destination.value, t.ark.movement.received_on), destination.value),
       // 보낸·받은 주소에 이미 인보이스가 있으면 다시 보여 주지 않음
@@ -230,7 +268,10 @@ class _MovementDetails extends StatelessWidget {
         children: [
           HighlightedInfoArea(textList: DateTimeUtil.formatTimestamp(movement.timestamp)),
           CoconutLayout.spacing_500h,
-          _buildAmount(context),
+          _buildAmount(
+            context,
+            isExit && activity.linkedTx != null ? activity.displayAmount : movement.effectiveBalanceSats,
+          ),
           CoconutLayout.spacing_400h,
           CoconutLayout.spacing_400h,
           UnderlineButtonItemCard(
@@ -242,34 +283,42 @@ class _MovementDetails extends StatelessWidget {
               label: t.ark.movement.memo,
               child: Text(memo, style: CoconutTypography.body2_14.setColor(colors.primaryText)),
             ),
-          UnderlineButtonItemCard(
-            label: t.ark.movement.fee,
-            child: Text(formatSats(unit, movement.offchainFeeSats), style: valueStyle),
-          ),
+          if (isExit) ...[
+            UnderlineButtonItemCard(
+              label: t.ark.movement.exit_requested,
+              child: Text(formatSats(unit, -movement.effectiveBalanceSats), style: valueStyle),
+            ),
+            // 받은 거래가 생긴 뒤에야 수수료가 다 정해짐
+            if (activity.linkedTx != null)
+              UnderlineButtonItemCard(
+                label: t.ark.movement.exit_onchain_fee,
+                child: Text(formatSats(unit, -activity.amount), style: valueStyle),
+              ),
+          ] else
+            UnderlineButtonItemCard(
+              label: t.ark.movement.fee,
+              child: Text(formatSats(unit, movement.offchainFeeSats), style: valueStyle),
+            ),
           for (final (label, value) in copyable)
             UnderlineButtonItemCard(
               label: label,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: CopyTextContainer(text: value, textStyle: valueStyle),
+              child: CopyTextContainer(
+                text: value,
+                textStyle: valueStyle,
+                suffixText: _ownAddressSuffix(context, value),
+                suffixTextStyle: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
               ),
             ),
-          if (onchainTx != null && !hasLinkedTx)
+          if (movement.kind == ArkMovementKind.exit) ...[
+            if (movement.exitRelatedTxids.isNotEmpty)
+              _buildTxRow(context, t.ark.movement.exit_fee_tx, movement.exitRelatedTxids.first, valueStyle),
+            if (linkedTxid != null) _buildTxRow(context, t.ark.movement.exit_claim_tx, linkedTxid, valueStyle),
+            if (movement.exitRelatedTxids.length > 1)
+              _buildTxRow(context, t.ark.movement.exit_refund_tx, movement.exitRelatedTxids[1], valueStyle),
+          ] else if (onchainTx != null && !hasLinkedTx)
             ..._buildOnchainTx(context, onchainTx!)
           else if (linkedTxid != null)
-            UnderlineButtonItemCard(
-              label: t.ark.movement.onchain_tx,
-              underlineButtonLabel: hasLinkedTx ? t.ark.movement.view_transaction : null,
-              onTapUnderlineButton:
-                  hasLinkedTx
-                      ? () => Navigator.pushNamed(
-                        context,
-                        AppRouteNames.transactionDetail,
-                        arguments: TransactionDetailRouteArgs(id: walletId, txHash: linkedTxid),
-                      )
-                      : null,
-              child: CopyTextContainer(text: linkedTxid, textStyle: valueStyle),
-            ),
+            _buildTxRow(context, t.ark.movement.onchain_tx, linkedTxid, valueStyle),
           // bark's own record, for support and debugging.
           UnderlineButtonItemCard(
             label: t.ark.movement.technical,
@@ -279,6 +328,9 @@ class _MovementDetails extends StatelessWidget {
               children: [
                 _detail(context, t.ark.movement.movement_id, '${movement.id}'),
                 _detail(context, t.ark.movement.subsystem, '${movement.subsystemName} / ${movement.subsystemKind}'),
+                if (isExit)
+                  for (final destination in movement.sentToDestinations)
+                    _detail(context, t.ark.movement.exit_output_address, destination.value),
                 if (movement.inputVtxoIds.isNotEmpty)
                   _detail(context, t.ark.movement.vtxos_spent, movement.inputVtxoIds.join('\n')),
                 if (movement.outputVtxoIds.isNotEmpty)
@@ -365,9 +417,11 @@ class _MovementDetails extends StatelessWidget {
   }
 
   /// The signed amount in the receiving or sending colour, as on the transaction detail screen.
-  Widget _buildAmount(BuildContext context) {
+  TransactionRecord? _record(TransactionProvider transactions, String? txid) =>
+      txid == null ? null : transactions.getTransactionRecord(walletId, txid);
+
+  Widget _buildAmount(BuildContext context, int amount) {
     final colors = context.coconutColors;
-    final amount = movement.effectiveBalanceSats;
     final isIncoming = amount > 0;
     final color = amount == 0 ? colors.primaryText : (isIncoming ? colors.receivingColor : colors.sendingColor);
     final sign = amount == 0 ? '' : (isIncoming ? '+' : '-');

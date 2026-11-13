@@ -228,19 +228,17 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   List<int> dailyRailBalances(int walletId, {required bool ark, required int days, DateTime? asOf}) {
     final today = (asOf ?? now).toLocal();
     return _cached('rail:$walletId:$ark:$days:${today.year}-${today.month}-${today.day}', () {
-      final changes =
-          [
-            for (final activity in _walletProvider.getWalletActivities(walletId))
-              switch (activity) {
-                OnchainActivity(:final tx) when !ark => (time: tx.timestamp, amount: tx.amount),
-                ArkActivity(:final linkedTx) when ark => (
-                  time: activity.time,
-                  amount: activity.amount - (linkedTx?.amount ?? 0),
-                ),
-                ArkActivity(:final linkedTx?) when !ark => (time: linkedTx.timestamp, amount: linkedTx.amount),
-                _ => null,
-              },
-          ].nonNulls.toList();
+      final changes = [
+        for (final activity in _walletProvider.getWalletActivities(walletId))
+          ...switch (activity) {
+            OnchainActivity(:final tx) when !ark => [(time: tx.timestamp, amount: tx.amount)],
+            ArkActivity(:final movement) when ark => [(time: activity.time, amount: movement.effectiveBalanceSats)],
+            ArkActivity(:final linkedTx, :final relatedTxs) when !ark => [
+              for (final tx in [if (linkedTx != null) linkedTx, ...relatedTxs]) (time: tx.timestamp, amount: tx.amount),
+            ],
+            _ => const <({DateTime time, int amount})>[],
+          },
+      ];
       final current =
           ark ? _walletProvider.offchainBalance(walletId) : _walletProvider.getWalletBalance(walletId).total;
       return HomeWidgetMath.dailyBalancesFromChanges(changes, current, today, days);
