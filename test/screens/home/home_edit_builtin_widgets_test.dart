@@ -3041,14 +3041,14 @@ void main() {
       final card = find.byKey(const Key('goal-reminder-card'));
       await tester.ensureVisible(card);
       expect(
-        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).data,
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).semanticsLabel,
         t.hodl_insights.goal_reminder_off,
       );
 
-      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
       await tester.pumpAndSettle();
       expect(
-        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).data,
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).semanticsLabel,
         t.hodl_insights.goal_reminder_summary_weekly(weekday: t.hodl_insights.goal_reminder_weekdays[0], time: '21:00'),
       );
       expect(reminders.scheduled.last.$1.enabled, isTrue);
@@ -3060,18 +3060,21 @@ void main() {
       // 금액은 기본으로 숨긴다.
       expect(reminders.scheduled.last.$3.body, isNot(contains('BTC')));
 
-      await tester.ensureVisible(find.byKey(const ValueKey('goal-reminder-weekday-5')));
+      // 요일은 값 줄을 눌러 여는 시트에서 고른다.
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-weekday')));
+      await tester.tap(find.byKey(const Key('goal-reminder-weekday')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('goal-reminder-weekday-5')));
       await tester.pumpAndSettle();
       expect(reminders.scheduled.last.$1.weekday, DateTime.friday);
 
       await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-switch')));
       expect(find.byKey(const Key('goal-reminder-amount-disabled-reason')), findsNothing);
-      await tester.tap(find.byKey(const Key('goal-reminder-amount-switch')));
+      await tester.tap(find.byKey(const Key('goal-reminder-amount-toggle')));
       await tester.pumpAndSettle();
       expect(reminders.scheduled.last.$3.body, contains('BTC'));
       expect(
-        tester.widget<Text>(find.byKey(const Key('goal-reminder-preview-body'))).data,
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-preview-body'))).semanticsLabel,
         reminders.scheduled.last.$3.body,
       );
 
@@ -3089,8 +3092,8 @@ void main() {
       expect(saved.weekday, DateTime.friday);
       expect(saved.showAmount, isTrue);
 
-      await tester.ensureVisible(find.byKey(const Key('goal-reminder-switch')));
-      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-toggle')));
+      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
       await tester.pumpAndSettle();
       expect(reminders.cancels, greaterThan(0));
       await _close(tester);
@@ -3105,8 +3108,8 @@ void main() {
         screen: (_) => GoalAmountScreen(viewModel: HodlInsightsViewModel(_widgetsViewModel!)),
       );
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.ensureVisible(find.byKey(const Key('goal-reminder-switch')));
-      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-toggle')));
+      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
       await tester.pumpAndSettle();
 
       final popup = find.byKey(const Key('goal-reminder-permission-popup'));
@@ -3123,7 +3126,7 @@ void main() {
       expect(reminders.settingsOpened, 1);
 
       expect(
-        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).data,
+        tester.widget<Text>(find.byKey(const Key('goal-reminder-summary'))).semanticsLabel,
         t.hodl_insights.goal_reminder_off,
       );
       expect(reminders.scheduled.where((entry) => entry.$1.enabled), isEmpty);
@@ -3135,7 +3138,7 @@ void main() {
       expect(reminders.settingsOpened, 2);
 
       // 취소하면 설정을 열지 않는다.
-      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
       await tester.pumpAndSettle();
       await tester.tap(popupText(t.cancel));
       await tester.pumpAndSettle();
@@ -3154,8 +3157,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byKey(const Key('goal-plan-card')), findsNothing);
-      await tester.ensureVisible(find.byKey(const Key('goal-reminder-switch')));
-      await tester.tap(find.byKey(const Key('goal-reminder-switch')));
+      await tester.ensureVisible(find.byKey(const Key('goal-reminder-toggle')));
+      await tester.tap(find.byKey(const Key('goal-reminder-toggle')));
       await tester.pumpAndSettle();
 
       // 모으기 계획이 없으니 '계획을 따라요' 안내 대신 여기서 주기를 고른다.
@@ -3168,19 +3171,23 @@ void main() {
       expect(SharedPrefsRepository().getString(SharedPrefKeys.kGoalPlanCycle), GoalPlanCycle.monthly.name);
 
       await tester.ensureVisible(find.byKey(const Key('goal-reminder-amount-option')));
-      expect(find.text(t.hodl_insights.goal_reminder_amount_disabled_no_goal), findsOneWidget);
+      // 보이는 글에는 줄바꿈 막는 문자가 들어가므로 화면 읽기용 원문으로 찾는다.
+      final reason = find.byWidgetPredicate(
+        (w) => w is Text && w.semanticsLabel == t.hodl_insights.goal_reminder_amount_disabled_no_goal,
+      );
+      expect(reason, findsOneWidget);
       // 안내 아이콘은 문구 첫 줄의 세로 가운데에 있다.
-      final reasonText = tester.getRect(find.text(t.hodl_insights.goal_reminder_amount_disabled_no_goal));
+      final reasonText = tester.getRect(reason);
       final iconBox = tester.getRect(find.byKey(const Key('goal-reminder-amount-disabled-icon')));
       final icon = tester.getRect(
         find.descendant(of: find.byKey(const Key('goal-reminder-amount-disabled-icon')), matching: find.byType(Icon)),
       );
       expect(iconBox.top, closeTo(reasonText.top, 0.5));
       expect(icon.center.dy, closeTo(iconBox.center.dy, 0.5));
-      final amountSwitch = find.byKey(const Key('goal-reminder-amount-switch'));
+      // 수량 표시 줄은 비활성으로 읽히고 눌러도 바뀌지 않는다.
       expect(
-        find.ancestor(of: amountSwitch, matching: find.byWidgetPredicate((w) => w is IgnorePointer && w.ignoring)),
-        findsOneWidget,
+        tester.getSemantics(find.byKey(const Key('goal-reminder-amount-toggle'))),
+        containsSemantics(hasEnabledState: true, isEnabled: false, hasTapAction: false),
       );
       await _close(tester);
     });

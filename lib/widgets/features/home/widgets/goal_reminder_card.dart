@@ -1,9 +1,14 @@
-import 'package:coconut_design_system/coconut_design_system.dart'
-    show CoconutLayout, CoconutPopup, CoconutSwitch, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutPopup, CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
-import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_settings_row.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart' show InlineActionButton;
+import 'package:coconut_wallet/widgets/common/buttons/segmented_choice.dart';
+import 'package:coconut_wallet/widgets/common/buttons/switch_row.dart';
+import 'package:coconut_wallet/widgets/common/buttons/value_select_row.dart';
+import 'package:coconut_wallet/widgets/common/info/inline_notice.dart';
+import 'package:coconut_wallet/widgets/common/info/notification_preview.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
 import 'package:flutter/cupertino.dart';
@@ -80,6 +85,11 @@ class GoalReminderCard extends StatelessWidget {
     if (picked != null) reminder.update(settings.copyWith(hour: picked.hour, minute: picked.minute));
   }
 
+  Future<void> _pickWeekday(BuildContext context, GoalReminderSettings settings) async {
+    final picked = await GoalReminderWeekdaySheet.open(context, weekday: settings.weekday);
+    if (picked != null) reminder.update(settings.copyWith(weekday: picked));
+  }
+
   Future<void> _pickDay(BuildContext context, GoalReminderSettings settings) async {
     final picked = await _ReminderDaySheet.open(context, day: settings.dayOfMonth);
     if (picked != null) reminder.update(settings.copyWith(dayOfMonth: picked));
@@ -106,38 +116,31 @@ class GoalReminderCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          copy.goal_reminder_title,
-                          style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText),
-                        ),
-                        CoconutLayout.spacing_100h,
-                        Text(
-                          enabled ? summaryOf(settings, cycle) : copy.goal_reminder_off,
-                          key: const Key('goal-reminder-summary'),
-                          style: labelStyle,
-                        ),
-                      ],
-                    ),
-                  ),
-                  IgnorePointer(
-                    ignoring: reminder.isBusy,
-                    child: CoconutSwitch(
-                      key: const Key('goal-reminder-switch'),
-                      isOn: enabled,
-                      onChanged: (value) => _toggle(context, value),
-                    ),
-                  ),
-                ],
+              // 줄 어디를 눌러도 켜고 끄며, 화면 읽기에서는 제목·요약·켜짐 상태를 한 번에 읽는다.
+              IgnorePointer(
+                ignoring: reminder.isBusy,
+                child: SwitchRow(
+                  key: const Key('goal-reminder-toggle'),
+                  title: copy.goal_reminder_title,
+                  titleStyle: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText),
+                  subtitle: enabled ? summaryOf(settings, cycle) : copy.goal_reminder_off,
+                  subtitleKey: const Key('goal-reminder-summary'),
+                  subtitleStyle: labelStyle,
+                  value: enabled,
+                  switchKey: const Key('goal-reminder-switch'),
+                  onChanged: (value) => _toggle(context, value),
+                ),
               ),
               if (reminder.permissionDenied) ...[
                 CoconutLayout.spacing_300h,
-                _PermissionNotice(onOpenSettings: reminder.openSettings),
+                InlineNotice(
+                  key: const Key('goal-reminder-permission-denied'),
+                  icon: CupertinoIcons.bell_slash,
+                  message: copy.goal_reminder_permission_denied,
+                  actionLabel: copy.goal_reminder_open_settings,
+                  actionKey: const Key('goal-reminder-open-settings'),
+                  onAction: reminder.openSettings,
+                ),
               ],
               if (enabled) ...[
                 Padding(
@@ -155,46 +158,31 @@ class GoalReminderCard extends StatelessWidget {
                 else ...[
                   Text(copy.goal_reminder_cycle_question, style: labelStyle),
                   CoconutLayout.spacing_200h,
-                  Row(
+                  KeyedSubtree(
                     key: const Key('goal-reminder-cycle-options'),
-                    children: [
-                      for (final value in GoalPlanCycle.values) ...[
-                        if (value != GoalPlanCycle.values.first) const SizedBox(width: 6),
-                        Expanded(
-                          child: _OptionButton(
-                            key: ValueKey('goal-reminder-cycle-${value.name}'),
-                            label: value.label,
-                            selected: cycle == value,
-                            onPressed: () => plan.selectCycle(value),
-                          ),
-                        ),
-                      ],
-                    ],
+                    child: SegmentedChoice<GoalPlanCycle>(
+                      keyOf: (value) => 'goal-reminder-cycle-${value.name}',
+                      values: GoalPlanCycle.values,
+                      selected: cycle,
+                      label: (value) => value.label,
+                      onSelected: plan.selectCycle,
+                    ),
                   ),
                 ],
                 CoconutLayout.spacing_300h,
+                // 요일은 날짜·시각과 같은 값 줄 + 시트로 고른다. 7칸 막대는 320px에서 한 칸이 약 31dp라 누르기 어렵다.
                 if (cycle == GoalPlanCycle.weekly) ...[
-                  Text(copy.goal_reminder_weekday, style: labelStyle),
-                  CoconutLayout.spacing_200h,
-                  Row(
-                    children: [
-                      for (var day = DateTime.monday; day <= DateTime.sunday; day++) ...[
-                        if (day > DateTime.monday) const SizedBox(width: 4),
-                        Expanded(
-                          child: _OptionButton(
-                            key: ValueKey('goal-reminder-weekday-$day'),
-                            label: copy.goal_reminder_weekdays_short[day - 1],
-                            selected: settings.weekday == day,
-                            onPressed: () => reminder.update(settings.copyWith(weekday: day)),
-                          ),
-                        ),
-                      ],
-                    ],
+                  ValueSelectRow(
+                    key: const Key('goal-reminder-weekday'),
+                    icon: CupertinoIcons.calendar,
+                    label: copy.goal_reminder_weekday,
+                    value: copy.goal_reminder_weekdays[settings.weekday - 1],
+                    onPressed: () => _pickWeekday(context, settings),
                   ),
-                  CoconutLayout.spacing_300h,
+                  CoconutLayout.spacing_200h,
                 ],
                 if (cycle == GoalPlanCycle.monthly) ...[
-                  _ValueRow(
+                  ValueSelectRow(
                     key: const Key('goal-reminder-day'),
                     icon: CupertinoIcons.calendar,
                     label: copy.goal_reminder_day,
@@ -203,7 +191,7 @@ class GoalReminderCard extends StatelessWidget {
                   ),
                   CoconutLayout.spacing_200h,
                 ],
-                _ValueRow(
+                ValueSelectRow(
                   key: const Key('goal-reminder-time'),
                   icon: CupertinoIcons.clock,
                   label: copy.goal_reminder_time,
@@ -218,7 +206,14 @@ class GoalReminderCard extends StatelessWidget {
                   onChanged: (value) => reminder.update(settings.copyWith(showAmount: value)),
                 ),
                 CoconutLayout.spacing_400h,
-                _Preview(content: preview),
+                Text(copy.goal_reminder_preview, style: labelStyle),
+                CoconutLayout.spacing_200h,
+                NotificationPreview(
+                  key: const Key('goal-reminder-preview'),
+                  title: preview.title,
+                  body: preview.body,
+                  bodyKey: const Key('goal-reminder-preview-body'),
+                ),
               ],
             ],
           ),
@@ -250,238 +245,27 @@ class _AmountOption extends StatelessWidget {
       key: const Key('goal-reminder-amount-option'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Opacity(
-          opacity: available ? 1 : 0.4,
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      copy.goal_reminder_show_amount,
-                      style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
-                    ),
-                    CoconutLayout.spacing_100h,
-                    Text(
-                      copy.goal_reminder_show_amount_hint,
-                      style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText),
-                    ),
-                  ],
-                ),
-              ),
-              IgnorePointer(
-                ignoring: !available,
-                child: CoconutSwitch(key: const Key('goal-reminder-amount-switch'), isOn: isOn, onChanged: onChanged),
-              ),
-            ],
-          ),
+        SwitchRow(
+          key: const Key('goal-reminder-amount-toggle'),
+          title: copy.goal_reminder_show_amount,
+          subtitle: copy.goal_reminder_show_amount_hint,
+          subtitleStyle: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText),
+          value: isOn,
+          switchKey: const Key('goal-reminder-amount-switch'),
+          // 모으기 계획이 없으면 흐리게 두고 누를 수 없게 한다(이유는 바로 아래)
+          onChanged: available ? onChanged : null,
         ),
         if (!available && unavailableReason != null) ...[
           CoconutLayout.spacing_200h,
-          Builder(
-            builder: (context) {
-              final style = CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong);
-              // 아이콘을 문구 첫 줄의 세로 가운데에 맞춘다. 한 줄이든 여러 줄이든, 글자 크기 설정이 바뀌어도 맞는다.
-              final painter = TextPainter(
-                text: TextSpan(text: ' ', style: style),
-                textDirection: Directionality.of(context),
-                textScaler: MediaQuery.textScalerOf(context),
-              )..layout();
-              final lineHeight = painter.height;
-              painter.dispose();
-              return Row(
-                key: const Key('goal-reminder-amount-disabled-reason'),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    key: const Key('goal-reminder-amount-disabled-icon'),
-                    height: lineHeight,
-                    child: Center(child: Icon(CupertinoIcons.info_circle, size: 14, color: colors.secondaryTextStrong)),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(unavailableReason!, style: style)),
-                ],
-              );
-            },
+          InlineNotice(
+            key: const Key('goal-reminder-amount-disabled-reason'),
+            iconKey: const Key('goal-reminder-amount-disabled-icon'),
+            icon: CupertinoIcons.info_circle,
+            message: unavailableReason!,
+            backgroundColor: Colors.transparent,
           ),
         ],
       ],
-    );
-  }
-}
-
-class _PermissionNotice extends StatelessWidget {
-  final VoidCallback onOpenSettings;
-
-  const _PermissionNotice({required this.onOpenSettings});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Container(
-      key: const Key('goal-reminder-permission-denied'),
-      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-      decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        children: [
-          Icon(CupertinoIcons.bell_slash, size: 16, color: colors.secondaryTextStrong),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              t.hodl_insights.goal_reminder_permission_denied,
-              style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-            ),
-          ),
-          ShrinkAnimationButton(
-            key: const Key('goal-reminder-open-settings'),
-            onPressed: onOpenSettings,
-            defaultColor: colors.homeSurface,
-            pressedOverlayColor: colors.homeSurfacePressOverlay,
-            pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-            borderRadius: 8,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Text(
-                t.hodl_insights.goal_reminder_open_settings,
-                style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Preview extends StatelessWidget {
-  final GoalReminderContent content;
-
-  const _Preview({required this.content});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          t.hodl_insights.goal_reminder_preview,
-          style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-        ),
-        CoconutLayout.spacing_200h,
-        Container(
-          key: const Key('goal-reminder-preview'),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: colors.homeBackground, borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(content.title, style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText)),
-              CoconutLayout.spacing_100h,
-              Text(
-                content.body,
-                key: const Key('goal-reminder-preview-body'),
-                style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _OptionButton extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onPressed;
-
-  const _OptionButton({super.key, required this.label, required this.selected, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return ShrinkAnimationButton(
-      onPressed: onPressed,
-      defaultColor: selected ? colors.primaryText : colors.homeBackground,
-      pressedOverlayColor: colors.homeSurfacePressOverlay,
-      pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-      borderRadius: 10,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        child: Center(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              label,
-              maxLines: 1,
-              style: (selected ? CoconutTypography.body3_12_Bold : CoconutTypography.body3_12).copyWith(
-                color: selected ? colors.background : colors.secondaryTextStrong,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ValueRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final VoidCallback onPressed;
-
-  const _ValueRow({super.key, required this.icon, required this.label, required this.value, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return ShrinkAnimationButton(
-      onPressed: onPressed,
-      defaultColor: colors.homeBackground,
-      pressedOverlayColor: colors.homeSurfacePressOverlay,
-      pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-      borderRadius: 10,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: colors.secondaryTextStrong),
-            const SizedBox(width: 8),
-            Expanded(child: Text(label, style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong))),
-            Text(value, style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText)),
-            const SizedBox(width: 4),
-            Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 바텀시트 아래 완료 버튼
-class _DoneButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _DoneButton({super.key, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return ShrinkAnimationButton(
-      onPressed: onPressed,
-      defaultColor: colors.primaryText,
-      pressedOverlayColor: colors.homeSurfacePressOverlay,
-      pressedOverlayOpacity: colors.homeSurfacePressOverlayOpacity,
-      borderRadius: 12,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        child: Center(
-          child: Text(t.complete, style: CoconutTypography.body2_14_Bold.copyWith(color: colors.background)),
-        ),
-      ),
     );
   }
 }
@@ -540,10 +324,47 @@ class _ReminderTimeSheetState extends State<_ReminderTimeSheet> {
             ),
           ),
           CoconutLayout.spacing_400h,
-          _DoneButton(
+          InlineActionButton(
             key: const Key('goal-reminder-time-done'),
+            text: t.complete,
             onPressed: () => Navigator.of(context).pop((hour: _hour, minute: _minute)),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 알림 요일 고르기. 설정 시트(단위·언어 등)와 같은 선택 줄로, 누르면 고르고 닫힌다.
+/// 한 줄 높이 50 이상, 화면 읽기에서 고른 요일을 '선택됨'으로 읽는다.
+class GoalReminderWeekdaySheet extends StatelessWidget {
+  final int weekday;
+
+  const GoalReminderWeekdaySheet({super.key, required this.weekday});
+
+  static Future<int?> open(BuildContext context, {required int weekday}) => CommonBottomSheets.showBottomSheet<int>(
+    context: context,
+    screenName: '/goal-reminder-weekday',
+    title: t.hodl_insights.goal_reminder_weekday,
+    showCloseButton: true,
+    child: GoalReminderWeekdaySheet(weekday: weekday),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final names = t.hodl_insights.goal_reminder_weekdays;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var day = DateTime.monday; day <= DateTime.sunday; day++)
+            SelectableSettingsRow(
+              key: ValueKey('goal-reminder-weekday-$day'),
+              title: names[day - 1],
+              isSelected: day == weekday,
+              onTap: () => Navigator.of(context).pop(day),
+            ),
         ],
       ),
     );
@@ -598,7 +419,11 @@ class _ReminderDaySheetState extends State<_ReminderDaySheet> {
             ),
           ),
           CoconutLayout.spacing_400h,
-          _DoneButton(key: const Key('goal-reminder-day-done'), onPressed: () => Navigator.of(context).pop(_day)),
+          InlineActionButton(
+            key: const Key('goal-reminder-day-done'),
+            text: t.complete,
+            onPressed: () => Navigator.of(context).pop(_day),
+          ),
         ],
       ),
     );
