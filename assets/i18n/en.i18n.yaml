@@ -448,6 +448,7 @@ home_widgets:
     - "Dec"
   no_period_transactions: "No transactions in this period"
   no_savings_goal: "Set a savings goal"
+  savings_goal_larger: "Larger goal"
   utxo_count: "$count UTXOs"
   today: "Today"
 home_presets:

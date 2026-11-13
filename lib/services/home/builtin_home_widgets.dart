@@ -393,11 +393,15 @@ List<HomeItemDefinition> builtinHomeWidgets() => [
     category: HomeItemCategory.hodl,
     settings: const HomeWidgetSettingsSpec(wallets: true, goals: true),
     name: () => t.home_widgets.savings_goal,
-    builder:
-        (context, viewModel, item) => SavingsGoalView(
-          goal: viewModel.savingsGoal(walletIds: walletIdsOf(item)),
-          amountText: (sats) => _btc(viewModel, sats),
-        ),
+    builder: (context, viewModel, item) {
+      final sum = viewModel.savingsGoalSum(walletIds: walletIdsOf(item));
+      return SavingsGoalView(
+        goal: sum.goal,
+        // 같은 계정에 서로 다른 목표가 있으면 큰 목표로 계산했다는 짧은 표시(결정 ⑦, B1-c 시안 A)
+        note: sum.hasConflictingGoals ? t.home_widgets.savings_goal_larger : null,
+        amountText: (sats) => _btc(viewModel, sats),
+      );
+    },
   ),
   BuiltinHomeWidget(
     id: HomeItemIds.utxoStatus,

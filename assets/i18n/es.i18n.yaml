@@ -449,6 +449,7 @@ home_widgets:
     - "dic"
   no_period_transactions: "No hay transacciones en este período"
   no_savings_goal: "Fija un objetivo de ahorro"
+  savings_goal_larger: "Objetivo mayor"
   utxo_count: "$count UTXOs"
   today: "Hoy"
 home_presets:

@@ -767,6 +767,7 @@ void main() {
     );
     expect(find.text('25.0%'), findsOneWidget);
     expect(find.byKey(const Key('savings-goal-icon')), findsOneWidget);
+    expect(find.byKey(const Key('savings-goal-note')), findsNothing);
     final fill = tester.getRect(find.byKey(const Key('goal-progress-fill')));
     expect(fill.height, 8);
 
@@ -789,6 +790,26 @@ void main() {
 
     await _pump(tester, _small, const SavingsGoalView(goal: null, amountText: _btc));
     expect(find.byKey(const Key('savings-goal-empty')), findsOneWidget);
+  });
+
+  // 카드 5: 같은 계정에 서로 다른 목표가 있어 큰 목표로 계산했으면 달성률 옆에 짧은 표시. 큰 글자에서는 줄임표로 잘린다
+  testWidgets('savings goal notes the larger goal beside the percent and cuts it with an ellipsis', (tester) async {
+    await _pump(
+      tester,
+      _small,
+      SavingsGoalView(
+        goal: const HomeSavingsGoal(balance: 150000000, target: 200000000),
+        amountText: _btc,
+        note: t.home_widgets.savings_goal_larger,
+      ),
+    );
+    expect(find.text('75.0%'), findsOneWidget);
+    final note = tester.widget<Text>(find.byKey(const Key('savings-goal-note')));
+    expect(
+      (note.data, note.maxLines, note.overflow),
+      ('· ${t.home_widgets.savings_goal_larger}', 1, TextOverflow.ellipsis),
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('utxo status shows the count and each bucket', (tester) async {

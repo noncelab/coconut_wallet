@@ -447,6 +447,7 @@ home_widgets:
     - "12月"
   no_period_transactions: "この期間の取引はありません"
   no_savings_goal: "目標数量を決めてみましょう"
+  savings_goal_larger: "大きい目標で計算"
   utxo_count: "UTXO $count個"
   today: "今日"
 home_presets:

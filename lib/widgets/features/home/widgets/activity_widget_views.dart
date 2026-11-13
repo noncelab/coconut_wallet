@@ -637,7 +637,10 @@ class SavingsGoalView extends StatelessWidget {
   final HomeSavingsGoal? goal;
   final String Function(int sats) amountText;
 
-  const SavingsGoalView({super.key, required this.goal, required this.amountText});
+  /// 달성률 옆 짧은 표시(같은 계정에 서로 다른 목표가 있어 큰 목표로 계산했을 때 등). 없으면 달성률만
+  final String? note;
+
+  const SavingsGoalView({super.key, required this.goal, required this.amountText, this.note});
 
   @override
   Widget build(BuildContext context) {
@@ -697,7 +700,26 @@ class SavingsGoalView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(goal.percentText, style: CoconutTypography.caption_10_NumberBold.copyWith(color: colors.primaryText)),
+            Row(
+              children: [
+                Text(
+                  goal.percentText,
+                  style: CoconutTypography.caption_10_NumberBold.copyWith(color: colors.primaryText),
+                ),
+                if (note != null) ...[
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      '· $note',
+                      key: const Key('savings-goal-note'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: CoconutTypography.caption_10.copyWith(color: colors.secondaryText),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ],
         ],
       ),
