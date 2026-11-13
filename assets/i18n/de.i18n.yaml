@@ -305,7 +305,7 @@ hodl_insights:
   goal_reminder_off_reached: "Erinnerungen sind aus, weil du dein Ziel erreicht hast"
   goal_reminder_off_deadline: "Erinnerungen sind aus, weil das Zieldatum vorbei ist"
   goal_reminder_off_no_goal: "Erinnerungen sind aus, weil es kein Ziel gibt"
-  goal_reminder_until: "Erinnerungen bis ${date}, dem Tag vor dem Zieldatum"
+  goal_reminder_until: "Erinnerungen kommen bis zum Tag vor dem Zieldatum (${date})"
   goal_reminder_until_booked: "Erinnerungen sind bis ${booked} geplant. Beim Öffnen der App gehen sie bis ${date} weiter, dem Tag vor dem Zieldatum"
   goal_reminder_amount_disabled_pending: "Solange das Guthaben geprüft wird, kommen Erinnerungen ohne Menge"
   goal_reminder_amount_disabled_hidden: "Solange dein Guthaben verborgen ist, zeigen Erinnerungen keine Menge"

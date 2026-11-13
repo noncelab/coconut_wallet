@@ -304,7 +304,7 @@ hodl_insights:
   goal_reminder_off_reached: "目標を達成したので通知をオフにしました"
   goal_reminder_off_deadline: "目標日を過ぎたので通知をオフにしました"
   goal_reminder_off_no_goal: "目標がないので通知をオフにしました"
-  goal_reminder_until: "期限の前日の${date}まで通知します"
+  goal_reminder_until: "通知は期限の前日（${date}）まで届きます"
   goal_reminder_until_booked: "${booked}まで通知を予約しています。アプリを開くと、期限の前日の${date}まで続けて予約します"
   goal_reminder_amount_disabled_pending: "残高を確認している間は数量なしで通知します"
   goal_reminder_amount_disabled_hidden: "残高を隠している間は数量を表示しません"

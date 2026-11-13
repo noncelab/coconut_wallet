@@ -305,7 +305,7 @@ hodl_insights:
   goal_reminder_off_reached: "목표를 채워서 알림을 껐어요"
   goal_reminder_off_deadline: "목표 날짜가 지나 알림을 껐어요"
   goal_reminder_off_no_goal: "목표가 없어 알림을 껐어요"
-  goal_reminder_until: "마감일 전날인 ${date}까지 알려 드려요"
+  goal_reminder_until: "알림은 마감일 전날(${date})까지 와요"
   goal_reminder_until_booked: "${booked}까지 알림을 걸어 두었어요. 앱을 열면 마감일 전날인 ${date}까지 이어서 걸어요"
   goal_reminder_amount_disabled_pending: "잔액을 확인하는 동안에는 수량 없이 알려 드려요"
   goal_reminder_amount_disabled_hidden: "잔액을 가리는 동안에는 수량을 넣지 않아요"
