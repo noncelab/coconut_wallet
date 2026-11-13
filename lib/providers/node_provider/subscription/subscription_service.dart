@@ -32,6 +32,9 @@ class SubscriptionService {
   final Set<int> _subscribingWallets = {};
   final Map<int, Completer<Result<bool>>> _subscriptionCompleters = {};
 
+  /// (지갑 id, 스크립트)별 마지막 구독 시도. 해제하거나 같은 지갑이 다시 구독하면 바뀌어, 늦게 온 응답이 목록을 되살리지 않는다
+  final Map<(int, String), Object> _subscribeGenerations = {};
+
   SubscriptionService(
     this._electrumService,
     this._stateManager,
@@ -208,8 +211,14 @@ class SubscriptionService {
 
   /// 지갑의 스크립트 구독 해제
   Future<Result<bool>> unsubscribeWallet(WalletItemBase walletItem) async {
-    await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
-    walletItem.subscribedScriptMap.clear();
+    // 응답을 기다리는 이 지갑의 구독 시도는 모두 무효: 늦게 온 응답이 지운 지갑의 목록을 되살리지 않게
+    _subscribeGenerations.removeWhere((key, _) => key.$1 == walletItem.id);
+    try {
+      await Future.wait([_unsubscribeScript(walletItem, false), _unsubscribeScript(walletItem, true)]);
+    } finally {
+      // 콜백은 이미 지워졌으므로 서버 해제가 실패해도 목록을 비워야 다음 구독이 다시 붙는다.
+      walletItem.subscribedScriptMap.clear();
+    }
     Logger.log('UnsubscribeWallet: ${walletItem.name} - finished');
     return Result.success(true);
   }
@@ -222,8 +231,12 @@ class SubscriptionService {
       return;
     }
 
-    await _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
-    walletItem.subscribedScriptMap.remove(script);
+    try {
+      await _unsubscribeForWallet(walletItem, address);
+    } finally {
+      // 콜백은 이미 지워졌으므로 서버 해제가 실패해도 목록에서 빼야 다음 subscribeAddress가 실제로 다시 구독한다.
+      walletItem.subscribedScriptMap.remove(script);
+    }
     Logger.log('UnsubscribeAddress: ${walletItem.name} - $address dormant, unsubscribed');
   }
 
@@ -401,25 +414,49 @@ class SubscriptionService {
       return (scriptStatus: scriptStatus, isSubscribed: true);
     }
 
+    var awaitingReply = true;
+    var notifiedBeforeReply = false;
+
     /// 구독중인 스크립트의 상태 변경 이벤트 처리
     void onUpdate(String reversedScriptHash, String? newStatus) {
+      if (awaitingReply) notifiedBeforeReply = true;
       // 새 상태 업데이트
       scriptStatus.status = newStatus;
       scriptStatus.timestamp = DateTime.now();
       _handleScriptUpdate(reversedScriptHash, scriptStatus, walletItem, scriptStatusController);
     }
 
-    final status = await _electrumService.subscribeScriptForWallet(
-      walletItem.walletBase.addressType,
-      address,
-      walletId: walletItem.id,
-      onUpdate: onUpdate,
-    );
+    final key = (walletItem.id, script);
+    final generation = _subscribeGenerations[key] = Object();
+    final String? status;
+    try {
+      status = await _electrumService.subscribeScriptForWallet(
+        walletItem.walletBase.addressType,
+        address,
+        walletId: walletItem.id,
+        onUpdate: onUpdate,
+      );
+    } catch (_) {
+      // 이 구독이 마지막 시도였으면, 응답 전에 온 알림이 목록에 넣었을 수 있는 항목도 지워 다음 구독이 다시 붙게 한다
+      if (identical(_subscribeGenerations[key], generation)) {
+        _subscribeGenerations.remove(key);
+        walletItem.subscribedScriptMap.remove(script);
+      }
+      rethrow;
+    }
 
-    scriptStatus.status = status;
-    scriptStatus.timestamp = DateTime.now();
+    awaitingReply = false;
+    // 응답보다 먼저 온 알림이 더 새 상태를 이미 반영했으면, 응답에 담긴 지난 상태로 덮지 않는다
+    if (!notifiedBeforeReply) {
+      scriptStatus.status = status;
+      scriptStatus.timestamp = DateTime.now();
+    }
 
-    walletItem.subscribedScriptMap[script] = scriptStatus.toUnaddressedScriptStatus();
+    // 응답을 기다리는 사이 이 지갑이 해제했거나 다시 구독했으면 이 응답으로 목록을 되살리지 않는다
+    if (identical(_subscribeGenerations[key], generation)) {
+      _subscribeGenerations.remove(key);
+      walletItem.subscribedScriptMap[script] = scriptStatus.toUnaddressedScriptStatus();
+    }
 
     return (scriptStatus: scriptStatus, isSubscribed: false);
   }
@@ -449,14 +486,22 @@ class SubscriptionService {
       timestamp: scriptStatus.timestamp,
     );
 
+    // 큐로 넘기는 이벤트는 따로 떼어 낸 상태를 담는다(뒤에 오는 응답·알림이 이미 넘긴 이벤트를 바꾸지 않게)
     scriptStatusController.add(
       SubscribeScriptStreamDto(
-        scriptStatus: scriptStatus,
+        scriptStatus: scriptStatus.copy(),
         walletItem: walletItem,
         updateUsedIndex: withinGapReach,
         retrySubscription: statusChanged && scriptStatus.index >= currentIndex,
       ),
     );
+  }
+
+  /// 이 지갑의 구독 하나를 해제한다. 응답을 기다리는 같은 주소의 구독 시도도 무효로 해 늦은 응답이 목록을 되살리지 않게 한다
+  Future<bool> _unsubscribeForWallet(WalletItemBase walletItem, String address) {
+    final addressType = walletItem.walletBase.addressType;
+    _subscribeGenerations.remove((walletItem.id, ElectrumUtil.getScriptForAddress(addressType, address)));
+    return _electrumService.unsubscribeScriptForWallet(addressType, address, walletId: walletItem.id);
   }
 
   /// 특정 유형(receive/change)의 스크립트 구독 해제
@@ -477,7 +522,7 @@ class SubscriptionService {
 
     await Future.wait(
       addressesToUnsubscribe.map((address) {
-        return _electrumService.unsubscribeScript(walletItem.walletBase.addressType, address);
+        return _unsubscribeForWallet(walletItem, address);
       }),
     );
   }

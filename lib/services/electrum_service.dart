@@ -339,6 +339,10 @@ class ElectrumService {
     return response.result;
   }
 
+  /// 콜백을 요청 전에 등록한다. 응답을 기다리는 사이 같은 키의 다른 지갑이 같은 주소를 해제해도 이 구독이 남은 구독자로
+  /// 세져 서버 해제가 나가지 않는다. 실패하면 이 호출이 등록한 콜백([onUpdate] 그 자체)이 아직 그대로일 때만 바로 앞
+  /// 콜백(이전에 성공한 구독 등)으로 되돌리고, 응답 뒤에는 다시 등록하지 않는다(그사이 해제된 구독이 되살아나지 않게).
+  /// [onUpdate]는 호출마다 새 함수여야 한다
   Future<String?> subscribeScriptForWallet(
     AddressType addressType,
     String address, {
@@ -346,13 +350,17 @@ class ElectrumService {
     required Function(String, String?) onUpdate,
   }) async {
     final reversedScriptHash = ElectrumUtil.addressToReversedScriptHash(addressType, address);
-    final response = await _call(
-      _BlockchainScripthashSubscribeReq(reversedScriptHash),
-      (json, {int? id}) => ElectrumResponse(result: json),
-    );
-
-    _socketManager.setWalletSubscriptionCallback(reversedScriptHash, walletId, onUpdate);
-    return response.result;
+    final previous = _socketManager.setWalletSubscriptionCallback(reversedScriptHash, walletId, onUpdate);
+    try {
+      final response = await _call(
+        _BlockchainScripthashSubscribeReq(reversedScriptHash),
+        (json, {int? id}) => ElectrumResponse(result: json),
+      );
+      return response.result;
+    } catch (_) {
+      _socketManager.restoreWalletSubscriptionCallback(reversedScriptHash, walletId, onUpdate, previous);
+      rethrow;
+    }
   }
 
   Future<bool> unsubscribeScriptForWallet(AddressType addressType, String address, {required int walletId}) async {
