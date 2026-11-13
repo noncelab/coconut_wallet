@@ -10,6 +10,7 @@ import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart' show walletBalanceHistoryFlight;
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
+import 'package:coconut_wallet/widgets/common/text/label_value_row.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_amount_views.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_plan_card.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
@@ -245,23 +246,38 @@ class _WalletChips extends StatelessWidget {
     return Wrap(
       key: const Key('goal-amount-wallet-chips'),
       spacing: 8,
-      runSpacing: 8,
+      runSpacing: 0,
       children: [
         for (final share in shares)
           Builder(
             builder: (context) {
               final active = !excluded.contains(share.walletId);
               final walletColor = BalanceByWalletView.colorOf(context, share.asBalanceShare, appearances: appearances);
-              return CoconutChip(
-                key: ValueKey('goal-amount-chip-${share.walletId}'),
-                color: colors.homeSurface,
-                borderColor: active ? walletColor : colors.border,
-                labelColor: active ? colors.primaryText : colors.tertiaryText,
-                label: share.name,
-                labelSize: 13,
-                isSelected: active,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              // 칩 모양은 그대로. 누르는 곳만 최소 44×44로 넓힌다(짧은 이름도). 넓힌 곳은 화면 읽기에서 빼서
+              // 칩 하나가 이름 있는 탭 대상으로 남는다. 칩을 누르면 칩이, 둘레를 누르면 바깥이 받아 한 번만 바뀐다.
+              return GestureDetector(
+                key: ValueKey('goal-amount-chip-hit-${share.walletId}'),
+                behavior: HitTestBehavior.opaque,
+                excludeFromSemantics: true,
                 onTap: () => onToggle(share.walletId),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                  child: Center(
+                    widthFactor: 1,
+                    heightFactor: 1,
+                    child: CoconutChip(
+                      key: ValueKey('goal-amount-chip-${share.walletId}'),
+                      color: colors.homeSurface,
+                      borderColor: active ? walletColor : colors.border,
+                      labelColor: active ? colors.primaryText : colors.tertiaryText,
+                      label: share.name,
+                      labelSize: 13,
+                      isSelected: active,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      onTap: () => onToggle(share.walletId),
+                    ),
+                  ),
+                ),
               );
             },
           ),
@@ -337,6 +353,7 @@ class _WalletGoalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final nameStyle = CoconutTypography.body2_14.copyWith(color: colors.primaryText);
     // 목표를 정한 지갑만 넘어온다.
     final goal = share.goal!;
     return Padding(
@@ -346,18 +363,29 @@ class _WalletGoalRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  share.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
+              // 색 점은 지갑 이름 첫 줄의 세로 가운데에 둔다(줄이 늘어도 이름 옆에 붙어 있게)
+              SizedBox(
+                height: LabelValueRow.lineHeightOf(context, nameStyle),
+                child: Center(
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                  ),
                 ),
               ),
-              Text(goal.percentText, style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText)),
+              const SizedBox(width: 8),
+              // 이름과 달성률이 한 줄에 안 들어가면 달성률을 다음 줄로(이름을 단어 중간에서 끊지 않는다)
+              Expanded(
+                child: LabelValueRow(
+                  label: share.name,
+                  labelStyle: nameStyle,
+                  value: goal.percentText,
+                  valueStyle: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText),
+                ),
+              ),
             ],
           ),
           CoconutLayout.spacing_200h,

@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:coconut_design_system/coconut_design_system.dart'
-    show CoconutLayout, CoconutSegmentedControl, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
-import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/buttons/segmented_choice.dart';
+import 'package:coconut_wallet/widgets/common/buttons/value_select_row.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/text/keep_words.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -363,12 +364,17 @@ class _GoalPlanCardState extends State<GoalPlanCard> {
           Text(copy.goal_plan_title, style: CoconutTypography.body1_16_Bold.copyWith(color: colors.primaryText)),
           CoconutLayout.spacing_400h,
           if (reached)
-            Text(copy.goal_plan_reached, key: const Key('goal-plan-reached'), style: questionStyle)
+            Text(
+              keepWords(copy.goal_plan_reached),
+              key: const Key('goal-plan-reached'),
+              semanticsLabel: copy.goal_plan_reached,
+              style: questionStyle,
+            )
           else ...[
             Text(copy.goal_plan_period_question, style: questionStyle),
             CoconutLayout.spacing_200h,
-            _Segments<GoalPlanPeriod>(
-              keyPrefix: 'goal-plan-period',
+            SegmentedChoice<GoalPlanPeriod>(
+              keyOf: (value) => 'goal-plan-period-${value.name}',
               values: GoalPlanPeriod.values,
               selected: period,
               label: (value) => value.label,
@@ -376,37 +382,20 @@ class _GoalPlanCardState extends State<GoalPlanCard> {
             ),
             if (period == GoalPlanPeriod.custom) ...[
               CoconutLayout.spacing_200h,
-              ShrinkAnimationButton(
+              ValueSelectRow(
                 key: const Key('goal-plan-custom-date'),
+                icon: CupertinoIcons.calendar,
+                label: copy.goal_plan_custom_date,
+                value: _formatDate(end),
+                valueKey: const Key('goal-plan-custom-date-text'),
                 onPressed: () => _selectPeriod(GoalPlanPeriod.custom),
-                defaultColor: colors.homeBackground,
-                pressedOverlayColor: colors.primaryText,
-                pressedOverlayOpacity: 0.16,
-                borderRadius: 10,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  child: Row(
-                    children: [
-                      Icon(CupertinoIcons.calendar, size: 16, color: colors.secondaryTextStrong),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(copy.goal_plan_custom_date, style: questionStyle)),
-                      Text(
-                        _formatDate(end),
-                        key: const Key('goal-plan-custom-date-text'),
-                        style: CoconutTypography.body3_12_Bold.copyWith(color: colors.primaryText),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(CupertinoIcons.chevron_right, size: 14, color: colors.tertiaryText),
-                    ],
-                  ),
-                ),
               ),
             ],
             CoconutLayout.spacing_400h,
             Text(copy.goal_plan_cycle_question, style: questionStyle),
             CoconutLayout.spacing_200h,
-            _Segments<GoalPlanCycle>(
-              keyPrefix: 'goal-plan-cycle',
+            SegmentedChoice<GoalPlanCycle>(
+              keyOf: (value) => 'goal-plan-cycle-${value.name}',
               values: GoalPlanCycle.values,
               selected: _cycle,
               label: (value) => value.label,
@@ -447,48 +436,14 @@ class _GoalPlanCardState extends State<GoalPlanCard> {
               ),
             ),
             CoconutLayout.spacing_200h,
-            Text(copy.goal_plan_note, style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText)),
+            Text(
+              keepWords(copy.goal_plan_note),
+              semanticsLabel: copy.goal_plan_note,
+              style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText),
+            ),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _Segments<T extends Enum> extends StatelessWidget {
-  final String keyPrefix;
-  final List<T> values;
-  final T selected;
-  final String Function(T value) label;
-  final ValueChanged<T> onSelected;
-
-  const _Segments({
-    required this.keyPrefix,
-    required this.values,
-    required this.selected,
-    required this.label,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.coconutColors;
-    return CoconutSegmentedControl(
-      selectedColor: colors.segmentedControlSelected,
-      segmentedControlContainerColor: colors.homeBackground,
-      selectedTextColor: colors.segmentedControlSelectedText,
-      unselectedTextColor: colors.segmentedControlUnselectedText,
-      labelPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-      isSelected: [for (final value in values) value == selected],
-      onPressed: (index) => onSelected(values[index]),
-      children: [
-        for (final value in values)
-          FittedBox(
-            key: ValueKey('$keyPrefix-${value.name}'),
-            fit: BoxFit.scaleDown,
-            child: Text(label(value), maxLines: 1),
-          ),
-      ],
     );
   }
 }

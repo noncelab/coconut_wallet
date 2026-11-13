@@ -4,9 +4,12 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 import 'package:coconut_wallet/providers/wallet_appearance_provider.dart';
+import 'package:coconut_wallet/widgets/common/text/keep_words.dart';
+import 'package:coconut_wallet/widgets/common/text/label_value_row.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/wallet_widget_views.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// 목표 수량 막대: 목표가 있는 지갑마다 잔액만큼 지갑 색으로 채우고, 조각 사이를 조금 띄운다.
 /// 지갑 색이 같아도 조각을 구분할 수 있다.
@@ -144,31 +147,54 @@ class GoalAmountSummary extends StatelessWidget {
     final animatedBalance = (goal.balance * reveal).round();
     final remaining = goal.target - goal.balance;
     final appearances = context.watchWalletAppearance();
+    final secondaryStyle = CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong);
     return Column(
       key: const Key('hodl-insights-goal'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Flexible(
-              child: HomeWidgetHeader(
-                iconPath: FeatureWidgetIconPath.bullseyeArrow,
-                title: t.hodl_insights.goal_amount,
-                style: CoconutTypography.body1_16_Bold,
-              ),
-            ),
-            CoconutLayout.spacing_200w,
-            Expanded(
-              child: Text(
-                scopeLabelOf(targeted),
-                key: const Key('goal-scope-label'),
-                textAlign: TextAlign.end,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-              ),
-            ),
-          ],
+        // 제목과 범위(지갑 이름·'지갑 N개 합산')가 한 줄에 들어가면 양 끝에, 아니면 범위를 제목 아래 줄로 내린다.
+        // 큰 글자·긴 언어에서 둘 다 '…'로 잘리지 않게 한다.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final scope = scopeLabelOf(targeted);
+            // HomeWidgetHeader: 아이콘 16 + 간격 6 + 제목(줄 높이 1)
+            final titleStyle = CoconutTypography.body1_16_Bold.copyWith(height: 1);
+            final headerWidth = 16 + 6 + LabelValueRow.widthOf(context, t.hodl_insights.goal_amount, titleStyle) + 1;
+            // 제목만으로도 한 줄을 넘으면(큰 글자·긴 언어) 홈 위젯 머리(한 줄·'…') 대신 제목이 다음 줄로 이어지는 머리를 쓴다.
+            final Widget header =
+                headerWidth <= constraints.maxWidth
+                    ? HomeWidgetHeader(
+                      iconPath: FeatureWidgetIconPath.bullseyeArrow,
+                      title: t.hodl_insights.goal_amount,
+                      style: CoconutTypography.body1_16_Bold,
+                    )
+                    : _WrappingHeader(title: t.hodl_insights.goal_amount, style: titleStyle);
+            if (headerWidth + 8 + LabelValueRow.widthOf(context, scope, secondaryStyle) <= constraints.maxWidth) {
+              return Row(
+                children: [
+                  SizedBox(width: headerWidth, child: header),
+                  CoconutLayout.spacing_200w,
+                  Expanded(
+                    child: Text(
+                      scope,
+                      key: const Key('goal-scope-label'),
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      style: secondaryStyle,
+                    ),
+                  ),
+                ],
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                header,
+                CoconutLayout.spacing_100h,
+                Text(scope, key: const Key('goal-scope-label'), style: secondaryStyle),
+              ],
+            );
+          },
         ),
         CoconutLayout.spacing_200h,
         FittedBox(
@@ -214,24 +240,7 @@ class GoalAmountSummary extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Divider(height: 1, thickness: 0.5, color: colors.border),
         ),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                t.hodl_insights.goal_remaining,
-                style: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
-              ),
-            ),
-            Text(
-              remaining > 0 ? amountText(remaining) : t.hodl_insights.goal_reached,
-              key: const Key('goal-remaining-amount'),
-              // 다 채우면 한글 문구라 숫자 글꼴을 쓰지 않는다.
-              style: (remaining > 0 ? CoconutTypography.body2_14_NumberBold : CoconutTypography.body2_14_Bold).copyWith(
-                color: colors.primaryText,
-              ),
-            ),
-          ],
-        ),
+        _RemainingLine(remaining: remaining, amountText: amountText),
         if (multiple) ...[
           CoconutLayout.spacing_300h,
           Wrap(
@@ -272,6 +281,60 @@ class GoalAmountSummary extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// 홈 위젯 머리와 같은 모양(아이콘 16 + 간격 6 + 굵은 제목)이지만 제목이 길면 다음 줄로 이어진다. 아이콘은 첫 줄에 맞춘다.
+class _WrappingHeader extends StatelessWidget {
+  final String title;
+  final TextStyle style;
+
+  const _WrappingHeader({required this.title, required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.coconutColors.primaryText;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: LabelValueRow.lineHeightOf(context, style),
+          child: Center(
+            child: SvgPicture.asset(
+              FeatureWidgetIconPath.bullseyeArrow,
+              width: 16,
+              height: 16,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(child: Text(keepWords(title), semanticsLabel: title, style: style.copyWith(color: color))),
+      ],
+    );
+  }
+}
+
+/// '남은 수량' 줄. 다 채우면 값 자리에 '목표 달성'(지금과 같은 문구). 이름과 값이 안 들어가면 값을 다음 줄로 내린다.
+class _RemainingLine extends StatelessWidget {
+  final int remaining;
+  final String Function(int sats) amountText;
+
+  const _RemainingLine({required this.remaining, required this.amountText});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return LabelValueRow(
+      label: t.hodl_insights.goal_remaining,
+      labelStyle: CoconutTypography.body3_12.copyWith(color: colors.secondaryTextStrong),
+      value: remaining > 0 ? amountText(remaining) : t.hodl_insights.goal_reached,
+      valueKey: const Key('goal-remaining-amount'),
+      // 다 채우면 한글 문구라 숫자 글꼴을 쓰지 않는다.
+      valueStyle: (remaining > 0 ? CoconutTypography.body2_14_NumberBold : CoconutTypography.body2_14_Bold).copyWith(
+        color: colors.primaryText,
+      ),
     );
   }
 }
