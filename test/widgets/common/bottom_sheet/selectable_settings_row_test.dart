@@ -40,7 +40,12 @@ void main() {
           expect(numericStyle.fontWeight, defaultStyle.fontWeight);
           expect(numericStyle.color, resolveCoconutThemeExtension(variant: variant).colors.primaryText);
           expect(
-            tester.getSemantics(find.bySemanticsLabel('1,234,567.89')).getSemanticsData().flagsCollection.isSelected,
+            tester
+                .getSemantics(find.bySemanticsLabel('1,234,567.89'))
+                .getSemanticsData()
+                .flagsCollection
+                .isSelected
+                .toBoolOrNull(),
             selected,
           );
           expect(tester.takeException(), isNull);

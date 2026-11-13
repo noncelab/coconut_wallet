@@ -29,7 +29,16 @@ class BroadcastingCompleteScreen extends StatefulWidget {
   final String txHash;
   final bool animateEntry;
 
-  const BroadcastingCompleteScreen({super.key, required this.id, required this.txHash, this.animateEntry = false});
+  /// Replaces the default title, e.g. to say whether a payjoin happened.
+  final String? title;
+
+  const BroadcastingCompleteScreen({
+    super.key,
+    required this.id,
+    required this.txHash,
+    this.animateEntry = false,
+    this.title,
+  });
 
   @override
   State<BroadcastingCompleteScreen> createState() => _BroadcastingCompleteScreenState();
@@ -92,7 +101,7 @@ class _BroadcastingCompleteScreenState extends State<BroadcastingCompleteScreen>
                   SvgPicture.asset(CommonStateIconPath.completionCheck),
                 CoconutLayout.spacing_400h,
                 Text(
-                  t.broadcasting_complete_screen.complete,
+                  widget.title ?? t.broadcasting_complete_screen.complete,
                   style: CoconutTypography.heading4_18_Bold.setColor(context.coconutColors.primaryText),
                 ),
                 CoconutLayout.spacing_400h,

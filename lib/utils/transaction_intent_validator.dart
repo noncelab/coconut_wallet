@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_sender.dart' show PayjoinCheckedProposal;
 
 enum TransactionIntentMismatch {
   missingTransaction,
@@ -112,6 +113,78 @@ class TransactionIntentValidator {
 
   static void ensureMatches(Transaction? expected, Transaction? actual) {
     final result = validate(expected, actual);
+    if (!result.isValid) {
+      throw TransactionIntentMismatchException(result);
+    }
+  }
+
+  /// Checks a signed payjoin proposal against the Original it replaces.
+  ///
+  /// A payjoin legitimately changes the transaction: the receiver adds inputs,
+  /// raises its own output and may take a fee contribution from our change.
+  /// payjoin's sender has already checked those changes against BIP 78's
+  /// rules, which [checked] proves. Here the wallet checks what it can see
+  /// itself: it signed exactly the proposal payjoin checked, every input of
+  /// the Original is still spent, and every output to someone else still
+  /// pays at least what the Original paid.
+  static TransactionIntentValidationResult validatePayjoinProposal(
+    Transaction? original,
+    Transaction? signedProposal,
+    PayjoinCheckedProposal checked, {
+    required bool Function(TransactionOutput output) isOwnOutput,
+  }) {
+    final checkedTransaction = Psbt.parse(checked.psbtBase64).unsignedTransaction;
+    final asChecked = validate(checkedTransaction, signedProposal);
+    if (!asChecked.isValid) return asChecked;
+    if (original == null || signedProposal == null) {
+      return const TransactionIntentValidationResult.mismatch(TransactionIntentMismatch.missingTransaction);
+    }
+    if (original.version != signedProposal.version) {
+      return const TransactionIntentValidationResult.mismatch(TransactionIntentMismatch.version);
+    }
+    if (original.lockTime != signedProposal.lockTime) {
+      return const TransactionIntentValidationResult.mismatch(TransactionIntentMismatch.lockTime);
+    }
+
+    for (var index = 0; index < original.inputs.length; index++) {
+      final input = original.inputs[index];
+      final kept = signedProposal.inputs.any(
+        (candidate) => candidate.transactionHash == input.transactionHash && candidate.index == input.index,
+      );
+      if (!kept) {
+        return TransactionIntentValidationResult.mismatch(
+          TransactionIntentMismatch.inputTransactionHash,
+          itemIndex: index,
+        );
+      }
+    }
+
+    for (var index = 0; index < original.outputs.length; index++) {
+      final output = original.outputs[index];
+      if (isOwnOutput(output)) continue;
+      final script = output.scriptPubKey.serialize();
+      final matching = signedProposal.outputs.where((candidate) => candidate.scriptPubKey.serialize() == script);
+      if (matching.isEmpty) {
+        return TransactionIntentValidationResult.mismatch(
+          TransactionIntentMismatch.outputScriptPubKey,
+          itemIndex: index,
+        );
+      }
+      if (matching.every((candidate) => candidate.amount < output.amount)) {
+        return TransactionIntentValidationResult.mismatch(TransactionIntentMismatch.outputAmount, itemIndex: index);
+      }
+    }
+
+    return const TransactionIntentValidationResult.match();
+  }
+
+  static void ensurePayjoinProposalMatches(
+    Transaction? original,
+    Transaction? signedProposal,
+    PayjoinCheckedProposal checked, {
+    required bool Function(TransactionOutput output) isOwnOutput,
+  }) {
+    final result = validatePayjoinProposal(original, signedProposal, checked, isOwnOutput: isOwnOutput);
     if (!result.isValid) {
       throw TransactionIntentMismatchException(result);
     }

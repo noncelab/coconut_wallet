@@ -1087,6 +1087,13 @@ class WalletProvider extends ChangeNotifier {
     return _addressRepository.containsAddress(walletId, address, isChange: isChange);
   }
 
+  /// The derivation path of [address] in the wallet, or null if the wallet
+  /// has not generated it.
+  String? derivationPathOf(int walletId, String address) {
+    final path = _addressRepository.getDerivationPath(walletId, address);
+    return path.isEmpty ? null : path;
+  }
+
   // 앱에 추가된 모든 지갑 중 해당 주소를 소유한 지갑 ID 반환, 없으면 null
   int? findWalletIdContainingAddress(String address) {
     for (final wallet in _walletItemList) {

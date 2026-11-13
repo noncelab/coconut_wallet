@@ -29,6 +29,14 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/screens/send/broadcasting_complete_screen.dart';
+import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/repository/realm/payjoin_session_repository.dart';
+import 'package:coconut_wallet/screens/payjoin/payjoin_vault_sign_screen.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_psbt.dart' show finalizeDeviceSignedPsbt;
+import 'package:coconut_wallet/services/payjoin/payjoin_send_attempt.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_sender.dart' show PayjoinCheckedProposal;
+import 'package:coconut_wallet/services/payjoin/payjoin_signer.dart';
+import 'package:coconut_wallet/widgets/features/send/payjoin_send_dialog.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/utils/transaction_intent_validator.dart';
@@ -91,6 +99,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
   bool _showBroadcastLottie = false;
   bool _isBroadcastCompletionPhase = false;
   bool _isOverlayLoading = false;
+
+  /// Whether this send went out as a payjoin; null when the receiver did not
+  /// ask for one.
+  bool? _sentAsPayjoin;
 
   int? get _displayAmount => _viewModel.amount ?? widget.initialAmount;
 
@@ -208,6 +220,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
               id: _viewModel.walletId!,
               txHash: _viewModel.signedTx!.transactionHash,
               animateEntry: true,
+              title: switch (_sentAsPayjoin) {
+                true => t.payjoin.sent_as_payjoin,
+                false => t.payjoin.sent_without_payjoin,
+                null => null,
+              },
             ),
         transitionsBuilder:
             (_, animation, secondaryAnimation, child) =>
@@ -396,7 +413,11 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
                                     },
                                     child: Text(
                                       _isBroadcastCompletionPhase
-                                          ? t.broadcasting_complete_screen.complete
+                                          ? switch (_sentAsPayjoin) {
+                                            true => t.payjoin.sent_as_payjoin,
+                                            false => t.payjoin.sent_without_payjoin,
+                                            null => t.broadcasting_complete_screen.complete,
+                                          }
                                           : t.broadcasting_screen.requesting,
                                       key: ValueKey(_isBroadcastCompletionPhase),
                                       style: CoconutTypography.heading4_18_Bold.setColor(
@@ -549,6 +570,10 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
                     ),
               );
       if (!mounted || inheritedTagIds == null) return;
+      if (viewModel.payjoinUri != null && _sentAsPayjoin == null) {
+        _sentAsPayjoin = await _attemptPayjoin(viewModel);
+        if (!mounted) return;
+      }
       await _broadcast(inheritedTagIds: inheritedTagIds);
     } catch (e) {
       Logger.error('Preparing tag inheritance failed: $e');
@@ -566,6 +591,60 @@ class _BroadcastingScreenState extends State<BroadcastingScreen>
         _restoreAfterBroadcastFailure();
       }
     }
+  }
+
+  /// Offers the receiver a payjoin before sending, with a dialog that shows
+  /// the receiver's progress and lets the sender go ahead without waiting.
+  Future<bool> _attemptPayjoin(BroadcastingViewModel viewModel) async {
+    final sessions = context.read<PayjoinSessionRepository>();
+    final attempt = PayjoinSendAttempt(repository: sessions);
+    var dialogOpen = true;
+    final dialog = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PayjoinSendDialog(stage: attempt.stage, onSendWithoutPayjoin: attempt.abandon),
+    );
+    Future<void> closeDialog() async {
+      if (!dialogOpen) return;
+      dialogOpen = false;
+      if (mounted) Navigator.of(context).pop();
+      await dialog;
+    }
+
+    Future<String?> signProposal(PayjoinCheckedProposal proposal) async {
+      if (viewModel.payjoinSigner == PayjoinSigner.coconutVault) {
+        await closeDialog();
+        return _signProposalWithVault(viewModel, proposal);
+      }
+      return AppGuard.runWithoutPrivacyScreen(() => viewModel.signPayjoinProposal(proposal));
+    }
+
+    try {
+      final sentAsPayjoin = await viewModel.attemptPayjoin(sessions, attempt, signProposal: signProposal);
+      // Let the sender see that the receiver joined before the send starts.
+      if (sentAsPayjoin && dialogOpen) await Future.delayed(const Duration(milliseconds: 900));
+      return sentAsPayjoin;
+    } finally {
+      await closeDialog();
+      attempt.dispose();
+    }
+  }
+
+  /// The second trip to Coconut Vault: the receiver's proposal out, our
+  /// signatures back. Null when the user leaves without signing.
+  Future<String?> _signProposalWithVault(BroadcastingViewModel viewModel, PayjoinCheckedProposal proposal) {
+    final psbtToSign = viewModel.payjoinProposalForVault(proposal);
+    return Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder:
+            (_) => PayjoinVaultSignScreen(
+              psbtBase64: psbtToSign,
+              instruction: t.payjoin.vault_sign_send(name: viewModel.walletName),
+              accept: (answer) => finalizeDeviceSignedPsbt(answer, shownPsbtBase64: psbtToSign),
+            ),
+      ),
+    );
   }
 
   @override

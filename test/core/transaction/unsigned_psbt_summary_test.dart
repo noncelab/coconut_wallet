@@ -11,7 +11,7 @@ class _TestWallet extends WalletBase {
   _TestWallet(this.changeAddress) : super(AddressType.p2wpkh, "m/84'/1'/0'");
 
   @override
-  String addSignatureToPsbt(String psbt) => throw UnimplementedError();
+  String addSignatureToPsbt(String psbt, {bool allowFinalizedForeignInputs = false}) => throw UnimplementedError();
 
   @override
   String getAddress(int addressIndex, {bool isChange = false}) => throw UnimplementedError();

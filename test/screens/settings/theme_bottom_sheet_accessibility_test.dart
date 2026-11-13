@@ -122,8 +122,8 @@ void main() {
           });
           final data = node.getSemanticsData();
           expect(data.hasAction(SemanticsAction.tap), isTrue);
-          expect(data.flagsCollection.hasSelectedState, isTrue);
-          expect(data.flagsCollection.isSelected, option.value == selected);
+          expect(data.flagsCollection.isSelected.toBoolOrNull(), isNotNull);
+          expect(data.flagsCollection.isSelected.toBoolOrNull(), option.value == selected);
         }
         final store = nodes.singleWhere(
           (node) => node.getSemanticsData().label == CcosOpenStoreContentSource.intro.ctaLabel,
