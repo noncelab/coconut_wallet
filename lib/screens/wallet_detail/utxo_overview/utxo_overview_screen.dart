@@ -359,12 +359,12 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
   }
 
   SliverPersistentHeader _buildMorphingHeader() {
-    final totalSats = viewModel.utxoList.fold<int>(0, (sum, utxo) => sum + utxo.amount);
     return SliverPersistentHeader(
       pinned: true,
       delegate: UtxoHeaderDelegate(
         topPadding: MediaQuery.paddingOf(context).top,
-        totalBalance: formatUtxoAmountForDisplay(totalSats, _currentUnit, dustThreshold: _dustThreshold),
+        // BTC 줄과 법정화폐 줄은 같은 지갑 잔액을 보여 준다(보내는 중인 UTXO는 빠지고 받는 중인 UTXO는 더해진 값)
+        totalBalance: formatUtxoAmountForDisplay(viewModel.balance, _currentUnit, dustThreshold: _dustThreshold),
         fiatPrice: viewModel.fiatPriceString,
         bottomBar:
             viewModel.isOverviewTab
@@ -541,7 +541,7 @@ class _UtxoOverviewScreenState extends State<UtxoOverviewScreen> with SelfLogged
                 key: _summaryChartKey,
                 height: UtxoSummaryChart.amountViewMinHeight,
                 buckets: _buckets,
-                totalSats: viewModel.utxoList.fold<int>(0, (s, u) => s + u.amount),
+                totalSats: viewModel.balance,
                 coinCount: viewModel.utxoList.length,
                 availableCount: viewModel.utxoList.where((u) => u.status == UtxoStatus.unspent).length,
                 availableSats: viewModel.utxoList
