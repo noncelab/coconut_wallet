@@ -216,7 +216,7 @@ home_edit:
   size: "サイズ"
   wallet_goals: "ウォレットごとの目標数量"
   wallet_goals_description: "ウォレットごとに貯蓄目標を設定してみましょう"
-  wallet_goal_same_account: "同じアカウントのウォレットにすでに目標があります"
+  wallet_goal_same_account: "「$name」ウォレットにすでに目標があります"
   wallet_goal_smaller_excluded: "同じアカウントにより大きい目標があるため、この目標は合計に含めません"
   wallet_goal_placeholder: "目標数量"
   categories:

@@ -329,9 +329,17 @@ void main() {
     test('a second wallet without a goal is blocked while the first has one, and clearing the first frees it', () {
       final viewModel = goals({1: 100000000}, []);
       expect((viewModel.goalBlocked(1), viewModel.goalBlocked(2)), (false, true));
+      // 막힌 이유에 목표가 있는 지갑 이름(카드 4)
+      expect((viewModel.goalOwnerName(1), viewModel.goalOwnerName(2)), (null, 'test_wallet1'));
       expect((viewModel.goalExcluded(1), viewModel.goalExcluded(2)), (false, false));
       viewModel.setTarget(1, null);
       expect(viewModel.goalBlocked(2), isFalse);
+    });
+
+    test('the reason names the wallet whose goal counts: the larger one (card 4)', () {
+      final three = [...twins, WalletMock.createSingleSigWalletItem(id: 3)];
+      final viewModel = goals({1: 100000000, 2: 200000000}, [], list: three);
+      expect(viewModel.goalOwnerName(3), 'test_wallet2');
     });
 
     test('existing goals on both stay editable; only the smaller one is marked as not counted', () {
@@ -379,7 +387,7 @@ void main() {
       final viewModel = goals({}, writes);
       viewModel.setTarget(2, 50000000);
       viewModel.setTarget(1, 70000000);
-      expect(await viewModel.commitTargets(), {2});
+      expect(await viewModel.commitTargets(), {2: 'test_wallet1'});
       expect(writes, [
         {1: 70000000},
       ]);
@@ -399,7 +407,7 @@ void main() {
         final viewModel = goals(store, writes);
         viewModel.setTarget(2, 50000000);
         store[1] = 100000000;
-        expect(await viewModel.commitTargets(), {2});
+        expect(await viewModel.commitTargets(), {2: 'test_wallet1'});
         expect(writes, isEmpty);
         expect(store, {1: 100000000});
       });

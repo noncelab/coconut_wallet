@@ -217,7 +217,7 @@ home_edit:
   size: "Size"
   wallet_goals: "Goal per Wallet"
   wallet_goals_description: "Set a savings goal for each wallet"
-  wallet_goal_same_account: "Another wallet of this account already has a goal"
+  wallet_goal_same_account: "The '$name' wallet already has a goal"
   wallet_goal_smaller_excluded: "This account has a larger goal, so this one isn't counted in the total"
   wallet_goal_placeholder: "Goal amount"
   categories:

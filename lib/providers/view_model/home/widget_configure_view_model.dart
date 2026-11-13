@@ -166,39 +166,45 @@ class WidgetConfigureViewModel extends ChangeNotifier {
     return true;
   }
 
-  /// 같은 계정(핫월렛과 그 보기 전용 지갑)의 다른 지갑에 [walletId]보다 큰 목표(없으면 아무 목표)가 지금 편집에 있는지
-  int? _largestOtherGoal(int walletId) {
+  /// 같은 계정(핫월렛과 그 보기 전용 지갑)의 다른 지갑 가운데 [targets]에서 목표가 가장 큰 지갑과 그 목표.
+  /// 목표가 다르면 큰 목표가 합계에 세어진다(결정 ⑦). 목표가 있는 다른 지갑이 없으면 null
+  ({WalletItemBase wallet, int target})? _largestOtherGoal(int walletId, Map<int, int?> targets) {
     final wallet = wallets.firstWhere((wallet) => wallet.id == walletId);
-    int? largest;
+    ({WalletItemBase wallet, int target})? largest;
     for (final other in wallets) {
       if (other.id == walletId || other.accountKey != wallet.accountKey) continue;
-      final theirs = _targets[other.id];
-      if (theirs != null && (largest == null || theirs > largest)) largest = theirs;
+      final theirs = targets[other.id];
+      if (theirs != null && (largest == null || theirs > largest.target)) largest = (wallet: other, target: theirs);
     }
     return largest;
   }
 
-  /// 새 목표를 받지 않는 지갑(결정 ⑦): 시트를 연 때 목표가 없었고 같은 계정의 다른 지갑에 목표가 있다.
-  /// 이미 목표가 있던 지갑(예전 데이터)은 지우고 다시 써도 막지 않는다(Fable N1). 이유: "같은 계정 지갑에 이미 목표가 있어요"
-  bool goalBlocked(int walletId) => _savedTargets[walletId] == null && _largestOtherGoal(walletId) != null;
+  /// 새 목표를 받지 않는 지갑이면 이미 목표가 있는 같은 계정 지갑의 이름, 아니면 null(결정 ⑦, 카드 4).
+  /// 시트를 연 때 목표가 없었고 같은 계정의 다른 지갑에 목표가 있으면 막는다. 이름은 목표가 가장 커서 세어지는 지갑.
+  /// 이미 목표가 있던 지갑(예전 데이터)은 지우고 다시 써도 막지 않는다(Fable N1). 이유: "'비상금' 지갑에 이미 목표가 있어요"
+  String? goalOwnerName(int walletId) =>
+      _savedTargets[walletId] == null ? _largestOtherGoal(walletId, _targets)?.wallet.name : null;
+
+  bool goalBlocked(int walletId) => goalOwnerName(walletId) != null;
 
   /// 이 지갑의 목표가 합계에 들어가지 않는 지갑: 목표가 있는데 같은 계정에 더 큰 목표가 있다(예전 데이터, 큰 목표로 센다).
   /// 이유: "같은 계정에 더 큰 목표가 있어 이 목표는 합계에 넣지 않아요"(막힌 것과 다른 말, Astra)
   bool goalExcluded(int walletId) {
     final mine = _targets[walletId];
-    final largest = _largestOtherGoal(walletId);
+    final largest = _largestOtherGoal(walletId, _targets)?.target;
     return mine != null && largest != null && largest > mine;
   }
 
-  /// 바뀐 지갑 목표를 한 번에 저장하고, 계정 규칙 때문에 저장하지 않은 지갑 id를 돌려준다(B1-b).
+  /// 바뀐 지갑 목표를 한 번에 저장하고, 계정 규칙 때문에 저장하지 않은 지갑 id와 그 계정에서 목표가 세어지는 지갑 이름을
+  /// 돌려준다(B1-b, 카드 4).
   /// - 저장소가 차례를 주면(다른 목표 저장과 겹치지 않게) 그때의 최신 저장값으로 정한다. 이번 시트에서 바꾼 지갑만 쓰고,
   ///   안 바꾼 지갑은 그 저장값을 그대로 둔다(시트를 연 사이 다른 곳에서 저장한 목표도 계정 규칙에 넣는다).
   /// - 목표가 없던 지갑의 새 목표는 같은 계정에 남는 목표가 없을 때만, 지갑 id 순서로 계정마다 하나 받는다.
   /// - 목표 맵은 한 번에 쓴다: 다 바뀌거나 하나도 안 바뀐다. 꺼짐 표시는 그 뒤에 쓰고, 실패하면 오류를 그대로 올린다.
   /// - 저장했든 못 했든 시트는 다시 읽은 저장값으로 다음 저장을 맞춘다.
-  Future<Set<int>> commitTargets() async {
+  Future<Map<int, String>> commitTargets() async {
     if (!spec.goals) return const {};
-    final skipped = <int>{};
+    final skipped = <int, String>{};
     try {
       await _saveTargets((stored) {
         skipped.clear();
@@ -214,8 +220,9 @@ class WidgetConfigureViewModel extends ChangeNotifier {
         };
         for (final wallet in edited) {
           if (wanted[wallet.id] != null && current[wallet.id] == null && !claimed.add(wallet.accountKey)) {
-            skipped.add(wallet.id);
             wanted[wallet.id] = null;
+            // 이 계정은 목표가 남는 지갑이 이미 있다(claimed). 그 가운데 큰 목표가 세어진다
+            skipped[wallet.id] = _largestOtherGoal(wallet.id, wanted)!.wallet.name;
           }
         }
         return {

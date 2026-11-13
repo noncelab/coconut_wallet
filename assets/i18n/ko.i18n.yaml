@@ -217,7 +217,7 @@ home_edit:
   size: "크기"
   wallet_goals: "지갑별 목표 수량"
   wallet_goals_description: "지갑별로 저축 목표를 정해보세요"
-  wallet_goal_same_account: "같은 계정 지갑에 이미 목표가 있어요"
+  wallet_goal_same_account: "'$name' 지갑에 이미 목표가 있어요"
   wallet_goal_smaller_excluded: "같은 계정에 더 큰 목표가 있어 이 목표는 합계에 넣지 않아요"
   wallet_goal_placeholder: "목표 수량"
   categories:

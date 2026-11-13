@@ -218,7 +218,7 @@ home_edit:
   size: "Tamaño"
   wallet_goals: "Objetivo por billetera"
   wallet_goals_description: "Define un objetivo de ahorro para cada billetera"
-  wallet_goal_same_account: "Otra billetera de esta cuenta ya tiene una meta"
+  wallet_goal_same_account: "La billetera «$name» ya tiene una meta"
   wallet_goal_smaller_excluded: "Esta cuenta tiene un objetivo mayor, así que este no cuenta en el total"
   wallet_goal_placeholder: "Cantidad objetivo"
   categories:

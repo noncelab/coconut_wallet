@@ -242,13 +242,13 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
     await _viewModel.commitFakeBalance();
     final skipped = await _viewModel.commitTargets();
     if (!mounted) return;
-    // 시트를 연 사이 같은 계정의 다른 지갑에 목표가 생겨 저장하지 않은 목표가 있으면 알린다
+    // 시트를 연 사이 같은 계정의 다른 지갑에 목표가 생겨 저장하지 않은 목표가 있으면 알린다(여럿이면 첫 지갑의 이름)
     if (skipped.isNotEmpty) {
       CoconutToast.showToast(
         context: context,
         isVisibleIcon: true,
         iconPath: CommonStateIconPath.triangleWarning,
-        text: t.home_edit.wallet_goal_same_account,
+        text: t.home_edit.wallet_goal_same_account(name: skipped.values.first),
         level: CoconutToastLevel.warning,
       );
     }
@@ -448,10 +448,10 @@ class _WidgetConfigureSheetState extends State<WidgetConfigureSheet> {
                   key: ValueKey('widget-configure-goal-same-account-${wallet.id}'),
                   icon: CupertinoIcons.info_circle,
                   // 새 목표를 막은 이유와, 예전 목표가 합계에서 빠진 이유는 다른 말로(Astra)
-                  message:
-                      viewModel.goalBlocked(wallet.id)
-                          ? t.home_edit.wallet_goal_same_account
-                          : t.home_edit.wallet_goal_smaller_excluded,
+                  message: switch (viewModel.goalOwnerName(wallet.id)) {
+                    final owner? => t.home_edit.wallet_goal_same_account(name: owner),
+                    null => t.home_edit.wallet_goal_smaller_excluded,
+                  },
                   backgroundColor: Colors.transparent,
                 ),
               ],

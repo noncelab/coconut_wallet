@@ -298,18 +298,25 @@ class WalletInfoViewModel extends ChangeNotifier {
 
   bool get isUpdatingTarget => _isUpdatingTarget;
 
-  /// 목표가 없는데 같은 계정(핫월렛과 그 보기 전용 지갑)의 다른 지갑에 목표가 있으면 true(결정 ⑦).
-  /// 새 두 번째 목표는 막는다. 이미 있는 목표는 고치고 지울 수 있다.
-  bool get goalBlockedBySameAccount {
-    if (targetSats != null) return false;
+  /// 목표가 없는데 같은 계정(핫월렛과 그 보기 전용 지갑)의 다른 지갑에 목표가 있으면 그 지갑 이름(결정 ⑦, 카드 4).
+  /// 여럿이면 목표가 가장 커서 합계에 세어지는 지갑. 새 두 번째 목표는 막는다. 이미 있는 목표는 고치고 지울 수 있다.
+  String? get goalOwnerName {
+    if (targetSats != null) return null;
     final wallet = _walletProvider.getWalletById(_walletId);
-    return _walletProvider.walletItemList.any(
-      (other) =>
-          other.id != _walletId &&
-          other.accountKey == wallet.accountKey &&
-          _sharedPrefs.getWalletTargetSats(other.id) != null,
-    );
+    String? owner;
+    var largest = 0;
+    for (final other in _walletProvider.walletItemList) {
+      if (other.id == _walletId || other.accountKey != wallet.accountKey) continue;
+      final theirs = _sharedPrefs.getWalletTargetSats(other.id);
+      if (theirs != null && (owner == null || theirs > largest)) {
+        owner = other.name;
+        largest = theirs;
+      }
+    }
+    return owner;
   }
+
+  bool get goalBlockedBySameAccount => goalOwnerName != null;
 
   Future<bool> setTargetSats(int targetSats) => _updateTargetSats(targetSats);
 

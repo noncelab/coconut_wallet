@@ -2863,7 +2863,8 @@ void main() {
         tester.widget<app_field.CoconutTextField>(find.byKey(const ValueKey('widget-configure-goal-input-2'))).enabled,
         isFalse,
       );
-      expect(find.bySemanticsLabel(t.home_edit.wallet_goal_same_account), findsOneWidget);
+      // 이유에 목표가 있는 지갑 이름(카드 4)
+      expect(find.bySemanticsLabel(t.home_edit.wallet_goal_same_account(name: 'test_wallet1')), findsOneWidget);
       // 1번 지갑의 목표를 지우면 2번 지갑에 넣을 수 있다.
       await tester.enterText(
         find.descendant(

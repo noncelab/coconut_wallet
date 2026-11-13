@@ -217,7 +217,7 @@ home_edit:
   size: "Größe"
   wallet_goals: "Ziel pro Wallet"
   wallet_goals_description: "Lege für jede Wallet ein Sparziel fest"
-  wallet_goal_same_account: "Eine andere Wallet dieses Kontos hat schon ein Ziel"
+  wallet_goal_same_account: "Die Wallet „$name“ hat schon ein Ziel"
   wallet_goal_smaller_excluded: "Dieses Konto hat ein größeres Ziel, daher zählt dieses nicht zur Summe"
   wallet_goal_placeholder: "Zielmenge"
   categories:

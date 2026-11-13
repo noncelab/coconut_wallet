@@ -488,6 +488,7 @@ void main() {
       final model = second();
       addTearDown(model.dispose);
       expect(model.goalBlockedBySameAccount, isTrue);
+      expect(model.goalOwnerName, 'Test wallet');
       expect(await model.setTargetSats(50000000), isFalse);
       expect(model.targetSats, isNull);
     });
@@ -507,7 +508,7 @@ void main() {
     testWidgets('opening the goal of the second wallet explains instead of opening the editor', (tester) async {
       await targets({'1': 100000000});
       await openTargetSheet(tester, id: 2, sheetExpected: false);
-      final reason = t.home_edit.wallet_goal_same_account;
+      final reason = t.home_edit.wallet_goal_same_account(name: 'Test wallet');
       expect(
         find.byWidgetPredicate(
           (w) =>
