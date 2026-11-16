@@ -398,7 +398,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   }
 
   void _onFeeRateChanged(String input) async {
-    if (_viewModel.isInitializedSuccess == false) {
+    // 준비가 예외로 끝나면 성공 여부가 null로 남는다(안내를 바깥 터치·뒤로 가기로 닫으면 이 화면에서 입력할 수 있다).
+    // 준비에 성공했을 때만 계산한다
+    if (_viewModel.isInitializedSuccess != true) {
       return;
     }
 

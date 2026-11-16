@@ -737,5 +737,51 @@ void main() {
       expect(inDialog(_text(t.OK)), findsOneWidget);
       expect(inDialog(_text(t.transaction_fee_bumping_screen.dialog.change_server)), findsNothing);
     });
+
+    /// 안내만 닫혀 수수료 올리기 화면이 남은 채(준비 실패) 수수료 12를 넣는다. 준비가 끝나지 않았으니 계산하지 않아야 한다
+    Future<void> typeFeeAfterGuideClosed(WidgetTester tester) async {
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.byType(TransactionFeeBumpingScreen), findsOneWidget, reason: '안내만 닫히고 수수료 올리기 화면은 남는다');
+      final viewModel = tester.element(find.byType(Scaffold)).read<FeeBumpingViewModel>();
+      expect(viewModel.isInitializedSuccess, isNot(true));
+
+      await tester.enterText(find.byType(EditableText), '12');
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(viewModel.hasValidTransaction, isFalse, reason: '준비가 끝나지 않은 화면에서는 입력한 수수료로 거래를 만들지 않는다');
+    }
+
+    testWidgets('서명 확인 불가 안내를 바깥을 눌러 닫은 뒤 수수료를 넣어도 오류 없이 계산하지 않는다', (tester) async {
+      await open(tester, await syncUnsigned(tester));
+      expectServerGuide();
+
+      await tester.tapAt(const Offset(8, 8));
+      await settle(tester);
+
+      await typeFeeAfterGuideClosed(tester);
+    });
+
+    testWidgets('서명 확인 불가 안내를 시스템 뒤로 가기로 닫은 뒤 수수료를 넣어도 오류 없이 계산하지 않는다', (tester) async {
+      await open(tester, await syncUnsigned(tester));
+      expectServerGuide();
+
+      await tester.binding.handlePopRoute();
+      await settle(tester);
+
+      await typeFeeAfterGuideClosed(tester);
+    });
+
+    testWidgets('일반 오류 안내를 바깥을 눌러 닫은 뒤 수수료를 넣어도 오류 없이 계산하지 않는다', (tester) async {
+      final own = await syncOwn(tester);
+      scenario.server.rawByHash.remove(own.transactionHash);
+      await open(tester, own);
+      expect(inDialog(_text(t.alert.error_occurs)), findsOneWidget);
+
+      await tester.tapAt(const Offset(8, 8));
+      await settle(tester);
+
+      await typeFeeAfterGuideClosed(tester);
+    });
   });
 }
