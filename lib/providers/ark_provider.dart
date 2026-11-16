@@ -39,7 +39,8 @@ import 'package:provider/provider.dart';
 /// - A hot wallet's Ark wallet is opened once per app session ([open]), after the UI has unlocked
 ///   its seed, and stays open until the process ends. Wallets created or restored this session
 ///   are already open.
-/// - 포그라운드에서 열린 지갑을 [syncInterval]마다, 결제를 기다리는 화면에서는 [fastSyncInterval]마다
+/// - 포그라운드에서 열린 지갑을 [syncInterval]마다, 결제를 기다리는 화면에서는 [fastSyncInterval]마다,
+///   화면을 떠난 뒤 아직 받지 않은 인보이스가 있으면 [awaitedInvoiceSyncInterval]마다
 ///   동기화. 만료 [ArkRefreshDue.noticeBlocks] 전부터 [refreshDue]로 알리고 사용자 승인 후 [refreshDelegated].
 ///   bark 갱신 기한까지 갱신하지 않았고 자동 갱신에 동의한 지갑만 자금 보호를 위해 자동 갱신
 enum ArkDeleteBlock { hasFunds, exitInProgress }
@@ -54,6 +55,7 @@ class ArkProvider extends ChangeNotifier {
     LocalNotificationService? notifications,
     this.syncInterval = const Duration(seconds: 60),
     this.fastSyncInterval = const Duration(seconds: 5),
+    this.awaitedInvoiceSyncInterval = const Duration(seconds: 30),
     bool startTimer = true,
   }) : _currentBlock = currentBlock,
        _notifications = notifications,
@@ -75,6 +77,7 @@ class ArkProvider extends ChangeNotifier {
   final SharedPrefsRepository _sharedPrefs;
   final Duration syncInterval;
   final Duration fastSyncInterval;
+  final Duration awaitedInvoiceSyncInterval;
 
   /// Bumped whenever cached Ark data changes, for screens that show balances or history. Unlike
   /// [notifyListeners], it doesn't fire for sync progress.
@@ -85,6 +88,7 @@ class ArkProvider extends ChangeNotifier {
   final Map<int, Map<int, String>> _paymentMemos = {};
   final Map<int, Future<bool>> _opening = {};
   final Map<int, DateTime> _lastSync = {};
+  final Map<int, DateTime> _lastLightSync = {};
   final Map<int, ArkRefreshDue> _refreshDue = {};
 
   /// 앱이 꺼져 있어도 만료 전에 알리는 로컬 알림, 테스트 등에서는 없음
@@ -605,6 +609,7 @@ class ArkProvider extends ChangeNotifier {
     _paymentMemos.remove(walletId);
     _refreshDue.remove(walletId);
     _lastSync.remove(walletId);
+    _lastLightSync.remove(walletId);
     cacheRevision.value++;
     _notify();
     await _cancelStaleNotifications();
@@ -1445,7 +1450,13 @@ class ArkProvider extends ChangeNotifier {
       if (forceSync || last == null || now.difference(last) >= syncInterval) {
         unawaited(syncNow(wallet.id));
       } else if (_fastSync.containsKey(wallet.id) || _awaitedInvoices.containsKey(wallet.id)) {
-        unawaited(syncNow(wallet.id, withRounds: false));
+        final lastLight = _lastLightSync[wallet.id];
+        if (_fastSync.containsKey(wallet.id) ||
+            lastLight == null ||
+            now.difference(lastLight) >= awaitedInvoiceSyncInterval) {
+          _lastLightSync[wallet.id] = now;
+          unawaited(syncNow(wallet.id, withRounds: false));
+        }
       }
     }
   }
@@ -1456,6 +1467,7 @@ class ArkProvider extends ChangeNotifier {
     _movementMemos.removeWhere((id, _) => !ids.contains(id));
     _paymentMemos.removeWhere((id, _) => !ids.contains(id));
     _lastSync.removeWhere((id, _) => !ids.contains(id));
+    _lastLightSync.removeWhere((id, _) => !ids.contains(id));
     _refreshDue.removeWhere((id, _) => !ids.contains(id));
     if (isEnabled) arkWalletsLoaded = _loadArkWallets();
     _declined.removeWhere((id) => !ids.contains(id));
