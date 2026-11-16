@@ -720,23 +720,32 @@ class _CheckRow extends StatelessWidget {
   }
 }
 
-/// 지갑 하나의 복구 기여와 점검(지갑 정보 "안전 상태" 줄에서 연다)
-Future<void> showWalletContributionSheet(BuildContext context, int walletId) =>
+/// 지갑 하나의 복구 기여와 점검(지갑 정보 "안전 상태" 줄, 지갑 점검의 복구 카드에서 연다).
+/// [showViewAll]은 아래 "지갑 상태 전체 보기" 버튼이다. 지갑 점검 안에서 열면 이미 그 화면이라 끈다(누르면 같은 화면이 하나 더 쌓였다).
+Future<void> showWalletContributionSheet(BuildContext context, int walletId, {bool showViewAll = true}) =>
     CommonBottomSheets.showDraggableBottomSheet<void>(
       context: context,
       screenName: '/wallet-health/wallet',
       title: safetyWalletOf(context, walletId)?.name ?? t.wallet_health.title,
       minChildSize: 0.5,
       maxChildSize: 0.9,
-      childBuilder: (controller) => _WalletSheet(walletId: walletId, controller: controller, opener: context),
+      childBuilder:
+          (controller) =>
+              _WalletSheet(walletId: walletId, controller: controller, opener: context, showViewAll: showViewAll),
     );
 
 class _WalletSheet extends StatelessWidget {
-  const _WalletSheet({required this.walletId, required this.controller, required this.opener});
+  const _WalletSheet({
+    required this.walletId,
+    required this.controller,
+    required this.opener,
+    required this.showViewAll,
+  });
 
   final int walletId;
   final ScrollController controller;
   final BuildContext opener;
+  final bool showViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -751,10 +760,13 @@ class _WalletSheet extends StatelessWidget {
       for (final i in report?.criticalIncidents ?? const [])
         if (i.walletId == walletId) i,
     ];
-    // 전체 지갑 상태로 가는 버튼을 시트 아래에 고정한다(고르기 시트의 확인 버튼과 같은 방식). 목록은 그 높이만큼 비켜 둔다
+    // 전체 지갑 상태로 가는 버튼을 시트 아래에 고정한다(고르기 시트의 확인 버튼과 같은 방식). 목록은 그 높이만큼 비켜 둔다.
+    // 버튼을 끈 시트(지갑 점검 안에서 연 것)는 비켜 둘 것이 없다
     final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
     final buttonArea =
-        FixedBottomButton.fixedBottomButtonDefaultHeight * textScale.clamp(1.0, double.infinity) + 3 + 12;
+        showViewAll
+            ? FixedBottomButton.fixedBottomButtonDefaultHeight * textScale.clamp(1.0, double.infinity) + 3 + 12
+            : 0.0;
     final list = ListView(
       key: const Key('wallet-health-wallet-sheet'),
       controller: controller,
@@ -825,25 +837,26 @@ class _WalletSheet extends StatelessWidget {
         children: [
           Positioned.fill(bottom: buttonArea, child: list),
           // 지갑 정보·지갑 상세에서 열었을 때 전체 지갑 상태로(UI_SPEC §7.5, POLISH §3)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SizedBox(
-              height: buttonArea + 5,
-              child: FixedBottomButton(
-                buttonKey: const Key('wallet-health-view-all'),
-                text: t.wallet_health.wallet_info.view_all,
-                isVisibleAboveKeyboard: false,
-                bottomPadding: 16,
-                surroundingsColor: Colors.transparent,
-                onButtonClicked: () {
-                  Navigator.pop(context);
-                  if (opener.mounted) WalletHealthScreen.open(opener, source: WalletHealthEntry.contributionSheet);
-                },
+          if (showViewAll)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SizedBox(
+                height: buttonArea + 5,
+                child: FixedBottomButton(
+                  buttonKey: const Key('wallet-health-view-all'),
+                  text: t.wallet_health.wallet_info.view_all,
+                  isVisibleAboveKeyboard: false,
+                  bottomPadding: 16,
+                  surroundingsColor: Colors.transparent,
+                  onButtonClicked: () {
+                    Navigator.pop(context);
+                    if (opener.mounted) WalletHealthScreen.open(opener, source: WalletHealthEntry.contributionSheet);
+                  },
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

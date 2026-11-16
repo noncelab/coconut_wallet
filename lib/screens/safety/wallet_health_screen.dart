@@ -247,7 +247,8 @@ class _WalletHealthScreenState extends State<WalletHealthScreen>
         await _scrollTo(_uncheckedKey, report);
       } else {
         final walletId = report.userConfirmedItems.where((r) => r.id.category == category).firstOrNull?.walletId;
-        if (walletId != null) await showWalletContributionSheet(context, walletId);
+        // 이미 지갑 점검 화면이라 시트의 [지갑 상태 전체 보기]는 끈다(누르면 같은 화면이 하나 더 쌓였다)
+        if (walletId != null) await showWalletContributionSheet(context, walletId, showViewAll: false);
       }
       return;
     }
