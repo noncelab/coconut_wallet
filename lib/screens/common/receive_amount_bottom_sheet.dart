@@ -110,12 +110,6 @@ class _ReceiveAmountSheetState extends State<_ReceiveAmountSheet> {
       _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
     });
     vibrateLight();
-    if (!_focusNode.hasFocus) return;
-    // 단위에 맞는 키보드로 바꾸려면 포커스를 다시 잡아야 함
-    _focusNode.unfocus();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
-    });
   }
 
   void _onComplete() {
@@ -145,13 +139,12 @@ class _ReceiveAmountSheetState extends State<_ReceiveAmountSheet> {
   Widget build(BuildContext context) {
     final isAndroid = defaultTargetPlatform == TargetPlatform.android;
     final amountField = CoconutTextField(
-      key: ValueKey(_unit),
       controller: _controller,
       focusNode: _focusNode,
       onChanged: (_) => setState(() {}),
       height: 54,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      textInputType: _unit.isBtcUnit ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.number,
+      textInputType: const TextInputType.numberWithOptions(decimal: true),
       textInputFormatter: _unit.isBtcUnit ? [const BtcAmountInputFormatter()] : [const SatoshiAmountInputFormatter()],
       placeholderText: t.address_list_screen.enter_receive_amount,
       backgroundColor: context.coconutColors.surfaceBottomSheet,
