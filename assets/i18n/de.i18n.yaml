@@ -2386,8 +2386,8 @@ wallet_health:
     available: "Verfügbar"
     reason_add_wallet: "Keine Wallet vorhanden"
     reason_onchain_activity: "Kein On-Chain-Verlauf"
-    reason_tx_history: "Noch kein Transaktionsverlauf"
-    reason_funds_or_usage: "Noch kein Guthaben und kein Nutzungsverlauf"
+    reason_tx_history: "Noch keine Transaktionen"
+    reason_funds_or_usage: "Kein Guthaben, noch nie genutzt"
     reason_checks_available: "Prüfungen verfügbar"
     addresses_reused(cardinal):
       one: "1 Adresse wiederverwendet"
