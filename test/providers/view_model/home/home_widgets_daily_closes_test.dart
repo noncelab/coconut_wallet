@@ -86,7 +86,7 @@ void main() {
     expect(history.calls, 1);
   });
 
-  test('a failed fetch on the new day keeps the old closes and waits for the next UTC day', () async {
+  test('a failed fetch on the new day keeps the old closes and retries a minute later', () async {
     viewModel.priceChange24h(usd);
     await settle();
 
