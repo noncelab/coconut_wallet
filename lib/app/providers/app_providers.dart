@@ -30,6 +30,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/widgets.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
@@ -127,13 +128,16 @@ List<SingleChildWidget> buildAppProviders({
       ChangeNotifierProvider<ArkProvider>(
         // 아크 잔액을 WalletProvider 표시 잔액에 더하므로 즉시 생성
         lazy: false,
-        create:
-            (context) => ArkProvider(
-              context.read<WalletProvider>(),
-              context.read<ArkRepository>(),
-              currentBlock: context.read<NodeProvider>().currentBlockNotifier,
-              notifications: LocalNotificationService.instance,
-            ),
+        create: (context) {
+          final preferences = context.read<PreferenceProvider>();
+          return ArkProvider(
+            context.read<WalletProvider>(),
+            context.read<ArkRepository>(),
+            currentBlock: context.read<NodeProvider>().currentBlockNotifier,
+            notifications: LocalNotificationService.instance,
+            isFeatureOn: () => preferences.getCcosFeatureAvailability(ArkFeature.id).isAvailable,
+          );
+        },
       ),
       if (isFirebaseAnalyticsUsed)
         Provider<HotWalletUsageTracker>(

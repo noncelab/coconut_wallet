@@ -64,7 +64,7 @@ class WalletInfoViewModel extends ChangeNotifier {
   final ArkProvider? _arkProvider;
   bool _isArkBusy = false;
 
-  bool get canUseArk => _arkProvider?.canUseArk(_walletItemBase) ?? false;
+  bool get showsArkSection => isArkOn || (_arkProvider?.canOfferArk(_walletItemBase) ?? false);
   bool get isArkOn => _arkProvider?.supportsArkById(_walletId) ?? false;
   bool get isArkAutoRefreshOn => _arkProvider?.isAutoRefreshOn(_walletId) ?? true;
   bool get canTurnOffArk => _arkProvider?.canTurnOff(_walletId) ?? false;

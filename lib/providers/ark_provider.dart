@@ -56,8 +56,10 @@ class ArkProvider extends ChangeNotifier {
     this.syncInterval = const Duration(seconds: 60),
     this.fastSyncInterval = const Duration(seconds: 5),
     this.awaitedInvoiceSyncInterval = const Duration(seconds: 30),
+    bool Function()? isFeatureOn,
     bool startTimer = true,
   }) : _currentBlock = currentBlock,
+       _isFeatureOn = isFeatureOn ?? (() => true),
        _notifications = notifications,
        _arkWalletService = arkWalletService ?? ArkWalletService(),
        _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository() {
@@ -78,6 +80,7 @@ class ArkProvider extends ChangeNotifier {
   final Duration syncInterval;
   final Duration fastSyncInterval;
   final Duration awaitedInvoiceSyncInterval;
+  final bool Function() _isFeatureOn;
 
   /// Bumped whenever cached Ark data changes, for screens that show balances or history. Unlike
   /// [notifyListeners], it doesn't fire for sync progress.
@@ -466,6 +469,15 @@ class ArkProvider extends ChangeNotifier {
 
   /// 아크를 켤 수 있는 지갑(핫월렛)
   bool canUseArk(WalletItemBase wallet) => isEnabled && wallet.hasLocalKey && wallet.hotWalletMetadata != null;
+
+  /// 오픈 스토어에서 아크 기능을 추가하고 켬
+  bool get isFeatureOn => isEnabled && _isFeatureOn();
+
+  /// 아크를 새로 켤 수 있는 지갑. 이미 켠 지갑은 [supportsArk]
+  bool canOfferArk(WalletItemBase wallet) => canUseArk(wallet) && isFeatureOn;
+
+  /// 아크를 켠 지갑이 하나라도 있으면 오픈 스토어에서 아크 기능을 끌 수 없음
+  bool get hasArkOnWallet => _walletProvider.walletItemList.any(supportsArk);
 
   /// 아크를 켠 지갑
   bool supportsArk(WalletItemBase wallet) =>

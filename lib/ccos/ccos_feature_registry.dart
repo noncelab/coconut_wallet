@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 
 enum CcosListingPriceType { free, oneTimePurchase, subscription }
@@ -32,6 +33,10 @@ enum CcosFeatureCategory {
 
   /// 홈 화면 등에 카드/위젯 형태로 붙는 표시 전용 모듈.
   widget,
+
+  /// 지갑에 새 결제 수단을 더하는 코코넛 팀 기능.
+  /// host surface: 핫월렛 만들기·복원의 아크 옵션, 지갑 정보의 아크 토글.
+  payment,
 }
 
 class CcosFeatureListing {
@@ -79,7 +84,7 @@ class CcosFeatureListing {
 class CcosFeatureRegistrySource {
   static CcosFeatureListing get featuredListing => CoconutThemeFeature.listing;
 
-  static List<CcosFeatureListing> get allListings => [featuredListing];
+  static List<CcosFeatureListing> get allListings => [featuredListing, ArkFeature.listing];
 
   static CcosFeatureListing? findListingById(String featureId) {
     for (final listing in allListings) {

@@ -80,7 +80,12 @@ class _HotWalletCreateScreenState extends State<HotWalletCreateScreen> {
   void initState() {
     super.initState();
     _shouldDisposeViewModel = widget.viewModel == null;
-    _viewModel = widget.viewModel ?? HotWalletCreateViewModel(context.read<WalletProvider>());
+    _viewModel =
+        widget.viewModel ??
+        HotWalletCreateViewModel(
+          context.read<WalletProvider>(),
+          isArkFeatureOn: context.readArkProviderOrNull()?.isFeatureOn ?? false,
+        );
     _viewModel.addListener(_handleViewModelChanged);
     _analyticsService = context.read<AnalyticsService>();
     _suggestedWalletName = _generateDefaultWalletName();

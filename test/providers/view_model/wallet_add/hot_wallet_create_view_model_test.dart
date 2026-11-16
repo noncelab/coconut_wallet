@@ -464,6 +464,23 @@ void main() {
       viewModel.dispose();
     });
 
+    test('오픈 스토어에서 아크 기능을 켜지 않으면 아크 옵션이 없고 켜도 무시된다', () async {
+      final walletProvider = _FakeWalletProvider();
+      final viewModel = HotWalletCreateViewModel(
+        walletProvider,
+        secretRepository: _FakeSecretRepository(),
+        arkWalletService: _FakeArkWalletService(),
+        sharedPrefsRepository: sharedPrefs,
+      );
+      viewModel.setArk(useArk: true);
+
+      (await create(viewModel)).clearSensitiveBytes();
+
+      expect(viewModel.isArkAvailable, isFalse);
+      expect(walletProvider.arkSeedHex, isNull);
+      viewModel.dispose();
+    });
+
     test('아크를 켜면 아크 시드를 넘기고 자동 갱신 선택을 저장한다', () async {
       final walletProvider = _FakeWalletProvider();
       final viewModel = HotWalletCreateViewModel(
@@ -471,6 +488,7 @@ void main() {
         secretRepository: _FakeSecretRepository(),
         arkWalletService: _FakeArkWalletService(),
         sharedPrefsRepository: sharedPrefs,
+        isArkFeatureOn: true,
       );
       viewModel.setArk(useArk: true, autoRefresh: false);
 

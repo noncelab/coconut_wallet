@@ -67,7 +67,9 @@ class HotWalletCreateViewModel extends ChangeNotifier {
     DateTime Function()? now,
     ArkWalletService? arkWalletService,
     SharedPrefsRepository? sharedPrefsRepository,
-  }) : _secretRepository = secretRepository ?? HotWalletSecretRepository(), // 테스트코드에서 사용하기 위해 저장소,생성기 주입
+    bool isArkFeatureOn = false,
+  }) : _isArkFeatureOn = isArkFeatureOn,
+       _secretRepository = secretRepository ?? HotWalletSecretRepository(), // 테스트코드에서 사용하기 위해 저장소,생성기 주입
        _materialGenerator = materialGenerator ?? _generateHotWalletMaterialInIsolate,
        _now = now ?? DateTime.now,
        _arkWalletService = arkWalletService ?? ArkWalletService(),
@@ -78,6 +80,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
   final HotWalletMaterialGenerator _materialGenerator;
   final DateTime Function() _now;
   final ArkWalletService _arkWalletService;
+  final bool _isArkFeatureOn;
   final SharedPrefsRepository _sharedPrefs;
   bool _isCreating = false;
   bool _disposed = false;
@@ -85,7 +88,7 @@ class HotWalletCreateViewModel extends ChangeNotifier {
   bool _arkAutoRefresh = true;
 
   bool get isCreating => _isCreating;
-  bool get isArkAvailable => _arkWalletService.isEnabled;
+  bool get isArkAvailable => _isArkFeatureOn && _arkWalletService.isEnabled;
   bool get useArk => _useArk;
   bool get arkAutoRefresh => _arkAutoRefresh;
 

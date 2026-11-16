@@ -48,18 +48,21 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     HotWalletSecretRepository? secretRepository,
     ArkWalletService? arkWalletService,
     SharedPrefsRepository? sharedPrefsRepository,
-  }) : _secretRepository = secretRepository ?? HotWalletSecretRepository(),
+    bool isArkFeatureOn = false,
+  }) : _isArkFeatureOn = isArkFeatureOn,
+       _secretRepository = secretRepository ?? HotWalletSecretRepository(),
        _arkWalletService = arkWalletService ?? ArkWalletService(),
        _sharedPrefs = sharedPrefsRepository ?? SharedPrefsRepository(),
        _words = List.filled(12, '');
 
   final HotWalletSecretRepository _secretRepository;
   final ArkWalletService _arkWalletService;
+  final bool _isArkFeatureOn;
   final SharedPrefsRepository _sharedPrefs;
   bool _useArk = false;
   bool _arkAutoRefresh = true;
 
-  bool get isArkAvailable => _arkWalletService.isEnabled;
+  bool get isArkAvailable => _isArkFeatureOn && _arkWalletService.isEnabled;
   bool get useArk => _useArk;
   bool get arkAutoRefresh => _arkAutoRefresh;
 

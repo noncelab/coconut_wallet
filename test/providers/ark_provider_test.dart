@@ -337,6 +337,29 @@ void main() {
     expect(arkProvider.supportsArkById(1), isTrue);
   });
 
+  test('Ark is offered only when the store feature is on, and a wallet using it is reported', () async {
+    arkService.onDisk.clear();
+    var featureOn = false;
+    final provider = ArkProvider(
+      walletProvider,
+      arkRepository,
+      arkWalletService: arkService,
+      isFeatureOn: () => featureOn,
+      startTimer: false,
+    );
+    await pumpEventQueue();
+
+    expect(provider.canOfferArk(_hotWallet(1)), isFalse);
+    expect(provider.hasArkOnWallet, isFalse);
+
+    featureOn = true;
+    expect(provider.canOfferArk(_hotWallet(1)), isTrue);
+
+    expect(await provider.turnOn(1, () async => 'ab' * 64), isTrue);
+    expect(provider.hasArkOnWallet, isTrue);
+    provider.dispose();
+  });
+
   test('Ark cannot be turned off while it holds funds', () async {
     await arkRepository.saveSnapshot(1, createArkSnapshot());
 

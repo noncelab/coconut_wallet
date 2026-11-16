@@ -395,6 +395,7 @@ void main() {
       secretRepository: _RecordingSecretRepository(),
       arkWalletService: _FakeArkWalletService(),
       sharedPrefsRepository: sharedPrefs,
+      isArkFeatureOn: true,
     );
     addTearDown(model.dispose);
     model.applyWords(0, [...List.filled(11, 'abandon'), 'about']);

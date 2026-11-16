@@ -65,7 +65,10 @@ class HotWalletRestoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(create: (_) => HotWalletRestoreViewModel(), child: const _HotWalletRestoreView());
+    return ChangeNotifierProvider(
+      create: (_) => HotWalletRestoreViewModel(isArkFeatureOn: context.readArkProviderOrNull()?.isFeatureOn ?? false),
+      child: const _HotWalletRestoreView(),
+    );
   }
 }
 

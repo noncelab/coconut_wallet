@@ -381,7 +381,7 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
                     ),
                   ),
               ]),
-            if (viewModel.canUseArk) _section(t.ark.wallet_info.section, _buildArkRows(viewModel)),
+            if (viewModel.showsArkSection) _section(t.ark.wallet_info.section, _buildArkRows(viewModel)),
             _section(t.wallet_info_screen.section_details, _buildDetailRows(context, viewModel)),
             if (viewModel.isBitBox02Wallet || viewModel.isTrezorWallet)
               _section(t.wallet_info_screen.connected_hardware_wallet.title, _buildHardwareWalletRows(viewModel)),
