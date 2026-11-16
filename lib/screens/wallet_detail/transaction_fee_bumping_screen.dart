@@ -1,6 +1,5 @@
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart' as cds show CoconutPopup;
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide
         CoconutAppBar,
@@ -245,15 +244,12 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (mounted && e is UnverifiedOriginalTransactionException) {
               // 연결한 서버가 잘못된 거래를 보냈을 수 있다. 다른 서버로 바꾸는 화면으로 안내한다
-              // (디자인 시스템 팝업, 글자 크기 고정)
+              // (아래 다른 오류 안내와 같은 앱 공통 팝업: 글자 크기를 따르고 긴 설명은 스크롤된다)
               showDialog(
                 context: context,
                 builder: (BuildContext dialogContext) {
-                  return cds.CoconutPopup(
+                  return CoconutPopup(
                     languageCode: dialogContext.read<PreferenceProvider>().language,
-                    // 이 팝업은 글자 크기가 고정이고 스크롤이 없다. 320×568 화면에서 상태 표시줄·내비게이션 바를 빼면
-                    // 기본 세로 여백(24)으로는 긴 설명(ja·es·de)의 버튼 줄이 잘려서 세로 여백만 없앤다. 가로는 기본값 40 그대로
-                    insetPadding: const EdgeInsets.symmetric(horizontal: 40),
                     title: t.transaction_fee_bumping_screen.dialog.unverified_original_title,
                     description: t.transaction_fee_bumping_screen.dialog.unverified_original,
                     leftButtonText: t.close,

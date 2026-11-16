@@ -39,6 +39,7 @@ import 'package:coconut_wallet/screens/wallet_detail/transaction_fee_bumping_scr
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/utils/result.dart';
 import 'package:coconut_wallet/widgets/common/overlays/custom_loading_overlay.dart';
 import 'package:flutter/material.dart';
@@ -668,6 +669,7 @@ void main() {
     }
 
     void expectServerGuide() {
+      expect(find.byType(CoconutPopup), findsOneWidget, reason: '같은 화면의 다른 오류 안내와 같은 앱 공통 팝업');
       expect(inDialog(_text(t.transaction_fee_bumping_screen.dialog.unverified_original_title)), findsOneWidget);
       expect(inDialog(_text(t.transaction_fee_bumping_screen.dialog.unverified_original)), findsOneWidget);
       expect(inDialog(_text(t.close)), findsOneWidget);
