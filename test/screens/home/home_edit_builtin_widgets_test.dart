@@ -74,6 +74,7 @@ import 'package:coconut_wallet/model/wallet/wallet_background.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart' as app_field;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -3194,6 +3195,8 @@ void main() {
 
       final popup = find.byKey(const Key('goal-reminder-permission-popup'));
       expect(popup, findsOneWidget);
+      // 디자인 시스템 팝업이 아니라 앱 공통 팝업을 쓴다
+      expect(tester.widget(popup), isA<CoconutPopup>());
       // 팝업은 한글 단어가 줄 중간에서 끊기지 않게 글자 사이에 보이지 않는 문자를 넣으므로 접근성 라벨로 찾는다.
       Finder popupText(String text) => find.descendant(
         of: popup,

@@ -1,7 +1,8 @@
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutPopup, CoconutTypography;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutLayout, CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/services/goal_reminder/goal_reminder.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart' show InlineActionButton;
 import 'package:coconut_wallet/widgets/common/buttons/switch_row.dart';
 import 'package:coconut_wallet/widgets/common/buttons/value_select_row.dart';
