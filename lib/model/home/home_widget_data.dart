@@ -19,6 +19,9 @@ class HomeRecentTransaction {
   /// 받기·보내기 대신 보여 줄 아크 내역 이름(갱신 등)
   final String? label;
 
+  /// 거래 메모
+  final String? memo;
+
   const HomeRecentTransaction({
     required this.walletId,
     required this.walletName,
@@ -30,6 +33,7 @@ class HomeRecentTransaction {
     this.rail,
     this.arkMovementId,
     this.label,
+    this.memo,
   });
 
   /// [WalletActivity.key]와 같은 값, 강조할 거래를 찾을 때 씀

@@ -352,4 +352,7 @@ class _RealmArkMovement {
   late String? paymentHash;
   late String? lightningInvoice;
   late String? lightningOffer;
+
+  /// 사용자가 단 거래 메모, 동기화로 다시 쓸 때도 유지
+  late String? memo;
 }

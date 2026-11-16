@@ -76,6 +76,7 @@ ArkMovement mapRealmToArkMovement(RealmArkMovement movement) => ArkMovement(
   paymentHash: movement.paymentHash,
   lightningInvoice: movement.lightningInvoice,
   lightningOffer: movement.lightningOffer,
+  memo: movement.memo,
 );
 
 RealmArkMovement mapArkMovementToRealm(int walletId, ArkMovement movement) => RealmArkMovement(

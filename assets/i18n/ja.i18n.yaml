@@ -2245,7 +2245,7 @@ ark:
     refresh_description_short: "期限前にVTXOを更新します"
 
   movement:
-    memo: "メモ"
+    memo: "決済メモ"
     gone: "This movement is no longer in the Ark history."
     status: "Status"
     fee: "Ark fee"
@@ -2288,7 +2288,7 @@ ark:
     ark: "Ark"
     lightning: "Lightning"
   receive:
-    memo_placeholder: "メモ（任意）"
+    memo_placeholder: "決済メモ（任意）"
     requested_amount(amount): "受け取る金額 $amount"
     amount_description: "この金額は1つのQRに含まれ、ビットコインアドレス・Ark・Lightningのどれで受け取っても同じ金額が適用されます"
     mode_bitcoin: "ビットコインアドレス"

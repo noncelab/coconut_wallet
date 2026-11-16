@@ -71,6 +71,19 @@ void main() {
     expect(OnchainActivity(tx), OnchainActivity(tx));
   });
 
+  test('an Ark entry shows its own memo, or its linked on-chain transaction\'s, and redraws when it changes', () {
+    final movement = createArkMovement(id: 5);
+    expect(ArkActivity(movement.withMemo('커피')).memo, '커피');
+    expect(ArkActivity(movement) == ArkActivity(movement.withMemo('커피')), isFalse);
+    final tx = TransactionRecordMock.createMockTransactionRecord(
+      transactionType: TransactionType.sent,
+      inputAddressList: const [],
+      outputAddressList: const [],
+      memo: '보딩',
+    );
+    expect(ArkActivity(movement.withMemo('커피'), linkedTx: tx).memo, '보딩');
+  });
+
   group('moves between on-chain and Ark', () {
     final fundingTxid = 'f' * 64;
     final offboardTxid = 'e' * 64;

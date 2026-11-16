@@ -36,14 +36,36 @@ class ArkRepository extends BaseRepository {
     final oldMovements = realm.query<RealmArkMovement>('walletId == $walletId');
     return realm.writeAsync(() {
       if (realm.find<RealmHotWalletMetadata>(walletId) == null) return false;
+      final memos = {
+        for (final movement in oldMovements)
+          if (movement.memo case final memo?) movement.movementId: memo,
+      };
       realm.deleteMany(oldVtxos);
       realm.deleteMany(oldMovements);
       realm.add(mapArkSnapshotToRealmState(walletId, snapshot), update: true);
       realm.addAll(snapshot.vtxos.map((vtxo) => mapArkVtxoToRealm(walletId, vtxo)));
-      realm.addAll(snapshot.movements.map((movement) => mapArkMovementToRealm(walletId, movement)));
+      realm.addAll(
+        snapshot.movements.map(
+          (movement) => mapArkMovementToRealm(walletId, movement)..memo = memos[movement.id] ?? movement.memo,
+        ),
+      );
       return true;
     });
   }
+
+  /// 아크 내역별 거래 메모
+  Map<int, String> getMovementMemos(int walletId) => {
+    for (final movement in realm.query<RealmArkMovement>('walletId == $walletId AND memo != nil'))
+      movement.movementId: movement.memo!,
+  };
+
+  /// 빈 문자열이면 메모를 지움. 캐시에 그 내역이 없으면 false
+  Future<bool> updateMovementMemo(int walletId, int movementId, String memo) => realm.writeAsync(() {
+    final movement = realm.find<RealmArkMovement>('$walletId:$movementId');
+    if (movement == null) return false;
+    movement.memo = memo.isEmpty ? null : memo;
+    return true;
+  });
 
   Future<void> deleteCache(int walletId) => realm.writeAsync(() => deleteArkCacheInWrite(realm, walletId));
 }

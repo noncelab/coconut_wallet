@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutChip, CoconutTypography;
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -261,6 +262,7 @@ class _TransactionRow extends StatelessWidget {
         style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
       ),
     );
+    final memo = tx.memo?.isNotEmpty == true ? tx.memo : null;
     final timeLabel = Text(
       formatHomeDateTime(tx.time, now),
       style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
@@ -342,7 +344,16 @@ class _TransactionRow extends StatelessWidget {
                             children: [statusLabel, const SizedBox(height: 2), timeLabel],
                           ),
                           const SizedBox(width: 8),
-                          Expanded(child: amountLabel),
+                          Expanded(
+                            child:
+                                memo == null
+                                    ? amountLabel
+                                    : Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [amountLabel, const SizedBox(height: 2), _buildMemo(colors, memo)],
+                                    ),
+                          ),
                         ],
                       ),
             ),
@@ -352,6 +363,23 @@ class _TransactionRow extends StatelessWidget {
     );
     if (onTap == null) return row;
     return HomePressableRow(onTap: onTap!, child: row);
+  }
+
+  /// 전체 거래 목록처럼 연필 아이콘과 메모
+  Widget _buildMemo(CoconutColors colors, String memo) {
+    final style = CoconutTypography.caption_10.copyWith(color: colors.secondaryText, height: 1);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SvgPicture.asset(
+          CommonActionIconPath.editOutlined,
+          width: 10,
+          colorFilter: ColorFilter.mode(colors.secondaryText, BlendMode.srcIn),
+        ),
+        const SizedBox(width: 4),
+        Flexible(child: Text(memo, maxLines: 1, overflow: TextOverflow.ellipsis, style: style)),
+      ],
+    );
   }
 }
 

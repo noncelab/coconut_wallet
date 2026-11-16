@@ -75,6 +75,7 @@ import 'package:realm/realm.dart';
 /// [아크 캐시] (10 -> 11)
 /// 1. RealmArkWalletState, RealmArkVtxo, RealmArkMovement 스키마 추가 (신규 스키마이므로 Realm이 자동 처리)
 /// 2. bark 지갑을 열면 다시 채워지는 캐시이므로 별도 마이그레이션 코드 없음
+/// 3. RealmArkMovement.memo: 아크 내역의 거래 메모(사용자 입력, 캐시를 다시 쓸 때 옮겨 담음)
 void defaultMigration(Migration migration, int oldVersion, {Set<int>? migratedWalletIds}) {
   if (oldVersion == kRealmVersion) {
     Logger.log('oldVersion: $oldVersion is same as kRealmVersion: $kRealmVersion');

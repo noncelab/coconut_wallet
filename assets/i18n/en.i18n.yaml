@@ -2248,7 +2248,7 @@ ark:
     refresh_description_short: "Replace VTXOs before they expire"
 
   movement:
-    memo: "Memo"
+    memo: "Payment memo"
     gone: "This movement is no longer in the Ark history."
     status: "Status"
     fee: "Ark fee"
@@ -2291,7 +2291,7 @@ ark:
     ark: "Ark"
     lightning: "Lightning"
   receive:
-    memo_placeholder: "Memo (optional)"
+    memo_placeholder: "Payment memo (optional)"
     requested_amount(amount): "Requesting $amount"
     amount_description: "This amount goes into the single QR, so it applies whether you're paid to the Bitcoin address, Ark or Lightning"
     mode_bitcoin: "Bitcoin address"

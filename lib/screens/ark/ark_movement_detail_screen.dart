@@ -1,4 +1,16 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'package:coconut_design_system/coconut_design_system.dart'
+    hide
+        CoconutAppBar,
+        CoconutToolTip,
+        CoconutTooltipType,
+        CoconutTooltipState,
+        CoconutToast,
+        CoconutToastLevel,
+        CoconutPopup;
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_lib/coconut_lib.dart' show NetworkType, Transaction;
 import 'package:coconut_wallet/analytics/analytics_parameter_values.dart';
 import 'package:coconut_wallet/enums/network_enums.dart';
@@ -242,7 +254,7 @@ class _MovementDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final transactions = context.read<TransactionProvider>();
+    final transactions = context.watch<TransactionProvider>();
     final isExit = movement.kind == ArkMovementKind.exit;
     final activity = ArkActivity(
       movement,
@@ -363,6 +375,7 @@ class _MovementDetails extends StatelessWidget {
             ..._buildOnchainTx(context, onchainTx!)
           else if (linkedTxid != null)
             _buildTxRow(context, t.ark.movement.onchain_tx, linkedTxid, valueStyle),
+          _buildTxMemo(context, activity),
           // bark's own record, for support and debugging.
           UnderlineButtonItemCard(
             label: t.ark.movement.technical,
@@ -402,6 +415,49 @@ class _MovementDetails extends StatelessWidget {
           ),
           CoconutLayout.spacing_1000h,
         ],
+      ),
+    );
+  }
+
+  /// 나만 보는 거래 메모. 온체인 거래가 붙은 내역은 그 거래의 메모를 함께 씀
+  Widget _buildTxMemo(BuildContext context, ArkActivity activity) {
+    final memo = activity.memo;
+    return UnderlineButtonItemCard(
+      label: t.tx_memo,
+      underlineButtonLabel: t.edit,
+      onTapUnderlineButton: () {
+        SingleTextFieldBottomSheet.show(
+          context: context,
+          title: t.tx_memo,
+          screenName: AnalyticsScreenNames.arkMovementDetailEditMemoSheet,
+          originalText: memo ?? '',
+          completeButtonText: t.done,
+          collapsedHeight: 300,
+          onComplete: (text) async {
+            final linkedTx = activity.linkedTx;
+            final saved =
+                linkedTx != null
+                    ? context.read<TransactionProvider>().updateTransactionMemo(
+                      walletId,
+                      linkedTx.transactionHash,
+                      text,
+                    )
+                    : await context.read<ArkProvider>().updateMovementMemo(walletId, movement.id, text);
+            if (!saved && context.mounted) {
+              CoconutToast.showToast(
+                context: context,
+                isVisibleIcon: true,
+                iconPath: CommonStateIconPath.triangleWarning,
+                text: t.toast.memo_update_failed,
+                level: CoconutToastLevel.warning,
+              );
+            }
+          },
+        );
+      },
+      child: Text(
+        memo?.isNotEmpty == true ? memo! : '-',
+        style: CoconutTypography.body2_14_Number.setColor(context.coconutColors.primaryText),
       ),
     );
   }

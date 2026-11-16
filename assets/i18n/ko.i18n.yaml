@@ -2254,7 +2254,7 @@ ark:
     refresh_description_short: "만료 전에 VTXO를 새로 갱신해요"
 
   movement:
-    memo: "메모"
+    memo: "결제 메모"
     gone: "이 내역은 더 이상 아크 기록에 없어요."
     status: "상태"
     fee: "아크 수수료"
@@ -2297,7 +2297,7 @@ ark:
     ark: "아크"
     lightning: "라이트닝"
   receive:
-    memo_placeholder: "메모 (선택)"
+    memo_placeholder: "결제 메모 (선택)"
     requested_amount(amount): "받을 금액 $amount"
     amount_description: "이 금액이 QR 하나에 함께 담겨 비트코인 주소·아크·라이트닝 어느 쪽으로 받든 같은 금액이 적용돼요"
     mode_bitcoin: "비트코인 주소"

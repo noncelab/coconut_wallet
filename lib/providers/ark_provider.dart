@@ -81,6 +81,7 @@ class ArkProvider extends ChangeNotifier {
   final ValueNotifier<int> cacheRevision = ValueNotifier(0);
 
   final Map<int, ArkSnapshot?> _snapshots = {};
+  final Map<int, Map<int, String>> _movementMemos = {};
   final Map<int, Future<bool>> _opening = {};
   final Map<int, DateTime> _lastSync = {};
   final Map<int, ArkRefreshDue> _refreshDue = {};
@@ -180,24 +181,26 @@ class ArkProvider extends ChangeNotifier {
         (movement.exitClaimTxid == txid || movement.exitRelatedTxids.contains(txid)),
   );
 
-  /// 지갑의 아크 내역. 직접 출금에는 앱이 기록한 온체인 거래를 붙임
+  /// 지갑의 아크 내역. 거래 메모와, 직접 출금에는 앱이 기록한 온체인 거래를 붙임
   List<ArkMovement> movements(int walletId) {
     final recorded = snapshot(walletId)?.movements ?? const <ArkMovement>[];
     final inFlight = _inFlightMovements(walletId, recorded);
     final movements = inFlight.isEmpty ? recorded : [...inFlight, ...recorded];
+    final memos = _memosOf(walletId);
     final exits = [
       if (_exitSessions[walletId] case final active?) active,
       ..._exitHistory.where((session) => session.walletId == walletId),
     ];
-    if (exits.isEmpty) return movements;
+    if (exits.isEmpty && memos.isEmpty) return movements;
     ArkMovement attach(ArkMovement movement) {
-      if (movement.kind != ArkMovementKind.exit) return movement;
+      final withMemo = movement.memo == memos[movement.id] ? movement : movement.withMemo(memos[movement.id]);
+      if (withMemo.kind != ArkMovementKind.exit) return withMemo;
       final exit = exits.firstWhereOrNull(
-        (exit) => exit.vtxoIds.any((id) => movement.inputVtxoIds.contains(id) || movement.exitedVtxoIds.contains(id)),
+        (exit) => exit.vtxoIds.any((id) => withMemo.inputVtxoIds.contains(id) || withMemo.exitedVtxoIds.contains(id)),
       );
       return exit == null
-          ? movement
-          : movement.withExitTxids(
+          ? withMemo
+          : withMemo.withExitTxids(
             claimTxid: exit.claimTxid,
             relatedTxids: exit.relatedTxids,
             destination: exit.destination,
@@ -205,6 +208,23 @@ class ArkProvider extends ChangeNotifier {
     }
 
     return [for (final movement in movements) attach(movement)];
+  }
+
+  Map<int, String> _memosOf(int walletId) =>
+      _movementMemos.putIfAbsent(walletId, () => _arkRepository.getMovementMemos(walletId));
+
+  /// 아크 내역에 거래 메모를 달거나(빈 문자열이면 지움) 고침
+  Future<bool> updateMovementMemo(int walletId, int movementId, String memo) async {
+    if (!await _arkRepository.updateMovementMemo(walletId, movementId, memo)) return false;
+    final memos = _memosOf(walletId);
+    if (memo.isEmpty) {
+      memos.remove(movementId);
+    } else {
+      memos[movementId] = memo;
+    }
+    cacheRevision.value++;
+    notifyListeners();
+    return true;
   }
 
   /// 지갑의 직접 출금 세션, 완료·실패 후 사용자가 확인할 때까지 남김
@@ -580,6 +600,7 @@ class ArkProvider extends ChangeNotifier {
     });
     await _arkRepository.deleteCache(walletId);
     _snapshots.remove(walletId);
+    _movementMemos.remove(walletId);
     _refreshDue.remove(walletId);
     _lastSync.remove(walletId);
     cacheRevision.value++;
@@ -1437,6 +1458,7 @@ class ArkProvider extends ChangeNotifier {
   void _onWalletListChanged() {
     final ids = _walletProvider.walletItemList.map((wallet) => wallet.id).toSet();
     _snapshots.removeWhere((id, _) => !ids.contains(id));
+    _movementMemos.removeWhere((id, _) => !ids.contains(id));
     _lastSync.removeWhere((id, _) => !ids.contains(id));
     _refreshDue.removeWhere((id, _) => !ids.contains(id));
     if (isEnabled) arkWalletsLoaded = _loadArkWallets();

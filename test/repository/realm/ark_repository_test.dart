@@ -95,6 +95,30 @@ void main() {
     expect(cached.movements, isEmpty);
   });
 
+  test('a movement memo survives a sync that rewrites the cache', () async {
+    addHotWallet(1);
+    await arkRepository.saveSnapshot(1, createArkSnapshot(movements: [createArkMovement(id: 7)]));
+
+    expect(await arkRepository.updateMovementMemo(1, 7, '커피'), isTrue);
+    await arkRepository.saveSnapshot(
+      1,
+      createArkSnapshot(movements: [createArkMovement(id: 7), createArkMovement(id: 8)]),
+    );
+
+    expect(arkRepository.getMovementMemos(1), {7: '커피'});
+    expect(arkRepository.getSnapshot(1)!.movements.firstWhere((movement) => movement.id == 7).memo, '커피');
+  });
+
+  test('an empty memo clears it, and a movement not cached yet takes none', () async {
+    addHotWallet(1);
+    await arkRepository.saveSnapshot(1, createArkSnapshot(movements: [createArkMovement(id: 7)]));
+    await arkRepository.updateMovementMemo(1, 7, '커피');
+
+    expect(await arkRepository.updateMovementMemo(1, 7, ''), isTrue);
+    expect(await arkRepository.updateMovementMemo(1, 9, '없음'), isFalse);
+    expect(arkRepository.getMovementMemos(1), isEmpty);
+  });
+
   test('snapshots of other wallets are kept apart', () async {
     addHotWallet(1);
     addHotWallet(2);

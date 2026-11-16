@@ -154,9 +154,9 @@ class ArkActivity extends WalletActivity {
     return isPending ? TransactionStatus.selfsending : TransactionStatus.self;
   }
 
-  /// Ark movements have no memos yet: Coconut's memo table also feeds the BIP-329 label export.
+  /// 온체인 거래가 붙은 이동·출금은 그 거래의 메모, 아니면 아크 내역의 메모
   @override
-  String? get memo => null;
+  String? get memo => linkedTx != null ? linkedTx!.memo : movement.memo;
 
   /// Which network it went over, shown next to the status. A payment from Ark to a Bitcoin
   /// address lands on-chain, so it gets the on-chain pill like any transaction. 아크 출금은 받은
@@ -193,6 +193,7 @@ class ArkActivity extends WalletActivity {
     movement.status,
     movement.effectiveBalanceSats,
     movement.updatedAt.microsecondsSinceEpoch,
+    movement.memo,
     linkedTx?.contentHashCode,
     Object.hashAll(relatedTxs.map((tx) => tx.contentHashCode)),
   );

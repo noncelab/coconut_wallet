@@ -91,6 +91,7 @@ class AnalyticsScreenNames {
   static const String addressScanQrSheet = 'address-scan-qr-sheet';
   static const String estimatedFeeSelectSheet = 'estimated-fee-select-sheet';
   static const String transactionDetailEditMemoSheet = 'transaction-detail-edit-memo-sheet';
+  static const String arkMovementDetailEditMemoSheet = 'ark-movement-detail-edit-memo-sheet';
   static const String utxoTagEditTagSheet = 'utxo-tag-edit-tag-sheet';
   static const String utxoTagAddTagSheet = 'utxo-tag-add-tag-sheet';
   static const String utxoDetailTagApplySheet = 'utxo-detail-tag-apply-sheet';

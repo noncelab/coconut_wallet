@@ -2248,7 +2248,7 @@ ark:
     refresh_description_short: "Renueva los VTXO antes de que venzan"
 
   movement:
-    memo: "Nota"
+    memo: "Nota del pago"
     gone: "This movement is no longer in the Ark history."
     status: "Status"
     fee: "Ark fee"
@@ -2291,7 +2291,7 @@ ark:
     ark: "Ark"
     lightning: "Lightning"
   receive:
-    memo_placeholder: "Nota (opcional)"
+    memo_placeholder: "Nota del pago (opcional)"
     requested_amount(amount): "Importe solicitado: $amount"
     amount_description: "Este importe va en un solo QR, así que se aplica tanto si te pagan a la dirección bitcoin, por Ark o por Lightning"
     mode_bitcoin: "Dirección bitcoin"

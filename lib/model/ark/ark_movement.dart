@@ -73,6 +73,7 @@ class ArkMovement {
     this.exitClaimTxid,
     this.exitRelatedTxids = const [],
     this.exitDestination,
+    this.memo,
   });
 
   factory ArkMovement.fromBark(bark.Movement movement) => ArkMovement(
@@ -130,32 +131,47 @@ class ArkMovement {
   /// 직접 출금을 받을 이 지갑 주소(bark의 보낸 곳은 중간 출금 출력 주소)
   final String? exitDestination;
 
+  /// 사용자가 단 거래 메모, bark가 아니라 앱 캐시에 보관
+  final String? memo;
+
   /// 앱이 기록한 직접 출금 거래를 붙인 사본
   ArkMovement withExitTxids({String? claimTxid, List<String> relatedTxids = const [], String? destination}) =>
-      ArkMovement(
-        id: id,
-        status: status,
-        subsystemName: subsystemName,
-        subsystemKind: subsystemKind,
-        metadataJson: metadataJson,
-        intendedBalanceSats: intendedBalanceSats,
-        effectiveBalanceSats: effectiveBalanceSats,
-        offchainFeeSats: offchainFeeSats,
-        sentTo: sentTo,
-        receivedOn: receivedOn,
-        inputVtxoIds: inputVtxoIds,
-        outputVtxoIds: outputVtxoIds,
-        exitedVtxoIds: exitedVtxoIds,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-        completedAt: completedAt,
-        paymentHash: paymentHash,
-        lightningInvoice: lightningInvoice,
-        lightningOffer: lightningOffer,
-        exitClaimTxid: claimTxid,
-        exitRelatedTxids: relatedTxids,
-        exitDestination: destination,
-      );
+      _copy(claimTxid: claimTxid, relatedTxids: relatedTxids, destination: destination, memo: memo);
+
+  /// 거래 메모를 붙인 사본
+  ArkMovement withMemo(String? memo) =>
+      _copy(claimTxid: exitClaimTxid, relatedTxids: exitRelatedTxids, destination: exitDestination, memo: memo);
+
+  ArkMovement _copy({
+    required String? claimTxid,
+    required List<String> relatedTxids,
+    required String? destination,
+    required String? memo,
+  }) => ArkMovement(
+    id: id,
+    status: status,
+    subsystemName: subsystemName,
+    subsystemKind: subsystemKind,
+    metadataJson: metadataJson,
+    intendedBalanceSats: intendedBalanceSats,
+    effectiveBalanceSats: effectiveBalanceSats,
+    offchainFeeSats: offchainFeeSats,
+    sentTo: sentTo,
+    receivedOn: receivedOn,
+    inputVtxoIds: inputVtxoIds,
+    outputVtxoIds: outputVtxoIds,
+    exitedVtxoIds: exitedVtxoIds,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    completedAt: completedAt,
+    paymentHash: paymentHash,
+    lightningInvoice: lightningInvoice,
+    lightningOffer: lightningOffer,
+    exitClaimTxid: claimTxid,
+    exitRelatedTxids: relatedTxids,
+    exitDestination: destination,
+    memo: memo,
+  );
 
   ArkMovementKind get kind {
     final isSend = subsystemKind == 'send';

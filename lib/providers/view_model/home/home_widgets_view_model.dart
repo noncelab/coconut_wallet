@@ -306,6 +306,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
                 OnchainActivity() => null,
                 ArkActivity() => arkActivityText(activity),
               },
+              memo: activity.memo,
             ),
       ];
       bool pending(HomeRecentTransaction tx) =>
