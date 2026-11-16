@@ -90,7 +90,6 @@ class SharedPrefKeys {
   /// 만료 직전 아크 자동 갱신 끔 여부 (지갑별, 기본은 켬)
   static String walletArkAutoRefreshOff(int walletId) => 'WALLET_ARK_AUTO_REFRESH_OFF_$walletId';
   static const String kArkRefreshingVtxos = 'ARK_REFRESHING_VTXOS';
-  static const String kArkPaymentMemos = 'ARK_PAYMENT_MEMOS';
   static const String kArkExitSessions = 'ARK_EXIT_SESSIONS';
   static const String kArkExitHistory = 'ARK_EXIT_HISTORY';
 

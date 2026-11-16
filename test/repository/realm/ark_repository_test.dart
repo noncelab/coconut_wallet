@@ -119,6 +119,20 @@ void main() {
     expect(arkRepository.getMovementMemos(1), isEmpty);
   });
 
+  test('a payment memo is kept before its movement is cached and through later syncs', () async {
+    addHotWallet(1);
+    await arkRepository.savePaymentMemo(1, 7, '점심값');
+    expect(arkRepository.getPaymentMemos(1), {7: '점심값'});
+
+    await arkRepository.saveSnapshot(1, createArkSnapshot(movements: [createArkMovement(id: 7)]));
+    expect(arkRepository.getPaymentMemos(1), {7: '점심값'});
+  });
+
+  test('no payment memo is saved for a hot wallet that no longer exists', () async {
+    await arkRepository.savePaymentMemo(1, 7, '점심값');
+    expect(realmManager.realm.all<RealmArkPaymentMemo>(), isEmpty);
+  });
+
   test('snapshots of other wallets are kept apart', () async {
     addHotWallet(1);
     addHotWallet(2);
@@ -141,12 +155,16 @@ void main() {
     addHotWallet(2);
     await arkRepository.saveSnapshot(1, createArkSnapshot());
     await arkRepository.saveSnapshot(2, createArkSnapshot(vtxos: [createArkVtxo(id: 'two:0')]));
+    await arkRepository.savePaymentMemo(1, 7, '점심값');
+    await arkRepository.savePaymentMemo(2, 7, '커피');
 
     await WalletRepository(realmManager, TransactionDraftRepository(realmManager)).deleteWallet(1);
 
     expect(arkRepository.getSnapshot(1), isNull);
     expect(realmManager.realm.query<RealmArkVtxo>('walletId == 1'), isEmpty);
     expect(realmManager.realm.query<RealmArkMovement>('walletId == 1'), isEmpty);
+    expect(arkRepository.getPaymentMemos(1), isEmpty);
     expect(arkRepository.getSnapshot(2), isNotNull);
+    expect(arkRepository.getPaymentMemos(2), {7: '커피'});
   });
 }

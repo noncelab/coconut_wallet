@@ -67,6 +67,16 @@ class ArkRepository extends BaseRepository {
     return true;
   });
 
+  /// 라이트닝 주소 결제 메모
+  Map<int, String> getPaymentMemos(int walletId) => {
+    for (final memo in realm.query<RealmArkPaymentMemo>('walletId == $walletId')) memo.movementId: memo.memo,
+  };
+
+  Future<void> savePaymentMemo(int walletId, int movementId, String memo) => realm.writeAsync(() {
+    if (realm.find<RealmHotWalletMetadata>(walletId) == null) return;
+    realm.add(RealmArkPaymentMemo('$walletId:$movementId', walletId, movementId, memo), update: true);
+  });
+
   Future<void> deleteCache(int walletId) => realm.writeAsync(() => deleteArkCacheInWrite(realm, walletId));
 }
 
@@ -76,4 +86,5 @@ void deleteArkCacheInWrite(Realm realm, int walletId) {
   if (state != null) realm.delete(state);
   realm.deleteMany(realm.query<RealmArkVtxo>('walletId == $walletId'));
   realm.deleteMany(realm.query<RealmArkMovement>('walletId == $walletId'));
+  realm.deleteMany(realm.query<RealmArkPaymentMemo>('walletId == $walletId'));
 }

@@ -33,6 +33,7 @@ final realmAllSchemas = [
   RealmArkWalletState.schema,
   RealmArkVtxo.schema,
   RealmArkMovement.schema,
+  RealmArkPaymentMemo.schema,
 ];
 
 @RealmModel()
@@ -355,4 +356,15 @@ class _RealmArkMovement {
 
   /// 사용자가 단 거래 메모, 동기화로 다시 쓸 때도 유지
   late String? memo;
+}
+
+/// 라이트닝 주소로 보낼 때 붙인 결제 메모, bark가 기록하지 않아 따로 보관
+@RealmModel()
+class _RealmArkPaymentMemo {
+  @PrimaryKey()
+  late String id; // walletId:movementId
+  @Indexed()
+  late int walletId;
+  late int movementId;
+  late String memo;
 }

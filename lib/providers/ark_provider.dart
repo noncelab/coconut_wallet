@@ -82,6 +82,7 @@ class ArkProvider extends ChangeNotifier {
 
   final Map<int, ArkSnapshot?> _snapshots = {};
   final Map<int, Map<int, String>> _movementMemos = {};
+  final Map<int, Map<int, String>> _paymentMemos = {};
   final Map<int, Future<bool>> _opening = {};
   final Map<int, DateTime> _lastSync = {};
   final Map<int, ArkRefreshDue> _refreshDue = {};
@@ -601,6 +602,7 @@ class ArkProvider extends ChangeNotifier {
     await _arkRepository.deleteCache(walletId);
     _snapshots.remove(walletId);
     _movementMemos.remove(walletId);
+    _paymentMemos.remove(walletId);
     _refreshDue.remove(walletId);
     _lastSync.remove(walletId);
     cacheRevision.value++;
@@ -1169,23 +1171,16 @@ class ArkProvider extends ChangeNotifier {
     return false;
   }
 
-  /// 라이트닝 주소로 보낼 때 붙인 메모, bark가 기록하지 않아 기기에 보관
-  String? paymentMemo(int walletId, int movementId) => _loadPaymentMemos()['$walletId:$movementId'];
+  /// 라이트닝 주소로 보낼 때 붙인 결제 메모
+  String? paymentMemo(int walletId, int movementId) =>
+      _paymentMemos.putIfAbsent(walletId, () => _arkRepository.getPaymentMemos(walletId))[movementId];
 
-  void _savePaymentMemo(int walletId, int movementId, String memo) {
+  Future<void> _savePaymentMemo(int walletId, int movementId, String memo) async {
     try {
-      final memos = _loadPaymentMemos()..['$walletId:$movementId'] = memo;
-      unawaited(_sharedPrefs.setStringAndConfirm(SharedPrefKeys.kArkPaymentMemos, jsonEncode(memos)));
-    } catch (_) {}
-  }
-
-  Map<String, String> _loadPaymentMemos() {
-    try {
-      final raw = _sharedPrefs.getStringOrNull(SharedPrefKeys.kArkPaymentMemos);
-      if (raw == null || raw.isEmpty) return {};
-      return (jsonDecode(raw) as Map<String, dynamic>).map((key, value) => MapEntry(key, value as String));
-    } catch (_) {
-      return {};
+      await _arkRepository.savePaymentMemo(walletId, movementId, memo);
+      _paymentMemos.remove(walletId);
+    } catch (error) {
+      Logger.error('ArkProvider: payment memo save failed: $error');
     }
   }
 
@@ -1285,7 +1280,7 @@ class ArkProvider extends ChangeNotifier {
             ArkPaymentRail.onchain => await _arkWalletService.sendOnchainTracked(fingerprint, destination, amountSats),
           };
           if (comment != null && comment.isNotEmpty && movementId != null) {
-            _savePaymentMemo(walletId, movementId, comment);
+            await _savePaymentMemo(walletId, movementId, comment);
           }
           succeeded = true;
           return movementId;
@@ -1459,6 +1454,7 @@ class ArkProvider extends ChangeNotifier {
     final ids = _walletProvider.walletItemList.map((wallet) => wallet.id).toSet();
     _snapshots.removeWhere((id, _) => !ids.contains(id));
     _movementMemos.removeWhere((id, _) => !ids.contains(id));
+    _paymentMemos.removeWhere((id, _) => !ids.contains(id));
     _lastSync.removeWhere((id, _) => !ids.contains(id));
     _refreshDue.removeWhere((id, _) => !ids.contains(id));
     if (isEnabled) arkWalletsLoaded = _loadArkWallets();
