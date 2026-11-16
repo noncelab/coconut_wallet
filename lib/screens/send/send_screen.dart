@@ -2071,10 +2071,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             height: kPageViewHeight,
             width: MediaQuery.of(context).size.width,
             child: Selector<SendViewModel, Tuple2<int, bool>>(
-              selector: (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.isMaxMode),
+              selector: (_, viewModel) => Tuple2(viewModel.recipientList.length, viewModel.canAddRecipient),
               builder: (context, data, child) {
                 final recipientListLength = data.item1;
-                final isMaxMode = data.item2;
+                final canAddRecipient = data.item2;
                 return PageView.builder(
                   controller: _recipientPageController,
                   onPageChanged: (index) {
@@ -2083,8 +2083,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
 
                     _viewModel.setCurrentPage(index);
                   },
-                  // isMaxMode: 수신자 추가 버튼 안보임
-                  itemCount: recipientListLength + (!isMaxMode ? 1 : 0),
+                  itemCount: recipientListLength + (canAddRecipient ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index == recipientListLength) {
                       return _buildAddRecipientCard();
@@ -2095,28 +2094,32 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
               },
             ),
           ),
-          AnimatedOpacity(
-            opacity: _isLeftDragGuideViewVisible ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 500),
-            child: IgnorePointer(
-              ignoring: !_isLeftDragGuideViewVisible,
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: _addRecipientHintCenterY,
-                    right: 8,
-                    child: FractionalTranslation(
-                      translation: const Offset(0, -0.5),
-                      child: AllFeaturesHint(
-                        title: t.add_recipient_hint.title,
-                        description: t.add_recipient_hint.description,
-                        onOpen: _openAddRecipientCard,
-                        onClose: _completeAddRecipientGuide,
-                      ),
+          Selector<SendViewModel, bool>(
+            selector: (_, viewModel) => viewModel.canAddRecipient,
+            builder: (context, canAddRecipient, child) {
+              final visible = _isLeftDragGuideViewVisible && canAddRecipient;
+              return AnimatedOpacity(
+                opacity: visible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 500),
+                child: IgnorePointer(ignoring: !visible, child: child),
+              );
+            },
+            child: Stack(
+              children: [
+                Positioned(
+                  top: _addRecipientHintCenterY,
+                  right: 8,
+                  child: FractionalTranslation(
+                    translation: const Offset(0, -0.5),
+                    child: AllFeaturesHint(
+                      title: t.add_recipient_hint.title,
+                      description: t.add_recipient_hint.description,
+                      onOpen: _openAddRecipientCard,
+                      onClose: _completeAddRecipientGuide,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

@@ -422,6 +422,17 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     return amount >= balance ? ArkSendRoute(ArkPaymentRail.onchain, address) : null;
   }
 
+  /// 라이트닝·아크로 보내면 받는 곳이 하나뿐
+  bool get canAddRecipient {
+    if (_isMaxMode || arkRoute != null) return false;
+    return switch (_requestAt(0)?.kind) {
+      PaymentRequestKind.lightningInvoice ||
+      PaymentRequestKind.lightningAddress ||
+      PaymentRequestKind.arkAddress => false,
+      _ => true,
+    };
+  }
+
   /// 주소란 아래에 보여 줄 받는 사람 종류, 비트코인 주소는 null
   String? requestKindLabel(int index) {
     if (!isArkWallet || index < 0 || index >= _recipientList.length) return null;
