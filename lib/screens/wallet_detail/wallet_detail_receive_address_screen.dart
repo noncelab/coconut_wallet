@@ -127,7 +127,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
     _arkProvider.cacheRevision.addListener(_onArkCacheChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _onWalletSelected();
+      if (mounted) _startFastSync();
     });
   }
 
@@ -140,10 +140,8 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
   }
 
   /// 화면이 열린 동안 아크를 자주 동기화해 라이트닝 받기가 바로 처리되게 함
-  void _onWalletSelected() {
+  void _startFastSync() {
     _stopFastSync();
-    _invoice = null;
-    _invoiceError = null;
     if (!_isArkWallet) return;
     _fastSyncWalletId = selectedWalletId;
     _arkProvider.setFastSync(selectedWalletId, true);
@@ -419,9 +417,10 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     }
     final invoice = _invoice;
     if (invoice == null) {
+      if (isArkOpen) return _ReceiveActionTile(text: t.ark.receive.creating_invoice);
       return _ReceiveActionTile(
-        text: isArkOpen ? t.ark.receive.add_invoice : t.ark.receive.unlock_invoice,
-        actionText: isArkOpen ? t.ark.receive.add : t.ark.send.unlock,
+        text: t.ark.receive.unlock_invoice,
+        actionText: t.ark.send.unlock,
         onTap: _createInvoice,
       );
     }
