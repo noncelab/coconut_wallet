@@ -1,9 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutToolTip, CoconutTooltipType, CoconutTooltipState, CoconutToast, CoconutPopup;
-import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
+import 'package:coconut_wallet/widgets/features/ark/ark_info_tooltip.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/model/ark/ark_movement.dart';
 import 'package:coconut_wallet/screens/ark/ark_movement_detail_screen.dart';
 import 'package:coconut_wallet/model/wallet/wallet_activity.dart';
@@ -50,7 +49,6 @@ class _VtxoDetailScreenState extends State<VtxoDetailScreen> {
   Offset _tooltipIconPosition = Offset.zero;
   Size _tooltipIconSize = Size.zero;
   bool _isTooltipVisible = false;
-  final GlobalKey _exitDepthInfoKey = GlobalKey();
   Rect? _exitDepthAnchor;
   bool _isRefreshing = false;
   late BitcoinUnit _unit;
@@ -103,7 +101,12 @@ class _VtxoDetailScreenState extends State<VtxoDetailScreen> {
         children: [
           _buildScaffold(context),
           if (_isTooltipVisible) _buildTooltip(context),
-          if (_exitDepthAnchor case final anchor?) _buildExitDepthTooltip(context, anchor),
+          if (_exitDepthAnchor case final anchor?)
+            ArkInfoTooltip(
+              anchor: anchor,
+              text: t.ark.vtxo.exit_depth_tooltip,
+              onDismiss: () => setState(() => _exitDepthAnchor = null),
+            ),
         ],
       ),
     );
@@ -230,14 +233,8 @@ class _VtxoDetailScreenState extends State<VtxoDetailScreen> {
         UnderlineButtonItemCard(
           label: t.ark.vtxo.exit_depth,
           showDivider: hasHistory,
-          labelTrailing: GestureDetector(
-            key: _exitDepthInfoKey,
-            behavior: HitTestBehavior.opaque,
-            onTap: _toggleExitDepthTooltip,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Icon(Icons.info_outline_rounded, color: context.coconutColors.iconSecondary, size: 18),
-            ),
+          labelTrailing: ArkInfoIcon(
+            onTap: (anchor) => setState(() => _exitDepthAnchor = _exitDepthAnchor == null ? anchor : null),
           ),
           child: Text('${vtxo.exitDepth}', style: valueStyle),
         ),
@@ -249,51 +246,6 @@ class _VtxoDetailScreenState extends State<VtxoDetailScreen> {
       (context.readArkProviderOrNull()?.vtxoHistory(widget.id, vtxo.id) ?? const <ArkMovement>[]).any(
         (movement) => movement.kind == ArkMovementKind.refresh,
       );
-
-  void _toggleExitDepthTooltip() {
-    if (_exitDepthAnchor != null) {
-      setState(() => _exitDepthAnchor = null);
-      return;
-    }
-    final box = _exitDepthInfoKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    setState(() => _exitDepthAnchor = box.localToGlobal(Offset.zero) & box.size);
-  }
-
-  Widget _buildExitDepthTooltip(BuildContext context, Rect anchor) {
-    final style = CoconutTypography.body3_12
-        .setColor(context.coconutColors.popoverText)
-        .merge(const TextStyle(height: 1.3));
-    final text =
-        LocaleSettings.currentLocale == AppLocale.ko
-            ? TextUtils.preventLineBreakInsideWords(t.ark.vtxo.exit_depth_tooltip)
-            : t.ark.vtxo.exit_depth_tooltip;
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout(maxWidth: MediaQuery.sizeOf(context).width * 0.6);
-    final width = painter.width + 32;
-    painter.dispose();
-    final arrowHeight = LeftTriangleBubbleClipper.arrowTip.dy + 10;
-    return Positioned(
-      top: anchor.bottom - LeftTriangleBubbleClipper.arrowTip.dy + 2,
-      left: anchor.center.dx - LeftTriangleBubbleClipper.arrowTip.dx,
-      child: SizedBox(
-        width: width,
-        child: CoconutToolTip(
-          width: width,
-          isBubbleClipperSideLeft: true,
-          tooltipType: CoconutTooltipType.placement,
-          isPlacementTooltipVisible: true,
-          backgroundColor: context.coconutColors.popoverBackground,
-          padding: EdgeInsets.fromLTRB(16, arrowHeight + 12, 16, 12),
-          richText: RichText(text: TextSpan(text: text, style: style)),
-          onTapRemove: () => setState(() => _exitDepthAnchor = null),
-        ),
-      ),
-    );
-  }
 
   Widget _buildHistory(ArkVtxo vtxo) {
     final ark = context.readArkProviderOrNull();

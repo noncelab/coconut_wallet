@@ -28,6 +28,7 @@ import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/common/info/highlighted_info_area.dart';
 import 'package:coconut_wallet/widgets/features/ark/ark_texts.dart';
+import 'package:coconut_wallet/widgets/features/ark/ark_info_tooltip.dart';
 import 'package:coconut_wallet/widgets/features/transaction/card/underline_button_item_card.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:flutter/material.dart';
@@ -71,6 +72,7 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
   /// this wallet's own (it paid a vault or someone else), looked up like any transaction.
   TransactionRecord? _onchainTx;
   ({String txid, bool pending})? _onchainTxRequest;
+  ({Rect anchor, String text})? _tooltip;
 
   // Syncs every few seconds while shown, so a payment that's still going (e.g. over Lightning)
   // settles on screen.
@@ -89,6 +91,10 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
   }
 
   void _toggleUnit() => setState(() => _unit = _unit.isBasedOnSatoshi ? BitcoinUnit.btc : BitcoinUnit.sats);
+
+  void _hideTooltip() {
+    if (_tooltip != null) setState(() => _tooltip = null);
+  }
 
   /// Looks up [movement]'s offboard transaction on the block explorer, again whenever the
   /// movement settles, so the inputs, fee and confirmations show as on the transaction detail
@@ -140,25 +146,39 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
       builder: (context, arkProvider, _) {
         final movement = arkProvider.movements(widget.id).where((m) => m.id == widget.movementId).firstOrNull;
         if (movement != null) _loadOnchainTx(movement);
-        return Scaffold(
+        final scaffold = Scaffold(
           backgroundColor: colors.background,
           appBar: CoconutAppBar.build(context: context, title: t.view_tx_details, backgroundColor: colors.background),
-          body: SafeArea(
-            child:
-                movement == null
-                    ? Center(
-                      child: Text(
-                        t.ark.movement.gone,
-                        style: CoconutTypography.body3_12.setColor(colors.secondaryText),
-                      ),
-                    )
-                    : _MovementDetails(
+          body:
+              movement == null
+                  ? Center(
+                    child: Text(t.ark.movement.gone, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                  )
+                  : NotificationListener<ScrollNotification>(
+                    onNotification: (_) {
+                      _hideTooltip();
+                      return false;
+                    },
+                    child: _MovementDetails(
                       walletId: widget.id,
                       movement: movement,
                       onchainTx: _onchainTx,
                       unit: _unit,
                       onToggleUnit: _toggleUnit,
+                      onInfoTap:
+                          (anchor, text) =>
+                              setState(() => _tooltip = _tooltip?.text == text ? null : (anchor: anchor, text: text)),
                     ),
+                  ),
+        );
+        return GestureDetector(
+          onTap: _hideTooltip,
+          child: Stack(
+            children: [
+              scaffold,
+              if (_tooltip case final tooltip?)
+                ArkInfoTooltip(anchor: tooltip.anchor, text: tooltip.text, onDismiss: _hideTooltip),
+            ],
           ),
         );
       },
@@ -173,6 +193,7 @@ class _MovementDetails extends StatelessWidget {
     required this.onchainTx,
     required this.unit,
     required this.onToggleUnit,
+    required this.onInfoTap,
   });
 
   final int walletId;
@@ -182,6 +203,9 @@ class _MovementDetails extends StatelessWidget {
   final TransactionRecord? onchainTx;
   final BitcoinUnit unit;
   final VoidCallback onToggleUnit;
+
+  /// 정보 아이콘을 누르면 그 위치와 설명
+  final void Function(Rect anchor, String text) onInfoTap;
 
   /// 인보이스·아크 주소·라이트닝 주소면 그 종류를, 비트코인 주소면 [fallback]을 이름으로
   /// 온체인 트랜잭션 ID, 이 지갑 내역에 있으면 상세로 가는 링크
@@ -252,7 +276,6 @@ class _MovementDetails extends StatelessWidget {
             ...movement.receivedOnDestinations,
           ].any((d) => d.value.toLowerCase() == invoice.toLowerCase()))
         (t.ark.movement.lightning_invoice, invoice),
-      if (movement.paymentHash != null) (t.ark.movement.payment_hash, movement.paymentHash!),
     ];
     final invoice =
         movement.lightningInvoice ??
@@ -347,19 +370,33 @@ class _MovementDetails extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _detail(context, t.ark.movement.movement_id, '${movement.id}'),
-                _detail(context, t.ark.movement.subsystem, '${movement.subsystemName} / ${movement.subsystemKind}'),
+                _detail(
+                  context,
+                  t.ark.movement.movement_id,
+                  ['${movement.id}'],
+                  labelTrailing: ArkInfoIcon(onTap: (anchor) => onInfoTap(anchor, t.ark.movement.movement_id_tooltip)),
+                ),
+                if (movement.paymentHash case final hash?) _detail(context, t.ark.movement.payment_hash, [hash]),
                 if (isExit)
-                  _detail(context, t.ark.movement.exit_requested, formatSats(unit, -movement.effectiveBalanceSats)),
+                  _detail(context, t.ark.movement.exit_requested, [
+                    formatSats(unit, -movement.effectiveBalanceSats),
+                  ], copyable: false),
                 if (isExit)
                   for (final destination in movement.sentToDestinations)
-                    _detail(context, t.ark.movement.exit_output_address, destination.value),
+                    _detail(
+                      context,
+                      t.ark.movement.exit_output_address,
+                      [destination.value],
+                      labelTrailing: ArkInfoIcon(
+                        onTap: (anchor) => onInfoTap(anchor, t.ark.movement.exit_output_address_tooltip),
+                      ),
+                    ),
                 if (movement.inputVtxoIds.isNotEmpty)
-                  _detail(context, t.ark.movement.vtxos_spent, movement.inputVtxoIds.join('\n')),
+                  _detail(context, t.ark.movement.vtxos_spent, movement.inputVtxoIds),
                 if (movement.outputVtxoIds.isNotEmpty)
-                  _detail(context, t.ark.movement.vtxos_created, movement.outputVtxoIds.join('\n')),
+                  _detail(context, t.ark.movement.vtxos_created, movement.outputVtxoIds),
                 if (movement.exitedVtxoIds.isNotEmpty)
-                  _detail(context, t.ark.movement.vtxos_exited, movement.exitedVtxoIds.join('\n')),
+                  _detail(context, t.ark.movement.vtxos_exited, movement.exitedVtxoIds),
               ],
             ),
           ),
@@ -486,15 +523,33 @@ class _MovementDetails extends StatelessWidget {
     );
   }
 
-  Widget _detail(BuildContext context, String label, String value) {
+  /// 값이 여럿이면 한 상자에 줄마다 하나씩
+  Widget _detail(
+    BuildContext context,
+    String label,
+    List<String> values, {
+    Widget? labelTrailing,
+    bool copyable = true,
+  }) {
     final colors = context.coconutColors;
+    final labelText = Text(label, style: CoconutTypography.body3_12.setColor(colors.secondaryText));
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
-          Text(value, style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
+          if (labelTrailing == null)
+            labelText
+          else
+            Row(mainAxisSize: MainAxisSize.min, children: [labelText, labelTrailing]),
+          CoconutLayout.spacing_200h,
+          copyable
+              ? CopyTextContainer(
+                text: values.join('\n\n'),
+                copyText: values.join('\n'),
+                textStyle: CoconutTypography.body3_12_Number.setColor(colors.primaryText),
+              )
+              : Text(values.join('\n'), style: CoconutTypography.body3_12_Number.setColor(colors.primaryText)),
         ],
       ),
     );
