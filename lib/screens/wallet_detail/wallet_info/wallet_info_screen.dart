@@ -1078,7 +1078,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
         return CoconutPopup(
           languageCode: context.read<PreferenceProvider>().language,
           title: t.alert.wallet_delete.confirm_delete,
-          description: t.alert.wallet_delete.confirm_delete_description,
+          description:
+              viewModel.isArkOn
+                  ? t.ark.wallet_info.delete_history_description
+                  : t.alert.wallet_delete.confirm_delete_description,
           onTapRight: () => Navigator.of(dialogContext).pop(true),
           onTapLeft: () => Navigator.of(dialogContext).pop(false),
           rightButtonText: t.delete,

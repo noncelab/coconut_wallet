@@ -12,6 +12,7 @@ import 'package:coconut_wallet/model/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_lifecycle_lock.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:crypto/crypto.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -175,6 +176,64 @@ class ArkWalletService {
     }
   }
 
+  /// 복원으로 다시 만든 출금은 bark 기록 시각이 복원한 때라, 출금 거래가 확정된 블록 시각으로 앞당김.
+  /// 직접 시작한 출금은 시작 시각이 더 이르므로 그대로
+  Future<List<ArkMovement>> _withExitBlockTimes(
+    String fingerprint,
+    bark.Wallet wallet,
+    List<ArkMovement> movements,
+  ) async {
+    if (!movements.any((movement) => movement.kind == ArkMovementKind.exit)) return movements;
+    return [
+      for (final movement in movements)
+        if (movement.kind != ArkMovementKind.exit)
+          movement
+        else if (await _exitTime(fingerprint, wallet, movement) case final time? when time.isBefore(movement.createdAt))
+          movement.withCreatedAt(time)
+        else
+          movement,
+    ];
+  }
+
+  Future<DateTime?> _exitTime(String fingerprint, bark.Wallet wallet, ArkMovement movement) async {
+    final key = '${_key(fingerprint)}:${movement.id}';
+    if (_exitTimes[key] case final time?) return time;
+    DateTime? earliest;
+    for (final vtxoId in {...movement.exitedVtxoIds, ...movement.inputVtxoIds}) {
+      try {
+        final status = await wallet.getExitStatus(vtxoId: vtxoId, includeHistory: true, includeTransactions: false);
+        final block = status == null ? null : exitConfirmedBlock([...?status.history, status.state]);
+        final time = block == null ? null : await _blockTime(block.hash);
+        if (time != null && (earliest == null || time.isBefore(earliest))) earliest = time;
+      } catch (error) {
+        Logger.error('ArkWalletService: exit time of $vtxoId unknown: $error');
+      }
+    }
+    if (earliest != null) _exitTimes[key] = earliest;
+    return earliest;
+  }
+
+  /// 출금 거래가 확정된 블록, 그 기록이 없으면 받기를 마친 블록
+  @visibleForTesting
+  static bark.BlockRef? exitConfirmedBlock(List<bark.ExitState> states) =>
+      states.whereType<bark.AwaitingDeltaExitState>().firstOrNull?.confirmedBlock ??
+      states.whereType<bark.ClaimedExitState>().firstOrNull?.block;
+
+  Future<DateTime?> _blockTime(String hash) async {
+    if (_blockTimes[hash] case final time?) return time;
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${CoconutWalletApp.kArkEsploraUrl}/block/$hash',
+      options: Options(sendTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 8)),
+    );
+    final seconds = (response.data?['timestamp'] as num?)?.toInt();
+    if (seconds == null) return null;
+    return _blockTimes[hash] = DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true).toLocal();
+  }
+
+  final Map<String, DateTime> _exitTimes = {};
+  final Map<String, DateTime> _blockTimes = {};
+  final Dio _dio = Dio();
+
   /// 복구가 딸려 온 지난 출금은 처음에 받을 수 있는 출금으로 남아 아크 잔액에 잡히고, 출금 상태를
   /// 몇 번 확인해야 끝난 것으로 바뀜. 복원 직후 없는 잔액이 보이지 않게 미리 확인
   static Future<void> _settleRecoveredExits(bark.Wallet wallet) async {
@@ -259,7 +318,11 @@ class ArkWalletService {
     return withWallet(fingerprint, (wallet) async {
       final balance = ArkBalance.fromBark(await wallet.balance());
       final vtxos = (await wallet.vtxos()).map(ArkVtxo.fromBark).toList();
-      final movements = (await wallet.history()).map(ArkMovement.fromBark).toList();
+      final movements = await _withExitBlockTimes(
+        fingerprint,
+        wallet,
+        (await wallet.history()).map(ArkMovement.fromBark).toList(),
+      );
       var recovery = _describeRecovery(wallet.recoveryStatus());
       if (recovery.state == ArkRecoveryState.notRun &&
           await File(_recoveryPendingPath(await _datadir(fingerprint))).exists()) {

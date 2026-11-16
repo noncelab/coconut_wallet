@@ -2473,6 +2473,7 @@ ark:
     delete_has_funds_description: "Ark-Guthaben kommt bei Wiederherstellung per Seed evtl. nicht vollständig zurück. Erst on-chain verschieben, dann löschen."
     delete_exit_title: "Ark-Auszahlung läuft"
     delete_exit_description: "Löschen nach Abschluss möglich."
+    delete_history_description: "Möchten Sie die Wallet wirklich löschen?\nBeim Wiederherstellen kehrt der Ark-Verlauf nicht zurück."
     auto_refresh_off_title: "Automatische Erneuerung ausschalten?"
     turn_on_failed: "Ark konnte nicht eingeschaltet werden. Prüfe die Verbindung zum Ark-Server und versuche es erneut."
     recovery_retry_title: "Früheres Ark-Guthaben prüfen"

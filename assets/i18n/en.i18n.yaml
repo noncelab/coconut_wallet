@@ -2468,6 +2468,7 @@ ark:
     delete_has_funds_description: "Ark balance may not fully return when restoring from the seed. Move it on-chain before deleting."
     delete_exit_title: "Ark withdrawal in progress"
     delete_exit_description: "You can delete after it finishes."
+    delete_history_description: "Do you really want to delete the wallet?\nRestoring the wallet won’t bring back Ark history."
     auto_refresh_off_title: "Turn off auto refresh?"
     turn_on_failed: "Couldn't turn on Ark. Check the connection to the Ark server and try again."
     recovery_retry_title: "Check previous Ark balance"

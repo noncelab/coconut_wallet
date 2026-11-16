@@ -2468,6 +2468,7 @@ ark:
     delete_has_funds_description: "El saldo Ark puede no volver completo al restaurar con la semilla. Muévelo on-chain antes de borrar."
     delete_exit_title: "Retiro Ark en curso"
     delete_exit_description: "Podrás borrarla cuando termine."
+    delete_history_description: "¿Estás seguro de querer eliminar la billetera?\nAl restaurarla, el historial de Ark no se recupera."
     auto_refresh_off_title: "¿Desactivar la renovación automática?"
     turn_on_failed: "No se pudo activar Ark. Revisa la conexión con el servidor Ark e inténtalo de nuevo."
     recovery_retry_title: "Comprobar saldo Ark anterior"

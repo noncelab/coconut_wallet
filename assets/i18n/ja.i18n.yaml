@@ -2465,6 +2465,7 @@ ark:
     delete_has_funds_description: "アーク残高はシードから復元しても全額戻る保証がありません。オンチェーンに移してから削除できます。"
     delete_exit_title: "アークの出金が進行中です"
     delete_exit_description: "出金が終わってから削除できます。"
+    delete_history_description: "ウォレットを本当に削除しますか？\nウォレットを復元しても、アークの取引履歴は戻りません。"
     auto_refresh_off_title: "自動更新をオフにしますか？"
     turn_on_failed: "Arkをオンにできませんでした。Arkサーバーとの接続を確認して、もう一度お試しください。"
     recovery_retry_title: "以前のアーク残高を確認"

@@ -142,11 +142,21 @@ class ArkMovement {
   ArkMovement withMemo(String? memo) =>
       _copy(claimTxid: exitClaimTxid, relatedTxids: exitRelatedTxids, destination: exitDestination, memo: memo);
 
+  /// 시각을 바꾼 사본, 복원으로 다시 만든 출금을 실제 출금 시각에 두려고 씀
+  ArkMovement withCreatedAt(DateTime createdAt) => _copy(
+    claimTxid: exitClaimTxid,
+    relatedTxids: exitRelatedTxids,
+    destination: exitDestination,
+    memo: memo,
+    createdAt: createdAt,
+  );
+
   ArkMovement _copy({
     required String? claimTxid,
     required List<String> relatedTxids,
     required String? destination,
     required String? memo,
+    DateTime? createdAt,
   }) => ArkMovement(
     id: id,
     status: status,
@@ -161,7 +171,7 @@ class ArkMovement {
     inputVtxoIds: inputVtxoIds,
     outputVtxoIds: outputVtxoIds,
     exitedVtxoIds: exitedVtxoIds,
-    createdAt: createdAt,
+    createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt,
     completedAt: completedAt,
     paymentHash: paymentHash,

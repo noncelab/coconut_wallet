@@ -69,7 +69,7 @@ class ArkSnapshot {
     ]..sort()),
     ...([
       for (final movement in movements)
-        '${movement.id}/${movement.status.name}/${movement.effectiveBalanceSats}/${movement.updatedAt.microsecondsSinceEpoch}',
+        '${movement.id}/${movement.status.name}/${movement.effectiveBalanceSats}/${movement.createdAt.microsecondsSinceEpoch}/${movement.updatedAt.microsecondsSinceEpoch}',
     ]..sort()),
   ].join('|');
 }
