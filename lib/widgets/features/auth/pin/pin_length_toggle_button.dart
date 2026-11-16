@@ -14,24 +14,19 @@ class PinLengthToggleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final text = currentPinLength == 4 ? t.pin_setting_screen.set_to_6_digit : t.pin_setting_screen.set_to_4_digit;
-    const outerBorderRadius = 8.0;
-    const borderWidth = 0.5;
-    const innerBorderRadius = outerBorderRadius + borderWidth * 2;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40.0),
       child: ShrinkAnimationButton(
         onPressed: onToggle,
-        defaultColor: colors.surfaceButton,
+        defaultColor: Colors.transparent,
         pressedOverlayColor: colors.surfacePressOverlay,
-        borderRadius: outerBorderRadius,
-        borderWidth: borderWidth,
+        borderRadius: 8,
         childBuilder:
             (context, isPressed) => Container(
               padding: const EdgeInsets.symmetric(horizontal: Sizes.size12, vertical: Sizes.size8),
               decoration: BoxDecoration(
-                color: colors.background,
-                borderRadius: BorderRadius.circular(innerBorderRadius),
+                border: Border.all(color: colors.border, width: 0.5),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
                 text,

@@ -541,7 +541,7 @@ class _ReceiveActionTile extends StatelessWidget {
             CoconutLayout.spacing_300w,
             ShrinkAnimationButton(
               onPressed: onTap!,
-              defaultColor: colors.surfaceButton,
+              defaultColor: colors.surfaceButtonOnSurface,
               pressedOverlayColor: colors.surfacePressOverlay,
               borderRadius: 8,
               child: Padding(
