@@ -1739,7 +1739,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       builder: (context, data, _) {
         final (fee, isEstimating) = data;
         return Container(
-          padding: const EdgeInsets.only(left: 16, right: 14, top: 16, bottom: 16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             border: Border.all(color: context.coconutColors.border, width: 1),
             borderRadius: const BorderRadius.all(Radius.circular(12)),
