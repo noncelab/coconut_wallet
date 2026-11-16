@@ -154,6 +154,7 @@ class ArkMoveViewModel extends ChangeNotifier {
         );
         if (built.isFailure) {
           problem = ArkMoveProblem.exceedsBalance;
+          fee = await _shortfallBoardFee(funding.address, amount, feeRate.toDouble());
         } else {
           final boarded = _isMax ? amount - built.estimatedFee : amount;
           final terms = _boardTerms;
@@ -198,6 +199,18 @@ class ArkMoveViewModel extends ChangeNotifier {
     _arrivalSats = problem == null ? arrival : null;
     _spendSats = problem == null ? spend : null;
     notifyListeners();
+  }
+
+  /// 금액이 온체인 잔액 이하지만 수수료까지 내기엔 모자랄 때의 예상 수수료
+  Future<int?> _shortfallBoardFee(String address, int amount, double feeRate) async {
+    if (_isMax) return null;
+    final built = _payment.build(address: address, amountSats: amount, feeRate: feeRate, sweep: true);
+    if (built.isFailure) return null;
+    try {
+      return built.estimatedFee + await _arkProvider.estimateBoardFee(walletId, amount - built.estimatedFee);
+    } catch (_) {
+      return null;
+    }
   }
 
   /// 결제 진행 화면에 넘길 실제 이동. 화면이 인증을 마친 뒤 호출
