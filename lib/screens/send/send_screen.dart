@@ -1749,7 +1749,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             children: [
               Row(
                 children: [
-                  _buildFeeRowLabel(t.send_screen.estimated_fee),
+                  _buildFeeRowLabel(t.estimated_fee),
                   CoconutLayout.spacing_200w,
                   Expanded(
                     child: Align(

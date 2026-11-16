@@ -1407,7 +1407,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
     return ShrinkAnimationButton(
       onPressed: _changeInputAsset,
-      defaultColor: context.coconutColors.surfaceButton,
+      defaultColor: context.coconutColors.surfaceButtonOnSurface,
       pressedOverlayColor: context.coconutColors.surfacePressOverlay,
       borderRadius: borderRadius,
       childBuilder:
@@ -1490,6 +1490,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
                                 key: ValueKey('input_textfield_$placeholderText'),
                                 activeColor: textColor,
                                 cursorColor: textColor,
+                                placeholderColor: context.coconutColors.mutedText,
                                 enabled: _viewModel.isNetworkOn,
                                 maxLines: 1,
                                 controller: controller,

@@ -173,10 +173,10 @@ class ArkMoveViewModel extends ChangeNotifier {
           address,
           amountSats: _isMax ? null : amount,
         );
+        fee = moveFee;
         if (!_isMax && amount + moveFee > arkBalanceSats) {
           problem = ArkMoveProblem.exceedsBalance;
         } else {
-          fee = moveFee;
           arrival = _isMax ? amount - moveFee : amount;
           spend = _isMax ? amount : amount + moveFee;
           if (arrival <= 0) {
@@ -193,7 +193,8 @@ class ArkMoveViewModel extends ChangeNotifier {
     if (_disposed || seq != _estimateSeq) return;
     _isEstimating = false;
     _problem = problem;
-    _feeSats = problem == null ? fee : null;
+    // 잔액이 모자라도 수수료는 표시
+    _feeSats = fee;
     _arrivalSats = problem == null ? arrival : null;
     _spendSats = problem == null ? spend : null;
     notifyListeners();

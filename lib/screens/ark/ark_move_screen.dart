@@ -198,7 +198,7 @@ class _ArkMoveScreenState extends State<ArkMoveScreen> {
     return Container(
       height: _cardHeight,
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: colors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +321,7 @@ class _ArkMoveScreenState extends State<ArkMoveScreen> {
       trailing: ShrinkAnimationButton(
         key: const Key('ark-move-max'),
         onPressed: _fillMax,
-        defaultColor: colors.surfaceButton,
+        defaultColor: colors.surfaceButtonOnSurface,
         pressedOverlayColor: colors.surfacePressOverlay,
         borderRadius: 8,
         child: Container(
@@ -397,7 +397,7 @@ class _ArkMoveScreenState extends State<ArkMoveScreen> {
     return ShrinkAnimationButton(
       key: const Key('ark-move-swap'),
       onPressed: _swap,
-      defaultColor: colors.surfaceButton,
+      defaultColor: colors.surfaceButtonOnSurface,
       pressedOverlayColor: colors.surfacePressOverlay,
       borderRadius: 26,
       childBuilder:

@@ -159,6 +159,9 @@ class CoconutColors {
   final Color surfaceButton;
   final Color surfaceButtonText;
 
+  /// surface 카드 안에 올라가는 Button의 바탕, 카드와 구분되는 한 단계 다른 색
+  final Color surfaceButtonOnSurface;
+
   /// 주요 CTA 버튼의 배경/전경/눌림 overlay 색상
   /// FixedBottomButton 등 공통 primary 버튼 컴포넌트의 기본 스킨에 사용한다
   final Color buttonPrimaryBackground;
@@ -405,6 +408,7 @@ class CoconutColors {
     required this.brandAccentForeground,
     required this.surfaceButton,
     required this.surfaceButtonText,
+    required this.surfaceButtonOnSurface,
     required this.buttonPrimaryBackground,
     required this.buttonPrimaryForeground,
     required this.buttonPrimaryDisabledBackground,
@@ -596,6 +600,7 @@ class CoconutColors {
       brandAccentForeground: Color.lerp(a.brandAccentForeground, b.brandAccentForeground, t)!,
       surfaceButton: Color.lerp(a.surfaceButton, b.surfaceButton, t)!,
       surfaceButtonText: _lerpForeground(a.surfaceButtonText, b.surfaceButtonText, a.surfaceButton, b.surfaceButton, t),
+      surfaceButtonOnSurface: Color.lerp(a.surfaceButtonOnSurface, b.surfaceButtonOnSurface, t)!,
       buttonPrimaryBackground: Color.lerp(a.buttonPrimaryBackground, b.buttonPrimaryBackground, t)!,
       buttonPrimaryForeground: _lerpForeground(
         a.buttonPrimaryForeground,
@@ -848,6 +853,7 @@ class CoconutColors {
       brandAccentForeground: ds.CoconutColors.black,
       surfaceButton: ds.CoconutColors.gray850,
       surfaceButtonText: ds.CoconutColors.white,
+      surfaceButtonOnSurface: ds.CoconutColors.gray750,
       buttonPrimaryBackground: ds.CoconutColors.white,
       buttonPrimaryForeground: ds.CoconutColors.black,
       buttonPrimaryDisabledBackground: ds.CoconutColors.gray800,
@@ -1010,6 +1016,7 @@ class CoconutColors {
       brandAccentForeground: ds.CoconutColors.black,
       surfaceButton: ds.CoconutColors.gray300,
       surfaceButtonText: ds.CoconutColors.black,
+      surfaceButtonOnSurface: ds.CoconutColors.gray300,
       buttonPrimaryBackground: ds.CoconutColors.black,
       buttonPrimaryForeground: ds.CoconutColors.white,
       buttonPrimaryDisabledBackground: ds.CoconutColors.gray150,
@@ -1191,6 +1198,7 @@ class CoconutColors {
       brandAccentForeground: huskDeep,
       surfaceButton: sand,
       surfaceButtonText: huskDeep,
+      surfaceButtonOnSurface: sand,
       buttonPrimaryBackground: huskDeep,
       buttonPrimaryForeground: ds.CoconutColors.white,
       buttonPrimaryDisabledBackground: cream,
