@@ -1,16 +1,19 @@
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_wallet/screens/ccos/store/widgets/ccos_store_feature_icon.dart';
 import 'package:coconut_wallet/screens/ccos/store/widgets/ccos_store_scope.dart';
 import 'package:flutter/material.dart';
 
-/// 스토어 카드의 썸네일. 코코넛 테마는 소개 화면의 이미지 조각, 나머지는 새 이미지가 오기 전까지 아이콘
+/// 스토어 카드의 썸네일. 코코넛 테마는 소개 화면의 이미지 조각, 아크는 Bark 일러스트, 나머지는 아이콘
 class CcosStoreFeatureThumbnail extends StatelessWidget {
   const CcosStoreFeatureThumbnail({super.key, required this.listing});
 
   static const double height = 200;
 
   final CcosFeatureListing listing;
+
+  static const String _arkIllustration = 'assets/images/ccos/ark_illustration.png';
 
   static const List<_Piece> _themePieces = [
     _Piece('assets/images/ccos/preview_transaction_card.png', Alignment(0.0, 0.1), 200, -0.035),
@@ -26,18 +29,22 @@ class CcosStoreFeatureThumbnail extends StatelessWidget {
       height: height,
       width: double.infinity,
       decoration: const BoxDecoration(color: CcosStoreScope.thumbnailColor),
-      child:
-          listing.id == CoconutThemeFeature.id
-              ? Stack(
-                children: [
-                  for (final piece in _themePieces)
-                    Align(
-                      alignment: piece.alignment,
-                      child: Transform.rotate(angle: piece.angle, child: Image.asset(piece.path, width: piece.width)),
-                    ),
-                ],
-              )
-              : Center(child: CcosStoreFeatureIcon(iconPath: listing.iconPath, size: 96, onSurface: true)),
+      child: switch (listing.id) {
+        CoconutThemeFeature.id => Stack(
+          children: [
+            for (final piece in _themePieces)
+              Align(
+                alignment: piece.alignment,
+                child: Transform.rotate(angle: piece.angle, child: Image.asset(piece.path, width: piece.width)),
+              ),
+          ],
+        ),
+        ArkFeature.id => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Image.asset(_arkIllustration, fit: BoxFit.contain),
+        ),
+        _ => Center(child: CcosStoreFeatureIcon(iconPath: listing.iconPath, size: 96, onSurface: true)),
+      },
     );
   }
 }

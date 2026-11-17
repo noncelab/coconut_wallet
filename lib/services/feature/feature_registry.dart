@@ -33,10 +33,10 @@ class FeatureRegistry {
     return [
       for (final listing in CcosFeatureRegistrySource.allListings)
         FeatureItem(
-          id: '${FeatureIds.appSettings}.ccos.${listing.id}',
+          id: '${FeatureIds.openStore}.${listing.id}',
           label: () => listing.title,
           keywords: listing.tags,
-          parentId: FeatureIds.appSettings,
+          parentId: FeatureIds.openStore,
           source: FeatureSource.ccos,
           isAvailable:
               (context) => listing.id != ArkFeature.id || (context.readArkProviderOrNull()?.isEnabled ?? false),

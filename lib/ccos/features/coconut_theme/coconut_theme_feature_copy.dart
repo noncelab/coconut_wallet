@@ -12,6 +12,8 @@ class CoconutThemeFeatureCopy {
     required this.tags,
     required this.subtitle,
     required this.screenshotCaptions,
+    required this.creatorParagraphs,
+    required this.belief,
   });
 
   final String title;
@@ -24,6 +26,8 @@ class CoconutThemeFeatureCopy {
   final List<String> tags;
   final String subtitle;
   final List<String> screenshotCaptions;
+  final List<String> creatorParagraphs;
+  final String belief;
 }
 
 class CoconutThemeFeatureCopySource {
@@ -52,7 +56,13 @@ class CoconutThemeFeatureCopySource {
     featureHelp: '오픈 스토어뿐 아니라 실제로 사용하는 테마 화면에서도 기능을 확인하고 사용할 수 있어요.',
     tags: ['밝은 테마'],
     subtitle: '코코넛과 해변의 따뜻한 밝은 테마',
-    screenshotCaptions: ['홈도 따뜻한 밝은 색으로', '지갑 상세', '보내기', '거래 흐름까지 같은 색감으로'],
+    screenshotCaptions: ['코코넛과 모래사장 색상의 밝은 홈', '지갑 상세', '코코넛 껍질 색의 버튼', '해변을 연상시키는 거래 흐름'],
+    creatorParagraphs: [
+      '코코넛 팀은 비트코인 전용 지갑 코코넛 월렛과 볼트를 만들고 있어요.',
+      '처음에 코코넛 월렛은 볼트와 구분하기 위해 의도적으로 어두운 테마만 제공했어요.',
+      '하지만 코코넛 오픈 스토어를 구상하며, \'누구나 새로운 기능을 제안하고 함께 만들어가는 경험\'을 잘 보여줄 수 있는 예시가 무얼까 고민하며 코코넛 테마를 추가하게 되었어요.',
+    ],
+    belief: '코코넛 테마를 선보이며 누구나 기여할 수 있는 코코넛 오픈 스토어를 그릴 수 있길 바랐어요',
   );
 
   static const CoconutThemeFeatureCopy _en = CoconutThemeFeatureCopy(
@@ -68,7 +78,18 @@ class CoconutThemeFeatureCopySource {
         'You can find and use this feature not only in the Open Store, but also later in the actual theme screen.',
     tags: ['Light theme'],
     subtitle: 'A warm, bright theme',
-    screenshotCaptions: ['A warm, bright home', 'Wallet details', 'Send', 'Transaction flow in the same colors'],
+    screenshotCaptions: [
+      'A bright home in coconut and sand colors',
+      'Wallet details',
+      'Buttons in coconut husk brown',
+      'Transaction flow that recalls the beach',
+    ],
+    creatorParagraphs: [
+      'The Coconut team builds Coconut Wallet and Coconut Vault, bitcoin-only wallets.',
+      'At first, Coconut Wallet offered only a dark theme on purpose, to set it apart from the Vault.',
+      'But while planning the Coconut Open Store, we asked what example could best show \'anyone proposing new features and building them together\', and added the Coconut Theme.',
+    ],
+    belief: 'With the Coconut Theme, we hoped to sketch a Coconut Open Store anyone can contribute to',
   );
 
   static const CoconutThemeFeatureCopy _de = CoconutThemeFeatureCopy(
@@ -85,7 +106,18 @@ class CoconutThemeFeatureCopySource {
         'Diese Funktion laesst sich nicht nur im Open Store finden, sondern spaeter auch direkt im Theme-Bildschirm wiedersehen und nutzen.',
     tags: ['Helles Theme'],
     subtitle: 'Ein warmes, helles Theme',
-    screenshotCaptions: ['Ein warmes, helles Home', 'Wallet-Details', 'Senden', 'Transaktionsfluss in gleichen Farben'],
+    screenshotCaptions: [
+      'Helles Home in Kokos- und Sandfarben',
+      'Wallet-Details',
+      'Buttons in Kokosschalenbraun',
+      'Transaktionsfluss, der an den Strand erinnert',
+    ],
+    creatorParagraphs: [
+      'Das Coconut-Team entwickelt Coconut Wallet und Coconut Vault, reine Bitcoin-Wallets.',
+      'Anfangs bot Coconut Wallet bewusst nur ein dunkles Theme, um sich vom Vault abzuheben.',
+      'Bei der Planung des Coconut Open Store fragten wir uns, welches Beispiel am besten zeigt, wie jeder neue Funktionen vorschlagen und gemeinsam bauen kann, und fügten das Coconut-Theme hinzu.',
+    ],
+    belief: 'Mit dem Coconut-Theme wollten wir einen Coconut Open Store skizzieren, zu dem jeder beitragen kann',
   );
 
   static const CoconutThemeFeatureCopy _es = CoconutThemeFeatureCopy(
@@ -102,11 +134,17 @@ class CoconutThemeFeatureCopySource {
     tags: ['Tema claro'],
     subtitle: 'Un tema claro y cálido',
     screenshotCaptions: [
-      'Un inicio claro y cálido',
+      'Inicio claro en tonos de coco y arena',
       'Detalle de billetera',
-      'Enviar',
-      'Flujo de la transacción a juego',
+      'Botones color cáscara de coco',
+      'Flujo de transacción que evoca la playa',
     ],
+    creatorParagraphs: [
+      'El equipo Coconut crea Coconut Wallet y Coconut Vault, billeteras solo de bitcoin.',
+      'Al principio, Coconut Wallet ofrecía a propósito solo un tema oscuro para diferenciarse del Vault.',
+      'Pero al idear el Coconut Open Store, buscamos un ejemplo que mostrara bien \'cualquiera propone nuevas funciones y las construimos juntos\', y añadimos el tema Coconut.',
+    ],
+    belief: 'Con el tema Coconut quisimos dibujar un Coconut Open Store al que cualquiera pueda contribuir',
   );
 
   static const CoconutThemeFeatureCopy _ja = CoconutThemeFeatureCopy(
@@ -119,6 +157,12 @@ class CoconutThemeFeatureCopySource {
     featureHelp: 'Open Store だけでなく、実際のテーマ画面でもこの機能を確認して使えます。',
     tags: ['明るいテーマ'],
     subtitle: 'あたたかい明るいテーマ',
-    screenshotCaptions: ['ホームも明るくあたたかく', 'ウォレット詳細', '送金', '取引の流れも同じ色合い'],
+    screenshotCaptions: ['ココナッツと砂浜の色の明るいホーム', 'ウォレット詳細', 'ココナッツの殻の色のボタン', 'ビーチを思わせる取引の流れ'],
+    creatorParagraphs: [
+      'Coconutチームは、ビットコイン専用ウォレットのCoconut WalletとVaultをつくっています。',
+      '最初、Coconut WalletはVaultと区別するため、あえてダークテーマだけを提供していました。',
+      'しかしCoconut Open Storeを構想する中で、「誰でも新しい機能を提案し、一緒につくっていく体験」をよく伝えられる例は何かを考え、Coconutテーマを追加しました。',
+    ],
+    belief: 'Coconutテーマを通じて、誰もが貢献できるCoconut Open Storeを描きたいと願いました',
   );
 }

@@ -129,6 +129,18 @@ void main() {
     expect(paths, contains('assets/images/ccos/preview_transaction_card.png'));
   });
 
+  testWidgets('the ark card thumbnail shows the bark illustration', (tester) async {
+    await _pump(tester);
+
+    final ark = find.byKey(ValueKey('ccos-store-card-${ArkFeature.id}'));
+    final images = tester
+        .widgetList<Image>(find.descendant(of: ark, matching: find.byType(Image)))
+        .map((image) => image.image)
+        .whereType<AssetImage>()
+        .map((image) => image.assetName);
+    expect(images, contains('assets/images/ccos/ark_illustration.png'));
+  });
+
   testWidgets('card thumbnails sit on their own background', (tester) async {
     await _pump(tester);
 

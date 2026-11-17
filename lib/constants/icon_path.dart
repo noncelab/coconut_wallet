@@ -12,10 +12,6 @@ abstract final class AppIconPath {
 }
 
 /// 오픈 스토어 기능 아이콘
-abstract final class CcosFeatureIconPath {
-  static const String ark = 'assets/svg/features/ccos/ark.svg';
-}
-
 abstract final class BrandIconPath {
   static const String arrowRightLg = 'assets/svg/brand/motifs/arrow-right-lg.svg';
   static const String coconutPlanet = 'assets/svg/brand/motifs/coconut-planet.svg';

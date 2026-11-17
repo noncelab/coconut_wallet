@@ -90,10 +90,10 @@ void main() {
     );
   });
 
-  testWidgets('the theme shows its creator quote', (tester) async {
+  testWidgets('the theme shows no feedback quote', (tester) async {
     LocaleSettings.setLocaleSync(AppLocale.ko);
     await _pump(tester, CoconutThemeFeature.id);
-    expect(find.byKey(const ValueKey('ccos-detail-quote')), findsOneWidget);
+    expect(find.byKey(const ValueKey('ccos-detail-quote')), findsNothing);
   });
 
   testWidgets('remove is disabled with a reason while ark is in use', (tester) async {

@@ -22,7 +22,7 @@ class ArkFeature {
       priceType: CcosListingPriceType.free,
       tags: copy.tags,
       subtitle: copy.subtitle,
-      iconPath: CcosFeatureIconPath.ark,
+      iconPath: CommonStateIconPath.ark,
       screenshots: [
         for (var i = 0; i < _screenshotNames.length; i++)
           CcosFeatureScreenshot(

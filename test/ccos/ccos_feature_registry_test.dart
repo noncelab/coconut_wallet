@@ -2,6 +2,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -95,19 +96,24 @@ void main() {
       final listing = ArkFeature.listing;
 
       expect(listing.author, 'Bark 팀');
+      expect(listing.iconPath, CommonStateIconPath.ark);
       expect(listing.creatorStory.quote, isNull);
       expect(listing.creatorStory.quoteAttribution, isNull);
       expect(listing.screenshots, hasLength(5));
     });
 
-    test('theme keeps the existing creator story', () {
+    test('theme tells its own store creator story without the feedback quote', () {
+      LocaleSettings.setLocaleSync(AppLocale.ko);
       final story = CoconutThemeFeature.listing.creatorStory;
-      final detail = t.ccos.first_pow_scene.creator_detail;
 
-      expect(story.quote, detail.feedback_quote);
-      expect(story.quoteAttribution, detail.feedback_attribution);
-      expect(story.paragraphs, [detail.story_paragraph1, detail.story_paragraph2, detail.story_paragraph3]);
-      expect(story.belief, detail.belief_statement);
+      expect(story.quote, isNull);
+      expect(story.quoteAttribution, isNull);
+      expect(story.paragraphs, [
+        '코코넛 팀은 비트코인 전용 지갑 코코넛 월렛과 볼트를 만들고 있어요.',
+        '처음에 코코넛 월렛은 볼트와 구분하기 위해 의도적으로 어두운 테마만 제공했어요.',
+        '하지만 코코넛 오픈 스토어를 구상하며, \'누구나 새로운 기능을 제안하고 함께 만들어가는 경험\'을 잘 보여줄 수 있는 예시가 무얼까 고민하며 코코넛 테마를 추가하게 되었어요.',
+      ]);
+      expect(story.belief, '코코넛 테마를 선보이며 누구나 기여할 수 있는 코코넛 오픈 스토어를 그릴 수 있길 바랐어요');
     });
 
     test('ark is applied while a wallet uses it, added or not', () {
