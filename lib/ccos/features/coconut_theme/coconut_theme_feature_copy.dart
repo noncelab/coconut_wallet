@@ -10,6 +10,8 @@ class CoconutThemeFeatureCopy {
     required this.whyItBelongs,
     required this.featureHelp,
     required this.tags,
+    required this.subtitle,
+    required this.screenshotCaptions,
   });
 
   final String title;
@@ -20,6 +22,8 @@ class CoconutThemeFeatureCopy {
   final String whyItBelongs;
   final String featureHelp;
   final List<String> tags;
+  final String subtitle;
+  final List<String> screenshotCaptions;
 }
 
 class CoconutThemeFeatureCopySource {
@@ -47,6 +51,8 @@ class CoconutThemeFeatureCopySource {
     whyItBelongs: '오픈 스토어는 좋은 PoW를 발견하고 함께 사용하는 공간입니다. 이 테마는 앞으로 다양한 기능이 추가될 모습을 보여주는 첫 번째 PoW예요.',
     featureHelp: '오픈 스토어뿐 아니라 실제로 사용하는 테마 화면에서도 기능을 확인하고 사용할 수 있어요.',
     tags: ['밝은 테마'],
+    subtitle: '코코넛과 해변의 따뜻한 밝은 테마',
+    screenshotCaptions: ['홈도 따뜻한 밝은 색으로', '지갑 상세', '보내기', '거래 흐름까지 같은 색감으로'],
   );
 
   static const CoconutThemeFeatureCopy _en = CoconutThemeFeatureCopy(
@@ -61,6 +67,8 @@ class CoconutThemeFeatureCopySource {
     featureHelp:
         'You can find and use this feature not only in the Open Store, but also later in the actual theme screen.',
     tags: ['Light theme'],
+    subtitle: 'A warm, bright theme',
+    screenshotCaptions: ['A warm, bright home', 'Wallet details', 'Send', 'Transaction flow in the same colors'],
   );
 
   static const CoconutThemeFeatureCopy _de = CoconutThemeFeatureCopy(
@@ -76,6 +84,8 @@ class CoconutThemeFeatureCopySource {
     featureHelp:
         'Diese Funktion laesst sich nicht nur im Open Store finden, sondern spaeter auch direkt im Theme-Bildschirm wiedersehen und nutzen.',
     tags: ['Helles Theme'],
+    subtitle: 'Ein warmes, helles Theme',
+    screenshotCaptions: ['Ein warmes, helles Home', 'Wallet-Details', 'Senden', 'Transaktionsfluss in gleichen Farben'],
   );
 
   static const CoconutThemeFeatureCopy _es = CoconutThemeFeatureCopy(
@@ -90,6 +100,13 @@ class CoconutThemeFeatureCopySource {
     featureHelp:
         'Puedes encontrar y usar esta función no solo en el Open Store, sino también más tarde en la pantalla real de temas.',
     tags: ['Tema claro'],
+    subtitle: 'Un tema claro y cálido',
+    screenshotCaptions: [
+      'Un inicio claro y cálido',
+      'Detalle de billetera',
+      'Enviar',
+      'Flujo de la transacción a juego',
+    ],
   );
 
   static const CoconutThemeFeatureCopy _ja = CoconutThemeFeatureCopy(
@@ -101,5 +118,7 @@ class CoconutThemeFeatureCopySource {
     whyItBelongs: 'Open Store は、良い PoW を見つけて一緒に使うための場所です。このテーマは、これからさまざまな機能が Coconut に加わっていく姿を見せる最初の PoW です。',
     featureHelp: 'Open Store だけでなく、実際のテーマ画面でもこの機能を確認して使えます。',
     tags: ['明るいテーマ'],
+    subtitle: 'あたたかい明るいテーマ',
+    screenshotCaptions: ['ホームも明るくあたたかく', 'ウォレット詳細', '送金', '取引の流れも同じ色合い'],
   );
 }

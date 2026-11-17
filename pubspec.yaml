@@ -167,6 +167,7 @@ flutter:
     - assets/svg/features/connectivity/
     - assets/svg/features/settings/
     - assets/svg/features/shortcuts/
+    - assets/svg/features/ccos/
     - assets/svg/features/tags/
     - assets/svg/features/taproot/
     - assets/svg/features/transaction/
@@ -201,6 +202,10 @@ flutter:
     - assets/images/ccos/preview_arrow_down.png
     - assets/images/ccos/preview_arrow_up.png
     - assets/images/ccos/preview_address_bar.png
+    - assets/images/ccos/ark/ko/
+    - assets/images/ccos/ark/en/
+    - assets/images/ccos/theme/ko/
+    - assets/images/ccos/theme/en/
     - regtest.env
     - mainnet.env
     - testnet.env

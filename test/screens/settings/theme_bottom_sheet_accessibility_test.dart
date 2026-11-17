@@ -7,9 +7,9 @@ import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/screens/ccos/coconut_open_store_intro_screen.dart';
 import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/deletable_settings_row.dart';
+import 'package:coconut_wallet/screens/ccos/store/coconut_open_store_feature_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -138,7 +138,7 @@ void main() {
       });
     }
 
-    testWidgets('$variant semantic store activation pushes the intro route exactly once', (tester) async {
+    testWidgets('$variant semantic store activation pushes the theme detail route exactly once', (tester) async {
       final semantics = tester.ensureSemantics();
       final preferences = _Preferences(themeVariant: variant, hasCcos: true);
       addTearDown(preferences.dispose);
@@ -150,8 +150,8 @@ void main() {
       tester.binding.renderViews.single.owner!.semanticsOwner!.performAction(store.id, SemanticsAction.tap);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      expect(routes.pushed.where((name) => name == AnalyticsScreenNames.ccosOpenStoreIntro), hasLength(1));
-      expect(find.byType(CoconutOpenStoreIntroScreen), findsOneWidget);
+      expect(routes.pushed.where((name) => name == AnalyticsScreenNames.ccosOpenStoreFeatureDetail), hasLength(1));
+      expect(find.byType(CoconutOpenStoreFeatureDetailScreen), findsOneWidget);
       expect(preferences.changes, 0);
       await tester.pumpWidget(const SizedBox());
       semantics.dispose();

@@ -467,10 +467,10 @@ List<FeatureItem> builtinFeatures() {
       id: FeatureIds.openStore,
       label: () => _labels.open_store,
       shortLabel: () => _labels.open_store_short,
-      iconPath: BrandIconPath.coconutPlanet,
+      iconPath: FeatureShortcutIconPath.openStore,
       keywords: const ['CCOS'],
       localizedKeywords: () => _keywords(_search.open_store),
-      launch: (context, _) => openCoconutOpenStoreIntroScreen(context),
+      launch: (context, _) => openCoconutOpenStore(context),
     ),
     FeatureItem(
       id: FeatureIds.walletDetail,

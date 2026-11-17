@@ -1,4 +1,6 @@
+import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -67,6 +69,86 @@ void main() {
         expect(listing.whyItBelongs, isNotEmpty);
         expect(listing.featureHelp, isNotEmpty);
         expect(listing.tags, isNotEmpty);
+      });
+    }
+  });
+
+  group('store details', () {
+    test('listings carry store details', () {
+      for (final listing in CcosFeatureRegistrySource.allListings) {
+        expect(listing.subtitle, isNotEmpty, reason: listing.id);
+        expect(listing.iconPath, isNotEmpty, reason: listing.id);
+        expect(listing.creatorStory.paragraphs, isNotEmpty, reason: listing.id);
+        expect(listing.creatorStory.belief, isNotEmpty, reason: listing.id);
+      }
+    });
+
+    test('the store lists ark first, then the coconut theme', () {
+      expect(CcosFeatureRegistrySource.allListings.map((listing) => listing.id), [
+        ArkFeature.id,
+        CoconutThemeFeature.id,
+      ]);
+      expect(CcosFeatureRegistrySource.featuredListing.id, CoconutThemeFeature.id);
+    });
+
+    test('ark is authored by the Bark team and has no quote', () {
+      final listing = ArkFeature.listing;
+
+      expect(listing.author, 'Bark 팀');
+      expect(listing.creatorStory.quote, isNull);
+      expect(listing.creatorStory.quoteAttribution, isNull);
+      expect(listing.screenshots, hasLength(5));
+    });
+
+    test('theme keeps the existing creator story', () {
+      final story = CoconutThemeFeature.listing.creatorStory;
+      final detail = t.ccos.first_pow_scene.creator_detail;
+
+      expect(story.quote, detail.feedback_quote);
+      expect(story.quoteAttribution, detail.feedback_attribution);
+      expect(story.paragraphs, [detail.story_paragraph1, detail.story_paragraph2, detail.story_paragraph3]);
+      expect(story.belief, detail.belief_statement);
+    });
+
+    test('ark is applied while a wallet uses it, added or not', () {
+      final listing = ArkFeature.listing;
+
+      expect(listing.isApplied(const CcosFeatureUsage(isActivated: false, hasArkOnWallet: true)), isTrue);
+      expect(listing.isApplied(const CcosFeatureUsage(isActivated: true)), isFalse);
+    });
+
+    test('the theme is applied only when added and selected', () {
+      final listing = CoconutThemeFeature.listing;
+
+      expect(
+        listing.isApplied(const CcosFeatureUsage(isActivated: true, themeVariant: CoconutThemeVariant.coconutTheme)),
+        isTrue,
+      );
+      expect(
+        listing.isApplied(const CcosFeatureUsage(isActivated: false, themeVariant: CoconutThemeVariant.coconutTheme)),
+        isFalse,
+      );
+      expect(listing.isApplied(const CcosFeatureUsage(isActivated: true)), isFalse);
+    });
+
+    test('screenshots fall back to English outside Korean', () {
+      final shot = ArkFeature.listing.screenshots.first;
+
+      expect(shot.assetPathFor(AppLocale.ko), shot.koAssetPath);
+      for (final locale in [AppLocale.en, AppLocale.ja, AppLocale.de, AppLocale.es]) {
+        expect(shot.assetPathFor(locale), shot.enAssetPath);
+      }
+      expect(shot.koAssetPath, isNot(shot.enAssetPath));
+    });
+
+    for (final locale in [AppLocale.en, AppLocale.ja, AppLocale.de, AppLocale.es]) {
+      test('locale=$locale ark store copy is translated', () {
+        LocaleSettings.setLocaleSync(locale);
+        final listing = ArkFeature.listing;
+
+        expect(listing.author, contains('Bark'));
+        expect(listing.subtitle, isNotEmpty);
+        expect(listing.screenshots.every((shot) => shot.caption.isNotEmpty), isTrue);
       });
     }
   });

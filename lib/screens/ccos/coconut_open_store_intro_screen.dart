@@ -34,6 +34,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/widgets/common/side_safe_area.dart';
+import 'package:coconut_wallet/widgets/features/ccos/coconut_open_store_backdrop.dart';
 
 class CoconutOpenStoreIntroScreen extends StatefulWidget {
   const CoconutOpenStoreIntroScreen({super.key});
@@ -550,7 +551,7 @@ class _CoconutOpenStoreIntroScreenState extends State<CoconutOpenStoreIntroScree
     return Stack(
       key: const ValueKey('open-store-story'),
       children: [
-        const Positioned.fill(child: _OpenStoreBackdrop()),
+        const Positioned.fill(child: CoconutOpenStoreBackdrop()),
         // 옆 상태 열 쪽에서는 워터마크와 장면(사진 카드)을 열 앞에서 잘라, 열에는 배경만 이어지게 한다.
         Positioned.fill(
           child: _SideGutterClip(
@@ -1570,67 +1571,6 @@ class _SceneWatermarkBannerState extends State<_SceneWatermarkBanner> with Singl
           },
         );
       },
-    );
-  }
-}
-
-class _OpenStoreBackdrop extends StatelessWidget {
-  const _OpenStoreBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFD6DCDF), Color(0xFFCDD4D7), Color(0xFFC6D0D5)],
-            ),
-          ),
-        ),
-        Align(
-          alignment: const Alignment(-0.95, -1),
-          child: Container(
-            width: 320,
-            height: 320,
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                colors: [Color(0x557AA2FF), Color(0x226E8EFF), Colors.transparent],
-                stops: [0, 0.4, 1],
-              ),
-            ),
-          ),
-        ),
-        Align(
-          alignment: const Alignment(0.9, -0.74),
-          child: Container(
-            width: 260,
-            height: 260,
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                colors: [Color(0x44B684FF), Color(0x15937FC5), Colors.transparent],
-                stops: [0, 0.42, 1],
-              ),
-            ),
-          ),
-        ),
-        Align(
-          alignment: const Alignment(0.2, 1.0),
-          child: Container(
-            width: 420,
-            height: 300,
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                colors: [Color(0x2274DCE0), Color(0x1167A7D0), Colors.transparent],
-                stops: [0, 0.4, 1],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

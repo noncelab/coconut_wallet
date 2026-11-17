@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
 import 'package:coconut_wallet/screens/common/feature_search_focus.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup, CoconutToast;
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutPopup;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
 import 'package:coconut_wallet/app/router/route_args.dart';
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutPopup, CoconutToast;
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutPopup;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
@@ -17,8 +17,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
-import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/settings/settings_view_model.dart';
@@ -465,26 +463,6 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                   if (kDebugMode) ...[
                     CoconutLayout.spacing_400h,
                     _category('개발자 도구'),
-                    if (context.readArkProviderOrNull()?.isEnabled ?? false) ...[
-                      ButtonGroup(
-                        buttons: [
-                          SingleButton(
-                            title: '오픈 스토어 아크 기능',
-                            subtitle: '스토어가 생기기 전까지 쓰는 임시 토글',
-                            isVerticalSubtitle: true,
-                            rightElement: _buildSwitch(
-                              isOn:
-                                  context
-                                      .watch<PreferenceProvider>()
-                                      .getCcosFeatureAvailability(ArkFeature.id)
-                                      .isActivated,
-                              onChanged: _setArkFeature,
-                            ),
-                          ),
-                        ],
-                      ),
-                      CoconutLayout.spacing_200h,
-                    ],
                     _buildAnimatedButton(
                       title: 'Realm 디버그용 뷰어',
                       onPressed: () {
@@ -513,19 +491,6 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
         },
       ),
     );
-  }
-
-  Future<void> _setArkFeature(bool on) async {
-    final preferences = context.read<PreferenceProvider>();
-    if (on) {
-      await preferences.activateCcosFeature(ArkFeature.id);
-      return;
-    }
-    if (context.read<ArkProvider>().hasArkOnWallet) {
-      CoconutToast.showToast(context: context, text: '아크를 켠 지갑이 있어 끌 수 없어요');
-      return;
-    }
-    await preferences.deactivateCcosFeature(ArkFeature.id);
   }
 
   Widget _buildSwitch({required bool isOn, required Function(bool) onChanged}) {

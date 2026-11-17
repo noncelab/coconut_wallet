@@ -1,6 +1,8 @@
 import 'package:coconut_design_system/coconut_design_system.dart'
     hide CoconutAppBar, CoconutToast, CoconutToastLevel, CoconutPopup;
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/ccos_theme_removal.dart';
+import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_content.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
@@ -70,7 +72,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
                 children: [
                   CoconutOpenStoreIntroCard(
                     intro: CcosOpenStoreContentSource.intro,
-                    onTap: () => openCoconutOpenStoreIntroScreen(context),
+                    onTap: () => openCoconutOpenStoreFeature(context, CoconutThemeFeature.id),
                     onDismiss: () => _handleDismissOpenStoreIntroCard(context),
                   ),
                   const SizedBox(height: Sizes.size20),
@@ -91,42 +93,8 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
   }
 
   Future<void> _handleDeleteTheme(BuildContext context, PreferenceProvider provider) async {
-    final featuredListing = CcosFeatureRegistrySource.featuredListing;
-    final isCurrentlyApplied = provider.themeVariant == CoconutThemeVariant.coconutTheme;
-
-    if (isCurrentlyApplied) {
-      final confirmed =
-          await showDialog<bool>(
-            context: context,
-            builder:
-                (dialogContext) => CoconutPopup(
-                  languageCode: provider.language,
-                  title: t.ccos.intro_screen.delete_popup_title,
-                  description: t.ccos.intro_screen.delete_popup_description,
-                  leftButtonText: t.cancel,
-                  rightButtonText: t.delete,
-                  onTapLeft: () => Navigator.pop(dialogContext, false),
-                  onTapRight: () => Navigator.pop(dialogContext, true),
-                ),
-          ) ??
-          false;
-
-      if (!confirmed) {
-        if (mounted) setState(() => _swipedVariant = null);
-        return;
-      }
-      await provider.changeThemeVariant(CoconutThemeVariant.dark);
-    }
-
-    await provider.deactivateCcosFeature(featuredListing.id);
-    if (!context.mounted) return;
-    setState(() => _swipedVariant = null);
-    CoconutToast.showToast(
-      context: context,
-      text: t.ccos.intro_screen.theme_removed,
-      isVisibleIcon: true,
-      iconPath: CommonStateIconPath.circleInfo,
-    );
+    await removeCoconutThemeWithConfirm(context);
+    if (mounted) setState(() => _swipedVariant = null);
   }
 
   @override
@@ -166,7 +134,7 @@ class _ThemeBottomSheetState extends State<ThemeBottomSheet> {
             MergeSemantics(
               child: CoconutAppBarActionButton(
                 tooltip: CcosOpenStoreContentSource.intro.ctaLabel,
-                onPressed: () => openCoconutOpenStoreIntroScreen(context),
+                onPressed: () => openCoconutOpenStoreFeature(context, CoconutThemeFeature.id),
                 icon: SvgPicture.asset(
                   BrandIconPath.coconutPlanet,
                   semanticsLabel: CcosOpenStoreContentSource.intro.ctaLabel,

@@ -11,6 +11,11 @@ abstract final class AppIconPath {
   static String get coconutVault => '$_brandAppBase/coconut-vault-$_networkSuffix.svg';
 }
 
+/// 오픈 스토어 기능 아이콘
+abstract final class CcosFeatureIconPath {
+  static const String ark = 'assets/svg/features/ccos/ark.svg';
+}
+
 abstract final class BrandIconPath {
   static const String arrowRightLg = 'assets/svg/brand/motifs/arrow-right-lg.svg';
   static const String coconutPlanet = 'assets/svg/brand/motifs/coconut-planet.svg';
@@ -142,6 +147,7 @@ abstract final class FeatureSettingsIconPath {
 
 abstract final class FeatureShortcutIconPath {
   static const String calculator = 'assets/svg/features/shortcuts/calculator.svg';
+  static const String openStore = 'assets/svg/features/shortcuts/open-store.svg';
   static const String transactionDraft = 'assets/svg/features/shortcuts/draft.svg';
   static const String walletAddHot = 'assets/svg/features/shortcuts/wallet-add-hot.svg';
   static const String glossary = 'assets/svg/features/shortcuts/font.svg';

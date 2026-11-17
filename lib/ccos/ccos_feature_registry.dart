@@ -1,4 +1,5 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 
@@ -34,9 +35,43 @@ enum CcosFeatureCategory {
   /// 홈 화면 등에 카드/위젯 형태로 붙는 표시 전용 모듈.
   widget,
 
-  /// 지갑에 새 결제 수단을 더하는 코코넛 팀 기능.
+  /// 지갑에 레이어 2를 더하는 기능.
   /// host surface: 핫월렛 만들기·복원의 아크 옵션, 지갑 정보의 아크 토글.
-  payment,
+  layer2,
+}
+
+/// 기능이 지금 쓰이고 있는지 판단하는 데 필요한 앱 상태
+class CcosFeatureUsage {
+  const CcosFeatureUsage({
+    required this.isActivated,
+    this.themeVariant = CoconutThemeVariant.dark,
+    this.hasArkOnWallet = false,
+  });
+
+  final bool isActivated;
+  final CoconutThemeVariant themeVariant;
+  final bool hasArkOnWallet;
+}
+
+/// 기능 상세 FEATURE 장의 스틸 사진. 한국어 외 언어는 영어 사진
+class CcosFeatureScreenshot {
+  const CcosFeatureScreenshot({required this.koAssetPath, required this.enAssetPath, required this.caption});
+
+  final String koAssetPath;
+  final String enAssetPath;
+  final String caption;
+
+  String assetPathFor(AppLocale locale) => locale == AppLocale.ko ? koAssetPath : enAssetPath;
+}
+
+/// 기능 상세 CREATOR 장의 이야기
+class CcosCreatorStory {
+  const CcosCreatorStory({this.quote, this.quoteAttribution, required this.paragraphs, required this.belief});
+
+  final String? quote;
+  final String? quoteAttribution;
+  final List<String> paragraphs;
+  final String belief;
 }
 
 class CcosFeatureListing {
@@ -51,6 +86,11 @@ class CcosFeatureListing {
     required this.whyItBelongs,
     required this.featureHelp,
     required this.priceType,
+    required this.subtitle,
+    required this.iconPath,
+    required this.creatorStory,
+    required this.isApplied,
+    this.screenshots = const [],
     this.tags = const [],
     this.priceLabel,
     this.linkedVariant,
@@ -66,6 +106,13 @@ class CcosFeatureListing {
   final String whyItBelongs;
   final String featureHelp;
   final CcosListingPriceType priceType;
+  final String subtitle;
+  final String iconPath;
+  final CcosCreatorStory creatorStory;
+
+  /// 스토어에서 "사용 중"으로 보일지
+  final bool Function(CcosFeatureUsage usage) isApplied;
+  final List<CcosFeatureScreenshot> screenshots;
   final List<String> tags;
   final String? priceLabel;
   final CoconutThemeVariant? linkedVariant;
@@ -84,7 +131,7 @@ class CcosFeatureListing {
 class CcosFeatureRegistrySource {
   static CcosFeatureListing get featuredListing => CoconutThemeFeature.listing;
 
-  static List<CcosFeatureListing> get allListings => [featuredListing, ArkFeature.listing];
+  static List<CcosFeatureListing> get allListings => [ArkFeature.listing, featuredListing];
 
   static CcosFeatureListing? findListingById(String featureId) {
     for (final listing in allListings) {

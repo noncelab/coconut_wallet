@@ -476,6 +476,9 @@ class ArkProvider extends ChangeNotifier {
   /// 아크를 새로 켤 수 있는 지갑. 이미 켠 지갑은 [supportsArk]
   bool canOfferArk(WalletItemBase wallet) => canUseArk(wallet) && isFeatureOn;
 
+  /// 아크를 켠 지갑 목록을 읽었는지. 읽기 전에는 [hasArkOnWallet]을 믿을 수 없음
+  bool get arkWalletsListed => _arkWalletsListed;
+
   /// 아크를 켠 지갑이 하나라도 있으면 오픈 스토어에서 아크 기능을 끌 수 없음
   bool get hasArkOnWallet => _walletProvider.walletItemList.any(supportsArk);
 
