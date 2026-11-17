@@ -76,6 +76,12 @@ class TransactionRepository extends BaseRepository {
     ]).toList();
   }
 
+  /// [transactionHashes] 중 기록된 거래를 해시별로 돌려준다
+  Map<String, TransactionRecord> getTransactionRecordMapByHashes(int walletId, Set<String> transactionHashes) => {
+    for (final tx in getRealmTransactionListByHashes(walletId, transactionHashes))
+      tx.transactionHash: mapRealmTransactionToTransaction(tx),
+  };
+
   List<TransactionRecord> getTransactionRecordListAfterBlockHeight(int walletId, int blockHeight) {
     final realmTxs = realm.query<RealmTransaction>(
       'walletId == $walletId AND blockHeight >= $blockHeight SORT(createdAt DESC)',

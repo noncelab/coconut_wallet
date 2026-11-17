@@ -1527,6 +1527,9 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "Diese Transaktion wird nicht unterstützt."
     utxo_not_found_title: "UTXO nicht gefunden"
     utxo_not_found: "Das in der Transaktion verwendete UTXO kann nicht gefunden werden."
+    unverified_original_title: "Signatur nicht bestätigt"
+    unverified_original: "Ohne bestätigte Signatur kann die Gebühr nicht erhöht werden. Der Server hat womöglich eine falsche Transaktion gesendet. Wählen Sie unter „Electrum-Server“ einen anderen Server und danach „Neu synchronisieren“."
+    change_server: "Server wechseln"
   toast:
     insufficient_utxo: "Unzureichendes Guthaben, um eine neue Transaktion zu erstellen"
 

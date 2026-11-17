@@ -23,6 +23,11 @@ class BalanceSyncService {
 
   bool hasBalanceFetchFailures(int walletId) => _failedBalanceFetches.any((entry) => entry.$1 == walletId);
 
+  bool hasBalanceFetchFailure(int walletId, String address) => _failedBalanceFetches.contains((walletId, address));
+
+  /// 다른 경로로 이 주소의 잔액이 맞는 것을 확인했을 때, 그 주소의 잔액 조회 실패 표시만 지운다.
+  void clearBalanceFetchFailure(int walletId, String address) => _failedBalanceFetches.remove((walletId, address));
+
   /// 스크립트의 잔액을 조회하고 업데이트합니다.
   Future<void> fetchScriptBalance(WalletItemBase walletItem, ScriptStatus scriptStatus) async {
     // 동기화 시작 state 업데이트

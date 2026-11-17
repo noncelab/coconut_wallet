@@ -160,12 +160,11 @@ class _AppGuardState extends State<AppGuard> {
         break;
       case AppLifecycleState.paused:
         _resumePolicy.onPaused();
-        if (!_isPaused) {
-          setState(() {
-            _isPaused = true;
-          });
-        }
         _priceProvider.pausePriceSources();
+        if (_isPaused) break;
+        setState(() {
+          _isPaused = true;
+        });
         _handleNodeProviderDisconnect();
         break;
       case AppLifecycleState.inactive:
