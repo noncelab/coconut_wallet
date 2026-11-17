@@ -379,8 +379,6 @@ class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProv
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
-  @override
-  int? get bitcoinPriceKrw => null;
 }
 
 /// 수수료 올리기 화면이 원래 거래를 다시 받는 노드(NodeProvider.getTransaction)는 같은 서버를 본다
