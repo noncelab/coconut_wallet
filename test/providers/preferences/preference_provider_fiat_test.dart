@@ -137,7 +137,7 @@ void main() {
       (const Locale('ja', 'JP'), 'ja', FiatCode.JPY),
       (const Locale('de', 'DE'), 'de', FiatCode.EUR),
       (const Locale('en', 'IN'), 'en', FiatCode.INR),
-      (const Locale('th', 'TH'), 'en', FiatCode.THB), // 앱 언어가 없는 지역도 지역의 통화
+      (const Locale('th', 'TH'), 'en', FiatCode.THB), // 앱 언어와 관계없이 지역의 통화
       (const Locale('ar', 'EG'), 'en', FiatCode.USD), // 지원하지 않는 통화의 지역
       (const Locale('en', 'US'), 'en', FiatCode.USD),
       (const Locale('ko'), 'ko', FiatCode.KRW),
@@ -398,6 +398,75 @@ void main() {
       expect(isChecked(prefs), isTrue);
       expect(await resolve(prefs, const Locale('en', 'US'), 'en'), FiatCode.KRW);
       expect(savedFiat(prefs), FiatCode.KRW.code);
+    });
+  });
+
+  // 통화는 기기 언어가 아니라 지역·시간대·저장값으로 정한다. 태국어를 더해도 이 규칙은 그대로다.
+  group('태국어', () {
+    final newInstalls = [
+      (const Locale('th', 'TH'), 'th', '+07', FiatCode.THB), // 태국 지역, 방콕 시간대
+      (const Locale('th', 'KR'), 'th', '+07', FiatCode.KRW), // 태국어여도 지역이 한국이면 원화
+      (const Locale('th', 'TH'), 'th', 'KST', FiatCode.KRW), // 한국 시간대가 먼저다
+      (const Locale('th', 'US'), 'th', 'UTC', FiatCode.USD),
+      (const Locale('th'), 'th', '+07', FiatCode.THB), // 지역이 없으면 앱 언어 th로 바트
+    ];
+    for (final (locale, appLanguage, timeZoneName, expected) in newInstalls) {
+      test('새 설치: $locale, 앱 언어 $appLanguage, 시간대 $timeZoneName → ${expected.code}', () async {
+        final prefs = await prefsWith({});
+
+        expect(await resolve(prefs, locale, appLanguage, timeZoneName: timeZoneName), expected);
+        expect(savedFiat(prefs), expected.code);
+      });
+    }
+
+    test('저장된 언어 th로 시작하면 번역 locale도 태국어다. 저장된 통화와 숫자 형식은 그대로 둔다', () async {
+      final prefs = await prefsWith({
+        SharedPrefKeys.kSelectedFiat: FiatCode.USD.code,
+        SharedPrefKeys.kLanguage: 'th',
+        SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.commaDecimal.name,
+      });
+
+      final provider = await createProvider(systemLocale: const Locale('th', 'TH'), timeZoneName: '+07');
+
+      expect(provider.language, 'th');
+      expect(LocaleSettings.currentLocale, AppLocale.th);
+      expect(provider.selectedFiat, FiatCode.USD);
+      expect(provider.numberFormatPreset, NumberFormatPreset.commaDecimal);
+      expect(savedFiat(prefs), FiatCode.USD.code);
+    });
+
+    test('이미 설치한 기기는 저장된 언어 en을 그대로 쓴다(태국 지역이어도 자동으로 태국어가 되지 않는다)', () async {
+      final prefs = await prefsWith({
+        SharedPrefKeys.kSelectedFiat: FiatCode.THB.code,
+        SharedPrefKeys.kLanguage: 'en',
+        SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.dotDecimal.name,
+      });
+
+      final provider = await createProvider(systemLocale: const Locale('th', 'TH'), timeZoneName: '+07');
+
+      expect(provider.language, 'en');
+      expect(LocaleSettings.currentLocale, AppLocale.en);
+      expect(prefs.getString(SharedPrefKeys.kLanguage), 'en');
+    });
+
+    test('설정에서 태국어로 바꾸면 언어만 바뀌고 통화와 숫자 형식은 그대로다', () async {
+      final prefs = await prefsWith({
+        SharedPrefKeys.kSelectedFiat: FiatCode.KRW.code,
+        SharedPrefKeys.kHasCheckedRegionDefaultFiat: true,
+        SharedPrefKeys.kLanguage: 'ko',
+        SharedPrefKeys.kNumberFormatPreset: NumberFormatPreset.commaDecimal.name,
+      });
+      final provider = await createProvider(systemLocale: const Locale('ko', 'KR'), timeZoneName: 'KST');
+
+      await provider.changeLanguage('th');
+
+      expect(provider.language, 'th');
+      expect(LocaleSettings.currentLocale, AppLocale.th);
+      expect(prefs.getString(SharedPrefKeys.kLanguage), 'th');
+      expect(provider.selectedFiat, FiatCode.KRW);
+      expect(savedFiat(prefs), FiatCode.KRW.code);
+      expect(provider.numberFormatPreset, NumberFormatPreset.commaDecimal);
+      expect(prefs.getString(SharedPrefKeys.kNumberFormatPreset), NumberFormatPreset.commaDecimal.name);
     });
   });
 

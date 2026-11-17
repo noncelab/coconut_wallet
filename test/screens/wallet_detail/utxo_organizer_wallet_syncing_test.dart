@@ -299,6 +299,30 @@ void main() {
     });
   }
 
+  // 직접 입력한 금액 기준은 금액·BTC·'이하/미만'을 코드가 이어 붙인다. 태국어에서는 사이가 한 칸씩이고 끝에 공백이 남지 않는다
+  for (final isLessThan in [false, true]) {
+    testWidgets('합치기(태국어): 직접 입력한 금액 기준(${isLessThan ? '미만' : '이하'}) 글에 공백이 겹치지 않는다', (tester) async {
+      LocaleSettings.setLocaleSync(AppLocale.th);
+      addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+      await openOrganizer(tester);
+      final labels = t.merge_utxos_screen.amount_range_bottomsheet;
+      mergeViewModel(tester)
+        ..confirmMergeMethodSelection(UtxoMergeMethod.smallAmounts)
+        ..confirmAmountRangeSelection(range: UtxoAmountRange.custom, customAmountText: '0.005', isLessThan: isLessThan)
+        ..setCurrentStep(UtxoMergeStep.selectAmountRange);
+      // 새 단계의 선택 칸은 1.5초 기다렸다가 0.6초 동안 올라온다. 다 올라올 때까지 시간을 흘린다
+      for (var i = 0; i < 3; i++) {
+        await settle(tester);
+      }
+
+      expect(
+        find.text(isLessThan ? '${labels.less_than} 0.005${t.btc}' : '0.005${t.btc} ${labels.or_less}'),
+        findsWidgets,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('합치기: 다른 지갑이 업데이트 중이어도 이 지갑은 막지 않는다', (tester) async {
     node
       ..setSyncing(1, false)

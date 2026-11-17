@@ -47,7 +47,7 @@ Watch-only first, with optional hot wallet support.
 - **UTXO management** — Coin control with UTXO locking and tagging
 - **PSBT** — BIP-174 Partially Signed Bitcoin Transactions
 - **Draft transactions** — Save transactions as drafts for later signing or sending
-- **Multilingual** — 한국어, English, 日本語, Español, Deutsch
+- **Multilingual** — 한국어, English, 日本語, Español, Deutsch, ไทย
 
 ## Architecture
 

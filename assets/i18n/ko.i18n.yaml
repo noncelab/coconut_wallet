@@ -1199,6 +1199,7 @@ settings_screen:
     japanese: "日本語"
     spanish: "Español"
     german: "Deutsch"
+    thai: "ไทย"
   electrum_server:
     title: "일렉트럼 서버 설정"
     server_address: "서버 주소"
@@ -2032,6 +2033,7 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+  thai: "ไทย"
 
 number_format_bottom_sheet:
   title: "숫자 형식"

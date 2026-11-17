@@ -62,6 +62,7 @@ Example:
   - `ja`
   - `es`
   - `de`
+  - `th`
 - Copy that requires translation:
   - title
   - description

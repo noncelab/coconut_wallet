@@ -53,7 +53,7 @@ void main() {
       expect(CoconutThemeFeature.listing.requiresEntitlement, isFalse);
     });
 
-    for (final locale in [AppLocale.ko, AppLocale.en, AppLocale.ja, AppLocale.es, AppLocale.de]) {
+    for (final locale in AppLocale.values) {
       test('locale=$locale 문구가 전부 번역되어 있다', () {
         LocaleSettings.setLocaleSync(locale);
 
@@ -67,6 +67,9 @@ void main() {
         expect(listing.whyItBelongs, isNotEmpty);
         expect(listing.featureHelp, isNotEmpty);
         expect(listing.tags, isNotEmpty);
+        if (locale == AppLocale.th) {
+          expect(listing.title, 'ธีม Coconut');
+        }
       });
     }
   });

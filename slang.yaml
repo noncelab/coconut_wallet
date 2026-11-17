@@ -1,7 +1,7 @@
 groups: true
 base_locale: ko
 fallback_strategy: base_locale
-locales: [ko, en, ja, es, de]
+locales: [ko, en, ja, es, de, th]
 input_directory: assets/i18n
 input_file_pattern: .i18n.yaml
 output_directory: lib/localization

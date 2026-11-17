@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/app/router/app_route_names.dart';
+import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -14,6 +15,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/air-gapped/airgap_wallet_add_scanner_screen.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -43,8 +45,10 @@ class _FakeWalletProvider extends Fake implements WalletProvider {
 }
 
 class _FakePreferenceProvider extends Fake implements PreferenceProvider {
+  _FakePreferenceProvider(this.language);
+
   @override
-  String get language => 'ko';
+  final String language;
 }
 
 class _RouteObserver extends NavigatorObserver {
@@ -134,9 +138,11 @@ class _Harness {
     WalletImportSource source = WalletImportSource.extendedPublicKey,
     CoconutThemeVariant? theme,
     double textScale = 1,
+    AppLanguage language = AppLanguage.ko,
   }) async {
     NetworkType.setNetworkType(NetworkType.regtest);
-    LocaleSettings.setLocaleSync(AppLocale.ko);
+    LocaleSettings.setLocaleSync(resolveAppLocale(language.code));
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
     tester.view.physicalSize = const Size(430, 932);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -180,7 +186,7 @@ class _Harness {
       MultiProvider(
         providers: [
           InheritedProvider<WalletProvider>.value(value: wallets),
-          InheritedProvider<PreferenceProvider>.value(value: _FakePreferenceProvider()),
+          InheritedProvider<PreferenceProvider>.value(value: _FakePreferenceProvider(language.code)),
           Provider<AnalyticsService>.value(value: AnalyticsService(null, true)),
         ],
         child: MaterialApp(
@@ -617,4 +623,61 @@ void main() {
     expect(harness.camera.starts, 1);
     expect(tester.takeException(), isNull);
   });
+
+  // 안내 글은 조각을 이어 붙인다. 영어 어순 언어(en·es·de·th)는 "선택" 뒤에 메뉴 이름, 한국어 어순 언어(ko·ja)는 메뉴 이름
+  // 뒤에 "선택"이 온다. 조각의 문구가 아니라 붙이는 순서만 본다
+  for (final language in AppLanguage.values) {
+    testWidgets('SeedSigner guide in ${language.code} puts the menu name '
+        '${language.hasEnglishWordOrder ? 'after' : 'before'} "select"', (tester) async {
+      final harness = _Harness();
+      await harness.mount(tester, source: WalletImportSource.seedSigner, language: language);
+      final guide = t.wallet_add_scanner_screen.guide_seedsigner;
+      final select = t.wallet_add_scanner_screen.select;
+
+      final texts =
+          tester
+              .widgetList<RichText>(find.byType(RichText))
+              .map((richText) => richText.text.toPlainText())
+              .where((text) => text.contains(guide.step6))
+              .toList();
+      expect(texts, hasLength(1));
+      for (final (step, menu) in [
+        (guide.step1, guide.step1_em),
+        (guide.step2, guide.step2_em),
+        (guide.step3, guide.step3_em),
+      ]) {
+        expect(texts.single, contains(language.hasEnglishWordOrder ? '$step$select$menu' : '$step$menu$select'));
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  // 태국어 조각이 코드가 붙이는 자리에 맞는지 화면에 나온 안내 글로 본다: 공백이 겹치지 않고 "เลือก"가 거듭 나오지 않는다
+  for (final (source, marker) in <(WalletImportSource, String Function())>[
+    (WalletImportSource.seedSigner, () => t.wallet_add_scanner_screen.guide_seedsigner.step6),
+    (WalletImportSource.keystone, () => t.wallet_add_scanner_screen.guide_keystone.step0),
+    (WalletImportSource.jade, () => t.wallet_add_scanner_screen.guide_jade.step0_preposition),
+    (WalletImportSource.coldCard, () => t.wallet_add_scanner_screen.guide_coldcard.step4_preposition),
+    (WalletImportSource.krux, () => t.wallet_add_scanner_screen.guide_krux.step0),
+    (WalletImportSource.passport, () => t.wallet_add_scanner_screen.guide_passport.note),
+  ]) {
+    testWidgets('Thai ${source.name} guide joins its parts with single spaces', (tester) async {
+      final harness = _Harness();
+      await harness.mount(tester, source: source, language: AppLanguage.th);
+      final select = RegExp.escape(t.wallet_add_scanner_screen.select);
+
+      final guides =
+          tester
+              .widgetList<RichText>(find.byType(RichText))
+              .map((richText) => richText.text.toPlainText())
+              .where((text) => text.contains(marker()))
+              .toList();
+      expect(guides, hasLength(1));
+      expect(guides.single, contains(t.wallet_add_scanner_screen.select));
+      for (final line in guides.single.split('\n')) {
+        expect(line.trim(), isNot(matches(RegExp(' {2,}|$select\\s*$select'))), reason: '"$line"');
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

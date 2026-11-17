@@ -220,7 +220,8 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
   }
 
   List<TextSpan> _getGuideTextSpan() {
-    final hasEnglishWordOrder = AppLanguage.fromCode(context.read<PreferenceProvider>().language).hasEnglishWordOrder;
+    final language = AppLanguage.fromCode(context.read<PreferenceProvider>().language);
+    final hasEnglishWordOrder = language.hasEnglishWordOrder;
 
     switch (_walletImportSource) {
       case WalletImportSource.coconutVault:
@@ -259,7 +260,10 @@ class _UnsignedTransactionQrScreenState extends State<UnsignedTransactionQrScree
                 style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText).copyWith(height: 1.2),
               ),
               TextSpan(
-                text: ' ${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
+                // 앞 쉼표의 공백에 이 공백이 겹쳐 en·es·de는 두 칸으로 나온다(지금 모양 그대로 둔다). 태국어는 한 칸만 둔다
+                text:
+                    '${language == AppLanguage.th ? '' : ' '}'
+                    '${t.tooltip.unsigned_tx_qr.select_wallet(name: widget.walletName)}',
                 style: CoconutTypography.body2_14_Bold
                     .setColor(context.coconutColors.primaryText)
                     .copyWith(height: 1.2),

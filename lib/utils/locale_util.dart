@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -89,7 +90,7 @@ const Map<FiatCode, List<String>> _localFiatRegions = {
 
 /// 기본 통화를 locale로 정합니다. 지역(countryCode)을 먼저 보고, 지역이 없으면 언어로 정합니다.
 /// 지역: KR→KRW, JP→JPY, 유로 사용 지역→EUR, 지원하는 그 지역의 통화(TH→THB 등), 그 밖→USD
-/// 언어: ko→KRW, ja→JPY, de→EUR, 그 밖→USD
+/// 언어: ko→KRW, ja→JPY, de→EUR, th→THB, 그 밖→USD
 FiatCode defaultFiatForLocale(Locale locale) {
   final region = locale.countryCode?.toUpperCase() ?? '';
   if (region.isEmpty) {
@@ -97,6 +98,7 @@ FiatCode defaultFiatForLocale(Locale locale) {
       AppLanguage.ko => FiatCode.KRW,
       AppLanguage.ja => FiatCode.JPY,
       AppLanguage.de => FiatCode.EUR,
+      AppLanguage.th => FiatCode.THB,
       AppLanguage.en || AppLanguage.es => FiatCode.USD,
     };
   }
@@ -125,8 +127,16 @@ AppLocale resolveAppLocale(String languageCode) {
     AppLanguage.ja => AppLocale.ja,
     AppLanguage.es => AppLocale.es,
     AppLanguage.de => AppLocale.de,
+    AppLanguage.th => AppLocale.th,
   };
 }
+
+/// 이용약관 주소. 태국어 페이지가 없어 태국어일 때만 영어 페이지를 엽니다. 다른 언어는 기본 주소 그대로입니다.
+String termsOfServiceUrlFor(AppLocale locale) =>
+    locale == AppLocale.th ? TERMS_OF_SERVICE_URL_EN : TERMS_OF_SERVICE_URL;
+
+/// 개인정보 처리방침 주소. 태국어일 때만 영어 페이지를 엽니다.
+String privacyPolicyUrlFor(AppLocale locale) => locale == AppLocale.th ? PRIVACY_POLICY_URL_EN : PRIVACY_POLICY_URL;
 
 /// SharedPrefs에서 저장된 언어 코드를 읽어 반환합니다.
 /// 저장된 값이 없으면 시스템 언어를 반환합니다.

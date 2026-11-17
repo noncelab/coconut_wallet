@@ -24,6 +24,8 @@ void main() {
   setUpAll(() => _loadFont('Pretendard', ['Pretendard-Regular.ttf', 'Pretendard-Bold.ttf']));
   tearDown(() => LocaleSettings.setLocale(AppLocale.ko));
 
+  // 태국어: 라벨 스타일이 주변 스타일을 물려받지 않아 테스트에서는 태국 글꼴을 댈 수 없고, 글자마다 1em 빈 칸으로 그려진다.
+  // 이 다섯 라벨은 실제 태국 글꼴(Thonburi·Noto Sans Thai)에서 그 폭의 0.35~0.61배라, 빈 칸 폭으로 들어가면 기기에서도 들어간다
   for (final locale in AppLocale.values)
     for (final bold in [false, true]) {
       testWidgets(
