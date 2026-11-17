@@ -1505,6 +1505,9 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "Esta transacción no es compatible."
     utxo_not_found_title: "UTXO no encontrado"
     utxo_not_found: "No se puede encontrar el UTXO utilizado en la transacción."
+    unverified_original_title: "Firma no verificada"
+    unverified_original: "No se pudo verificar la firma, así que no se puede aumentar la comisión. Puede que tu servidor haya enviado una transacción incorrecta. Cambia de servidor en 'Servidor Electrum' y luego usa 'Resincronizar'."
+    change_server: "Cambiar servidor"
   toast:
     insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
 
