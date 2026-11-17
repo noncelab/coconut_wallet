@@ -40,4 +40,43 @@ void main() {
       expect(HistoricalBitcoinPriceService.closedDailyClosesFromBitflyer(candles, now), [7]);
     });
   });
+
+  group('CoinGecko daily closes', () {
+    const day = 86400000;
+    final todayStart = DateTime.utc(2026, 10, 28).millisecondsSinceEpoch;
+
+    test('treats each UTC midnight point as the previous day close and drops the live point', () {
+      final prices = [
+        [todayStart - 2 * day, 65948.88],
+        [todayStart - day, 66241.96],
+        [todayStart, 66982.11],
+        [todayStart + 18830000, 67036.86],
+      ];
+
+      expect(HistoricalBitcoinPriceService.closedDailyClosesFromCoinGecko(prices), [65948.88, 66241.96, 66982.11]);
+    });
+
+    test('keeps at most the latest 32 closed days, oldest first', () {
+      final prices = [
+        for (var i = 40; i >= 0; i--) [todayStart - i * day, i],
+      ];
+
+      final closes = HistoricalBitcoinPriceService.closedDailyClosesFromCoinGecko(prices);
+
+      expect(closes, hasLength(32));
+      expect(closes.first, 31);
+      expect(closes.last, 0);
+    });
+
+    test('ignores malformed rows', () {
+      final prices = [
+        'x',
+        [todayStart],
+        [todayStart, null],
+        [todayStart - day, 7],
+      ];
+
+      expect(HistoricalBitcoinPriceService.closedDailyClosesFromCoinGecko(prices), [7]);
+    });
+  });
 }

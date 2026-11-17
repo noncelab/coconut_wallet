@@ -11,6 +11,7 @@ class SelectionItem<T> {
   final TextStyle? subtitleStyle;
   final T value;
   final VoidCallback onTap;
+  final String? sectionTitle;
 
   SelectionItem({
     required this.title,
@@ -19,6 +20,7 @@ class SelectionItem<T> {
     this.subtitleStyle,
     required this.value,
     required this.onTap,
+    this.sectionTitle,
   });
 }
 
@@ -27,6 +29,8 @@ class SelectionBottomSheet<T> extends StatelessWidget {
   final List<SelectionItem<T>> items;
   final T selectedValue;
   final String? headerText;
+  final ScrollController? scrollController;
+  final bool showAppBar;
 
   const SelectionBottomSheet({
     super.key,
@@ -34,16 +38,22 @@ class SelectionBottomSheet<T> extends StatelessWidget {
     required this.items,
     required this.selectedValue,
     this.headerText,
+    this.scrollController,
+    this.showAppBar = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    // 목록을 끝까지 내려도 마지막 줄이 아래 시스템 영역(탐색 막대·홈 표시줄)에 가리지 않게 그만큼 띄운다.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true),
+      appBar:
+          showAppBar ? CoconutAppBar.build(title: title, context: context, onBackPressed: null, isBottom: true) : null,
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: Sizes.size16),
+        controller: scrollController,
+        padding: EdgeInsets.fromLTRB(Sizes.size16, 0, Sizes.size16, bottomInset),
         children: [
           if (headerText != null)
             Align(
@@ -66,6 +76,18 @@ class SelectionBottomSheet<T> extends StatelessWidget {
       final item = items[i];
       final isSelected = item.value == selectedValue;
 
+      final sectionTitle = item.sectionTitle;
+      if (sectionTitle != null) {
+        widgets.add(
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? Sizes.size8 : Sizes.size24, bottom: Sizes.size4),
+            child: Text(sectionTitle, style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText)),
+          ),
+        );
+      } else if (i > 0) {
+        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
+      }
+
       widgets.add(
         SelectableSettingsRow(
           title: item.title,
@@ -76,10 +98,6 @@ class SelectionBottomSheet<T> extends StatelessWidget {
           onTap: item.onTap,
         ),
       );
-
-      if (i < items.length - 1) {
-        widgets.add(Divider(color: context.coconutColors.primaryText.withValues(alpha: 0.12), height: 1));
-      }
     }
 
     return widgets;

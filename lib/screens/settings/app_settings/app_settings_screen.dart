@@ -13,8 +13,8 @@ import 'package:coconut_wallet/screens/settings/theme_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
-import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/number_format_preset.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -156,12 +156,7 @@ class AppSettingsScreen extends StatefulWidget {
           child: const UnitBottomSheet(),
         );
       case AppSettingsTarget.fiat:
-        await CommonBottomSheets.showCustomHeightBottomSheet(
-          context: context,
-          screenName: AnalyticsScreenNames.appSettingsFiatSheet,
-          heightRatio: 0.5,
-          child: const FiatBottomSheet(),
-        );
+        await FiatBottomSheet.show(context);
       case AppSettingsTarget.language:
         await CommonBottomSheets.showCustomHeightBottomSheet(
           context: context,
@@ -322,27 +317,9 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
                       Selector<PreferenceProvider, String>(
                         selector: (_, provider) => provider.selectedFiat.code,
                         builder: (context, fiatCode, child) {
-                          String fiatDisplayName;
-                          switch (fiatCode) {
-                            case 'KRW':
-                              fiatDisplayName = FiatCode.KRW.code;
-                              break;
-                            case 'JPY':
-                              fiatDisplayName = FiatCode.JPY.code;
-                              break;
-                            case 'USD':
-                              fiatDisplayName = FiatCode.USD.code;
-                              break;
-                            case 'EUR':
-                              fiatDisplayName = FiatCode.EUR.code;
-                              break;
-                            default:
-                              fiatDisplayName = FiatCode.USD.code;
-                              break;
-                          }
                           return _buildAnimatedButton(
                             title: t.settings_screen.fiat,
-                            subtitle: fiatDisplayName,
+                            subtitle: fiatCode,
                             onPressed: () async {
                               AppSettingsScreen.open(context, AppSettingsTarget.fiat);
                             },
