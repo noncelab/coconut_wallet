@@ -619,7 +619,20 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
     final resolvedHeight = widget.height ?? _resolvedDefaultHeight(isUnderline);
     final resolvedSuffixEdgePadding = _resolvedSuffixEdgePadding(isUnderline);
     final resolvedMaxLines = widget.obscureText ? 1 : widget.maxLines;
-    final resolvedTextHeight = _resolvedTextHeight(resolvedMaxLines);
+    final scaledFontSize = MediaQuery.textScalerOf(context).scale(widget.fontSize);
+    final useThaiLineMetrics =
+        resolvedHeight != null &&
+        scaledFontSize > 0 &&
+        resolvedMaxLines == 1 &&
+        !widget.obscureText &&
+        RegExp(r'[\u0E01-\u0E3A\u0E40-\u0E5B]').hasMatch('$_text${widget.ghostText}');
+    final resolvedTextHeight = useThaiLineMetrics ? kTextHeightNone : _resolvedTextHeight(resolvedMaxLines);
+    final thaiStrutHeight =
+        useThaiLineMetrics
+            ? (resolvedHeight - (widget.isVisibleBorder ? (isUnderline ? 1 : 2) : 0)).clamp(0.0, double.infinity) /
+                scaledFontSize
+            : null;
+    final inputPadding = useThaiLineMetrics ? resolvedPadding.copyWith(top: 0, bottom: 0) : resolvedPadding;
 
     final errorBorderColor = widget.errorColor ?? context.coconutColors.danger;
     final resolvedBorderColor =
@@ -675,7 +688,7 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                     inputFormatters: widget.textInputFormatter,
                     obscureText: widget.obscureText,
                     textAlign: widget.textAlign ?? TextAlign.start,
-                    padding: resolvedPadding.copyWith(right: resolvedPadding.right + _suffixSize.width),
+                    padding: inputPadding.copyWith(right: inputPadding.right + _suffixSize.width),
                     style: CoconutTextField.withDefaultFontFeatures(
                       CoconutTypography.body2_14.copyWith(
                         color: resolvedTextColor,
@@ -689,12 +702,15 @@ class _CoconutTextFieldState extends State<CoconutTextField> {
                     ),
                     strutStyle: StrutStyle(
                       fontSize: widget.fontSize,
-                      height: resolvedTextHeight,
+                      // Use the existing field's inner space without increasing its height.
+                      height: thaiStrutHeight ?? resolvedTextHeight,
+                      leadingDistribution: useThaiLineMetrics ? TextLeadingDistribution.even : null,
                       fontFamily: widget.fontFamily,
                       fontWeight: widget.fontWeight,
                       forceStrutHeight: true,
                     ),
                     cursorColor: _cursorColor,
+                    cursorHeight: useThaiLineMetrics ? scaledFontSize.roundToDouble() : null,
                     decoration: const BoxDecoration(color: Colors.transparent),
                     maxLength: widget.maxLength,
                     maxLines: resolvedMaxLines,
