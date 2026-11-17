@@ -134,25 +134,20 @@ void main() {
     expect(viewModel.dailyPrices(thb, days: 3), [80000, 90000, 100000]);
   });
 
-  test('앱을 켜 둔 채 UTC 자정을 넘기면, 00:35 뒤에는 어제(11/16) 종가 대비로 보여 준다', () async {
+  test('앱을 켜 둔 채 UTC 자정을 넘기면, 00:40 뒤에는 어제(11/16) 종가 대비로 보여 준다', () async {
     clock = DateTime.utc(2026, 11, 16, 23, 30);
     create();
     final before = await readChange(clock);
     expect(before, closeTo(vsNov15, 1e-9), reason: '11/16 23:30에는 마지막으로 마감된 날이 11/15');
 
-    final log = <String>[];
     for (final at in [
-      DateTime.utc(2026, 11, 17, 0, 1), // 자정 직후: 날짜가 바뀌어 다시 받는다(문서상 새 종가는 아직 없음)
+      DateTime.utc(2026, 11, 17, 0, 1), // 자정 직후: 00:40 전이라 받아 둔 종가를 그대로 쓴다
       DateTime.utc(2026, 11, 17, 0, 36), // 새 종가가 올라온 뒤
       DateTime.utc(2026, 11, 17, 1, 0),
       DateTime.utc(2026, 11, 17, 12, 0),
       DateTime.utc(2026, 11, 17, 23, 59),
     ]) {
-      final change = await readChange(at);
-      log.add(
-        '${at.toIso8601String()} change=${change?.toStringAsFixed(4)} requests=${dio.requests.length} '
-        'chart=${viewModel.dailyPrices(thb, days: 3)}',
-      );
+      await readChange(at);
     }
 
     final afterNoon = await readChange(DateTime.utc(2026, 11, 17, 12, 0));
@@ -160,11 +155,11 @@ void main() {
     expect(viewModel.dailyPrices(thb, days: 3), [90000, 95000, 100000]);
   });
 
-  test('UTC 00:00~00:35 사이에 앱을 켜도, 00:35 뒤에는 어제(11/16) 종가 대비로 보여 준다', () async {
+  test('UTC 00:00~00:40 사이에 앱을 켜도, 00:40 뒤에는 어제(11/16) 종가 대비로 보여 준다', () async {
     clock = DateTime.utc(2026, 11, 17, 0, 10);
     create();
     final atStart = await readChange(clock);
-    expect(atStart, closeTo(vsNov15, 1e-9), reason: 'C keeps the previous close before 00:40, including cold start');
+    expect(atStart, closeTo(vsNov15, 1e-9), reason: '00:40 전에는 받아 둔 종가를 유지한다');
     final afterNoon = await readChange(DateTime.utc(2026, 11, 17, 12, 0));
 
     expect(afterNoon, closeTo(vsNov16, 1e-9), reason: '11/17 낮에는 어제(11/16) 종가 95,000 대비여야 한다');
@@ -192,7 +187,7 @@ void main() {
     expect(actual, closeTo(vsNov16, 1e-9));
   });
 
-  test('대조: UTC 00:35 뒤에 앱을 켜면 어제 종가 대비다', () async {
+  test('대조: UTC 00:40에 앱을 켜면 어제 종가 대비다', () async {
     clock = DateTime.utc(2026, 11, 17, 0, 40);
     create();
     final change = await readChange(clock);

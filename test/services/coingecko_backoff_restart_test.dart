@@ -1,4 +1,3 @@
-// - 기존 `a restart keeps the backoff after a failure`의 기대값을 바꾼 판(다시 시작해도 대기를 건너뛰지 않고, 대기가 끝나면 바로 다시 묻는다)
 // - 10분 상한에서 다시 시작이 끼어도 직전 실패 뒤 10분에 다시 묻는지(서비스, 실제 PriceProvider)
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
@@ -88,5 +87,18 @@ void main() {
     await tester.pump();
 
     expect(595 + afterResume, 600);
+  });
+
+  testWidgets('a stop during the backoff sends nothing when the wait ends', (tester) async {
+    final dio = _FailingDio();
+    final service = CoinGeckoPriceService(dio: dio, fiats: const [FiatCode.THB]);
+
+    service.start();
+    await tester.pump();
+    service.stop();
+    await tester.pump(const Duration(minutes: 30));
+
+    expect(dio.requestCount, 1);
+    service.dispose();
   });
 }
