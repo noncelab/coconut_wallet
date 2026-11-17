@@ -876,7 +876,7 @@ wallet_connect_screen:
       passphrase_use_yes: "ใช้"
       passphrase_use_no: "ไม่ใช้"
       passphrase_where_to_enter: "ต้องการป้อนพาสเฟรสที่ใด?"
-      passphrase_confirm_on_device: "กรุณาตรวจสอบพาสเฟรสที่ป้อนบน Trezor"
+      passphrase_confirm_on_device: "กรุณาตรวจสอบบน Trezor ว่าพาสเฟรสที่ป้อนไว้ถูกต้อง"
       passphrase_enabling: "กรุณายืนยันการเปิดใช้พาสเฟรสบน Trezor"
       suite_app_notice: "Trezor Suite เปิดเองหรือไม่?"
       suite_app_setting_guide:
@@ -1350,7 +1350,7 @@ wallet_info_screen:
   section_security: "ความปลอดภัย"
   section_details: "รายละเอียดกระเป๋า"
   section_data: "ข้อมูลกระเป๋า"
-  section_danger: "ส่วนที่ต้องระวัง"
+  section_danger: "พื้นที่อันตราย"
   wallet_type: "ประเภทกระเป๋า"
   master_fingerprint: "มาสเตอร์ฟิงเกอร์พรินต์"
   mfp_enter: "ป้อน"
@@ -1912,7 +1912,7 @@ alert:
     confirm_backup: "สำรองวลีกู้คืนแล้วหรือยัง?"
     confirm_backup_description: "หากลบกระเป๋าโดยไม่ได้สำรองไว้ จะกู้คืนสินทรัพย์ไม่ได้"
     backup_now: "สำรองข้อมูล"
-    backup_and_delete: "ใช่ ลบเลย"
+    backup_and_delete: "ใช่ ต้องการลบ"
   update:
     title: "แจ้งอัปเดต"
     description: "กรุณาอัปเดตเป็นเวอร์ชันล่าสุด\nเพื่อใช้งานได้อย่างเสถียร"
