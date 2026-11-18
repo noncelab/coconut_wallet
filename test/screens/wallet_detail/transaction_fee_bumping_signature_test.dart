@@ -379,8 +379,6 @@ class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProv
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
-  @override
-  int? get bitcoinPriceKrw => null;
 }
 
 /// 수수료 올리기 화면이 원래 거래를 다시 받는 노드(NodeProvider.getTransaction)는 같은 서버를 본다
@@ -785,5 +783,61 @@ void main() {
 
       await typeFeeAfterGuideClosed(tester);
     });
+  });
+
+  // 예상 수수료가 0.01 BTC 이상이면 보내기 전에 한 번 더 묻는다. 버튼 글자는 팝업의 기본값(ko·es 말고는 영어)이 아니라
+  // 그 언어의 번역 문자열이어야 한다
+  group('수수료가 너무 높을 때의 확인 안내', () {
+    late TestRealmManager realm;
+    late _Scenario scenario;
+
+    setUp(() {
+      realm = TestRealmManager();
+      scenario = _Scenario(realm, _Signer.hot, coins: 3);
+    });
+    tearDown(() => realm.dispose());
+
+    Finder inDialog(Finder finder) => find.descendant(of: find.byType(Dialog), matching: finder);
+
+    for (final locale in [AppLocale.ja, AppLocale.de]) {
+      testWidgets('${locale.languageCode}: [취소]와 [확인]이 그 언어로 나온다', (tester) async {
+        // 입금 300만 sats를 모두 써서 60만 sats를 보낸 결제. 수수료율 5000 sat/vB면 수수료가 100만 sats를 넘는다
+        final own = scenario.ownPayment();
+        await tester.runAsync(() async {
+          await scenario.utxos.addAllUtxos(_walletId, [
+            for (var i = 0; i < 3; i++)
+              UtxoState(
+                transactionHash: scenario.deposit.transactionHash,
+                index: i,
+                amount: _depositAmount,
+                derivationPath: '${scenario.vault.derivationPath}/0/0',
+                blockHeight: 100,
+                to: scenario.receive0,
+                timestamp: DateTime(2026, 11, 1),
+              ),
+          ]);
+          await scenario.sync(own, 'own');
+        });
+        LocaleSettings.setLocaleSync(locale);
+        await _openFeeBumping(tester, scenario, scenario.txs.getTransactionRecord(_walletId, own.transactionHash)!);
+
+        await tester.enterText(find.byType(EditableText), '5000');
+        await tester.pump();
+        expect(_text(t.transaction_fee_bumping_screen.estimated_fee_too_high_error), findsOneWidget);
+        await tester.tap(find.text(t.done));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(inDialog(_text(t.transaction_fee_bumping_screen.dialog.fee_alert_title)), findsOneWidget);
+        expect(inDialog(find.text(t.cancel)), findsOneWidget);
+        expect(inDialog(find.text(t.OK)), findsOneWidget);
+
+        await tester.tap(inDialog(find.text(t.cancel)));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.byType(Dialog), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }

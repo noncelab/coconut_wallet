@@ -140,6 +140,7 @@ In the current CCOS example, `*_feature_copy.dart` manages these locales togethe
 - `ja`
 - `es`
 - `de`
+- `th`
 
 After adding shared labels:
 

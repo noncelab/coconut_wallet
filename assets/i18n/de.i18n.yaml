@@ -1135,6 +1135,7 @@ settings_screen:
     japanese: "日本語"
     spanish: "Español"
     german: "Deutsch"
+    thai: "ไทย"
   electrum_server:
     title: "Electrum-Server-Einstellungen"
     server_address: "Serveradresse"
@@ -1965,6 +1966,7 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+  thai: "ไทย"
 
 number_format_bottom_sheet:
   title: "Zahlenformat"

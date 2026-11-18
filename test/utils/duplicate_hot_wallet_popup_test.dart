@@ -7,9 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../fixtures/thai_test_font.dart';
+
 // 문구는 `t`(테스트 기본 로케일)에서 읽고, languageCode는 줄바꿈 처리 분기만 고른다(en = 단어 결합 없음).
-Widget _host(void Function(BuildContext) onOpen) => MaterialApp(
-  theme: buildCoconutThemeData(variant: CoconutThemeVariant.values.first),
+Widget _host(void Function(BuildContext) onOpen, {bool thaiFont = false}) => MaterialApp(
+  theme:
+      thaiFont
+          ? withThaiFontFallback(buildCoconutThemeData(variant: CoconutThemeVariant.values.first))
+          : buildCoconutThemeData(variant: CoconutThemeVariant.values.first),
   home: Builder(
     builder: (context) => Scaffold(body: TextButton(onPressed: () => onOpen(context), child: const Text('open'))),
   ),
@@ -80,6 +85,7 @@ void main() {
               ..addFont(rootBundle.load('assets/fonts/$family-Bold.ttf')))
             .load();
       }
+      await loadThaiTestFont();
     });
 
     Future<({Finder warning, Rect popup, ({bool removeHotWallet})? Function() choice})> openAndTick(
@@ -105,7 +111,7 @@ void main() {
             existingWalletName: 'Daily',
             languageCode: locale.languageCode,
           );
-        }),
+        }, thaiFont: locale == AppLocale.th),
       );
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
@@ -122,7 +128,9 @@ void main() {
       );
     }
 
-    for (final locale in [AppLocale.ko, AppLocale.en, AppLocale.ja, AppLocale.es, AppLocale.de]) {
+    // 태국어: 제목·경고·버튼은 태국 글꼴로 그린다. 설명은 주변 스타일을 물려받지 않는 RichText라 테스트에서는 글자마다
+    // 1em 빈 칸으로 그려져 실제보다 길다. 그 길이로도 경고가 다 보이면 기기에서도 보인다
+    for (final locale in [AppLocale.ko, AppLocale.en, AppLocale.ja, AppLocale.es, AppLocale.de, AppLocale.th]) {
       for (final (screen, scale) in [
         (const Size(320, 568), 2.0),
         (const Size(360, 640), 3.0),
@@ -131,6 +139,7 @@ void main() {
         testWidgets('${locale.languageCode} ${screen.width.toInt()}x${screen.height.toInt()} @${scale}x: '
             'the whole warning shows without scrolling and the add button works', (tester) async {
           final opened = await openAndTick(tester, locale, screen, scale);
+          if (locale == AppLocale.th) expectThaiGlyphs(tester, opened.warning);
           final viewport = tester.getRect(
             find.ancestor(of: opened.warning, matching: find.byType(SingleChildScrollView)).first,
           );
@@ -142,7 +151,7 @@ void main() {
           await tester.tap(find.text(t.wallet_home_screen.add_wallet_action));
           await tester.pumpAndSettle();
           expect(opened.choice()?.removeHotWallet, isTrue);
-        });
+        }, skip: locale == AppLocale.th && !hasThaiTestFont);
       }
     }
 

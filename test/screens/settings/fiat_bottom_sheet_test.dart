@@ -68,7 +68,7 @@ void main() {
     expect(kFiatQuickAddAmounts.keys.toSet(), FiatCode.values.toSet());
   });
 
-  test('통화 이름: 5개 언어 모두 44개 통화의 이름이 있다', () {
+  test('통화 이름: 모든 언어에 44개 통화의 이름이 있다', () {
     final missing = <String>[];
     for (final locale in AppLocale.values) {
       LocaleSettings.setLocaleSync(locale);

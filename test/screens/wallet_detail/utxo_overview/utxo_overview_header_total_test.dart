@@ -60,8 +60,6 @@ class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProv
 /// 법정화폐 줄이 어떤 sats로 계산됐는지 그대로 보이게 한다
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
-  int? get bitcoinPriceKrw => null;
-  @override
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) =>
       'fiat of $satoshiAmount sats';
 }

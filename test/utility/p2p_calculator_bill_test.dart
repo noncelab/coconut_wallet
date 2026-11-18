@@ -14,6 +14,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import '../fixtures/thai_test_font.dart';
 import 'p2p_calculator_test.dart'
     show FakePreferenceProvider, FakeConnectivityProvider, FakePriceProvider, FakeWalletProvider;
 
@@ -40,10 +41,8 @@ Future<void> _openBill(
       ],
       child: MaterialApp(
         // 숫자 글꼴(SpaceGrotesk)에 없는 한글은 대체 글꼴로 그린다. 기기는 시스템 글꼴(iPhone Apple SD Gothic Neo 등)로
-        // 대신 그리고, 여기서는 폭이 비슷한 앱 한글 글꼴 Pretendard로 대신한다
-        theme: buildCoconutThemeData().copyWith(
-          textTheme: buildCoconutThemeData().textTheme.apply(fontFamilyFallback: const ['Pretendard']),
-        ),
+        // 대신 그리고, 여기서는 폭이 비슷한 앱 한글 글꼴 Pretendard로 대신한다. 태국 글자는 앱 글꼴에 없어 태국 글꼴로 대신한다
+        theme: withThaiFontFallback(buildCoconutThemeData(), before: const ['Pretendard']),
         builder:
             (context, child) =>
                 MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)), child: child!),
@@ -76,6 +75,7 @@ Future<void> _loadAppFonts() async {
           ..addFont(rootBundle.load('assets/fonts/$family-Bold.ttf')))
         .load();
   }
+  await loadThaiTestFont();
 }
 
 void main() {
@@ -113,7 +113,7 @@ void main() {
   }
 
   // A-C2: 폭 320 화면에서 글자를 키워도 계산서가 넘치지 않는다. 출처·시각 줄은 남은 폭 안에서 줄을 바꾸고, 계산서 글자는
-  // 1.2배까지만 커진다. 앱 글꼴로 5개 언어 모두 본다
+  // 1.2배까지만 커진다. 앱 글꼴로 모든 언어를 본다(태국어는 태국 글꼴을 대신 올린다)
   group('A-C2 with the app fonts at 320×844', () {
     setUpAll(_loadAppFonts);
 
@@ -125,22 +125,27 @@ void main() {
         (FiatCode.CHF, 90000, '100', 2.0),
         (FiatCode.JPY, 15000000, '10000', 2.0),
       ]) {
-        testWidgets('${locale.languageCode} ${fiat.code} ${(scale * 100).round()}%: the bill fits', (tester) async {
-          LocaleSettings.setLocaleSync(locale);
-          await _openBill(tester, fiat: fiat, price: price, input: input, size: const Size(320, 844), scale: scale);
-          expect(tester.takeException(), isNull);
-          final source =
-              find
-                  .descendant(
-                    of: _bill(),
-                    matching: find.byWidgetPredicate((w) => w is Text && (w.data?.contains(' · ') ?? false)),
-                  )
-                  .first;
-          final row = find.ancestor(of: source, matching: find.byType(Row)).first;
-          expect(tester.getRect(source).right, lessThanOrEqualTo(tester.getRect(row).right + 0.5));
-          await tester.pumpWidget(const SizedBox());
-          await tester.pump(const Duration(seconds: 3));
-        });
+        testWidgets(
+          '${locale.languageCode} ${fiat.code} ${(scale * 100).round()}%: the bill fits',
+          (tester) async {
+            LocaleSettings.setLocaleSync(locale);
+            await _openBill(tester, fiat: fiat, price: price, input: input, size: const Size(320, 844), scale: scale);
+            expect(tester.takeException(), isNull);
+            final source =
+                find
+                    .descendant(
+                      of: _bill(),
+                      matching: find.byWidgetPredicate((w) => w is Text && (w.data?.contains(' · ') ?? false)),
+                    )
+                    .first;
+            final row = find.ancestor(of: source, matching: find.byType(Row)).first;
+            expect(tester.getRect(source).right, lessThanOrEqualTo(tester.getRect(row).right + 0.5));
+            if (locale == AppLocale.th) expectThaiGlyphs(tester, _bill());
+            await tester.pumpWidget(const SizedBox());
+            await tester.pump(const Duration(seconds: 3));
+          },
+          skip: locale == AppLocale.th && !hasThaiTestFont,
+        );
       }
     }
   });
@@ -202,6 +207,7 @@ void main() {
               await tester.pump(const Duration(seconds: 3));
               semantics.dispose();
             },
+            skip: locale == AppLocale.th && !hasThaiTestFont,
           );
         }
       }

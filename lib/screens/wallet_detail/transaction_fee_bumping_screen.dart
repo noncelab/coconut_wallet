@@ -417,6 +417,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               languageCode: context.read<PreferenceProvider>().language,
               title: t.transaction_fee_bumping_screen.dialog.fee_alert_title,
               description: t.transaction_fee_bumping_screen.dialog.fee_alert_description,
+              // 팝업의 기본 버튼 글자는 ko·es만 번역돼 있어 나머지 언어는 영어로 나온다. 번역 문자열을 넘긴다.
+              leftButtonText: t.cancel,
+              rightButtonText: t.OK,
               onTapRight: () {
                 Navigator.pop(context, true);
               },

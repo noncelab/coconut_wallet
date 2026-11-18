@@ -144,6 +144,7 @@ flutter:
     - assets/files/glossary_details_en.json
     - assets/files/glossary_details_es.json
     - assets/files/glossary_details_de.json
+    - assets/files/glossary_details_th.json
     - assets/files/coconut_crew.json
     - assets/files/LICENSE
     - assets/files/CONTRIBUTING.md
