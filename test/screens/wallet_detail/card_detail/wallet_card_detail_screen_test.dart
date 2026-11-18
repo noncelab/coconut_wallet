@@ -82,6 +82,28 @@ class _Wallets extends Fake with ChangeNotifier implements WalletProvider {
   List<TransactionRecord> getTransactionRecordList(int walletId) => transactions;
   @override
   List<UtxoState> getUtxoList(int walletId) => utxos;
+
+  void setHotWalletBackup(int index, {required bool verified}) {
+    final wallet = wallets[index];
+    wallets[index] = SinglesigWalletItem(
+      id: wallet.id,
+      name: wallet.name,
+      descriptor: wallet.descriptor,
+      colorIndex: wallet.colorIndex,
+      iconIndex: wallet.iconIndex,
+      hotWalletMetadata: HotWalletMetadata(
+        walletId: wallet.id,
+        secureStorageKey: 'test',
+        masterFingerprint: '12345678',
+        derivationPath: 'test',
+        accountIndex: 0,
+        backupVerified: verified,
+        enterPassphraseWhenSigning: false,
+        createdAt: DateTime.now(),
+      ),
+    );
+    notifyListeners();
+  }
 }
 
 class _Transactions extends Fake with ChangeNotifier implements TransactionProvider {
@@ -137,8 +159,10 @@ class _Connectivity extends Fake with ChangeNotifier implements ConnectivityProv
 }
 
 class _Auth extends Fake with ChangeNotifier implements AuthProvider {
+  _Auth(this.isAuthEnabled);
+
   @override
-  bool get isAuthEnabled => true;
+  final bool isAuthEnabled;
 }
 
 class _Analytics extends Fake implements AnalyticsService {
@@ -177,6 +201,7 @@ void main() {
     WidgetTester tester, {
     int id = 1,
     bool syncing = false,
+    bool isAuthEnabled = true,
     bool focusRecentTransactions = false,
     String? focusedTransactionHash,
     Size size = const Size(390, 1400),
@@ -201,7 +226,7 @@ void main() {
           ChangeNotifierProvider<PreferenceProvider>.value(value: _Preferences()),
           ChangeNotifierProvider<PriceProvider>.value(value: _Prices()),
           ChangeNotifierProvider<ConnectivityProvider>.value(value: _Connectivity()),
-          ChangeNotifierProvider<AuthProvider>.value(value: _Auth()),
+          ChangeNotifierProvider<AuthProvider>.value(value: _Auth(isAuthEnabled)),
           ChangeNotifierProvider<WalletAppearanceProvider>.value(value: appearances),
           Provider<AnalyticsService>.value(value: analytics),
         ],
@@ -440,24 +465,7 @@ void main() {
   for (final unbacked in [false, true]) {
     testWidgets('home transaction entry scrolls and highlights with unbacked warning: $unbacked', (tester) async {
       if (unbacked) {
-        final wallet = walletProvider.wallets.first;
-        walletProvider.wallets[0] = SinglesigWalletItem(
-          id: wallet.id,
-          name: wallet.name,
-          descriptor: wallet.descriptor,
-          colorIndex: wallet.colorIndex,
-          iconIndex: wallet.iconIndex,
-          hotWalletMetadata: HotWalletMetadata(
-            walletId: wallet.id,
-            secureStorageKey: 'test',
-            masterFingerprint: '12345678',
-            derivationPath: 'test',
-            accountIndex: 0,
-            backupVerified: false,
-            enterPassphraseWhenSigning: false,
-            createdAt: DateTime.now(),
-          ),
-        );
+        walletProvider.setHotWalletBackup(0, verified: false);
       }
       walletProvider.transactions = [
         TransactionMock.createMockTransactionRecord(transactionHash: 'selected', timestamp: DateTime.now()),
@@ -512,29 +520,31 @@ void main() {
     });
   }
 
+  for (final balance in [0, 1]) {
+    testWidgets('remembered backup dismissal with app lock off and balance $balance', (tester) async {
+      await SharedPrefsRepository().setInt(
+        SharedPrefKeys.kUnbackedHotWalletWarningDismissedAt,
+        DateTime.now().millisecondsSinceEpoch,
+      );
+      walletProvider.balances[1] = balance;
+      walletProvider.setHotWalletBackup(0, verified: false);
+      await pump(tester, isAuthEnabled: false);
+      await tester.pumpAndSettle();
+      expect(find.text(t.wallet_home_screen.unbacked_hot_wallet_warning.title).hitTestable(), findsNothing);
+      expect(
+        find.text(t.wallet_home_screen.app_lock_warning.title).hitTestable(),
+        balance > 0 ? findsOneWidget : findsNothing,
+      );
+      expect(find.byKey(const Key('wallet-settings-backup-dot')), balance > 0 ? findsOneWidget : findsNothing);
+    });
+  }
+
   for (final nextNeedsBackup in [false, true]) {
     testWidgets('security strip hides throughout carousel movement and returns after settling: $nextNeedsBackup', (
       tester,
     ) async {
       for (var index = 0; index < (nextNeedsBackup ? 2 : 1); index++) {
-        final wallet = walletProvider.wallets[index];
-        walletProvider.wallets[index] = SinglesigWalletItem(
-          id: wallet.id,
-          name: wallet.name,
-          descriptor: wallet.descriptor,
-          colorIndex: wallet.colorIndex,
-          iconIndex: wallet.iconIndex,
-          hotWalletMetadata: HotWalletMetadata(
-            walletId: wallet.id,
-            secureStorageKey: 'test',
-            masterFingerprint: '12345678',
-            derivationPath: 'test',
-            accountIndex: 0,
-            backupVerified: false,
-            enterPassphraseWhenSigning: false,
-            createdAt: DateTime.now(),
-          ),
-        );
+        walletProvider.setHotWalletBackup(index, verified: false);
       }
       await pump(tester);
       // The viewport must track the card in this frame, rather than clipping one frame behind.
@@ -596,7 +606,7 @@ void main() {
         await tester.tap(find.byKey(const Key('wallet-security-banner-close')));
         await tester.pumpAndSettle();
         expect(progress(), 0);
-        expect(find.byKey(const Key('wallet-settings-backup-dot')), findsNothing);
+        expect(find.byKey(const Key('wallet-settings-backup-dot')), findsOneWidget);
         final restoredCard = find.byKey(const ValueKey('wallet-detail-card-2'));
         final restoredContainer = find.byKey(const ValueKey('wallet-detail-card-container-2'));
         expect(
@@ -604,6 +614,9 @@ void main() {
           const BorderRadius.vertical(top: Radius.circular(28), bottom: Radius.circular(28)),
         );
         expect(tester.getSize(restoredContainer).height, closeTo(tester.getSize(restoredCard).height, 0.1));
+        walletProvider.setHotWalletBackup(1, verified: true);
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('wallet-settings-backup-dot')), findsNothing);
       }
       expect(tester.takeException(), isNull);
     });

@@ -300,11 +300,7 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
           width: CoconutAppBarActionButton.actionWidth,
           onPressed: _openWalletInfo,
           icon: WalletSettingsBackupBadge(
-            visible:
-                viewModel.detail.getSecurityWarningType(
-                  isAppLockEnabled: context.watch<AuthProvider>().isAuthEnabled,
-                ) ==
-                WalletDetailSecurityWarningType.unbackedHotWallet,
+            visible: viewModel.detail.shouldShowBackupBadge,
             child: SvgPicture.asset(
               FeatureSettingsIconPath.settings,
               width: 24,
