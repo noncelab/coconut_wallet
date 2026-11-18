@@ -22,6 +22,8 @@
 - 기여자가 수정할 수 있는 범위 안에서 설명 가능한가
 - 공식 경로와 폴더 구조를 따르는가
 - 처음 도입된 카테고리라면, registry 등록뿐 아니라 실제 진입점(host surface) 구현이 같은 PR에 포함되어 있는가 (`foundation/architecture.md` 6.1절). 단, 그 진입점이 테마 예시(`theme_bottom_sheet.dart`)와 구조가 다르다는 이유만으로 반려하지 않는다 — 카테고리마다 다른 진입점은 의도된 것이다.
+- 홈 바로가기나 위젯을 켰다면(`homeShortcut`·`homeWidget`), 이름·아이콘·실행 동작과 위젯 정의를 기능이 직접 제공하는가. 켜지 않은 기능에 홈 진입점 코드가 들어가 있지는 않은가 (`foundation/architecture.md` 6.1절)
+- 스토어·검색·홈 코드가 특정 기능을 직접 알지 않고, 기능이 `CcosFeatureStatusRegistry`로 자기 상태를 알려 주는가 (`foundation/architecture.md` 6.1.1절)
 - PR에 실제 entitlement 연동 코드(구매 버튼, 결제 파이프라인, 영수증 검증 등)가 포함되어 있지는 않은가 — 있다면 정상이 아니다. 그건 기여자의 역할이 아니라 계약 체결 후 코코넛 개발팀이 배포 시점에 직접 담당하는 부분이다 (`foundation/architecture.md` 6.2절)
 
 ## 4. 테스트

@@ -1,4 +1,6 @@
 import 'package:collection/collection.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/ccos_home_entry.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/model/home/home_configuration.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
@@ -39,6 +41,11 @@ class HomeViewModel extends ChangeNotifier {
   bool _allFeaturesHintDismissed;
   bool _addWalletHintReminded = false;
   int _addWalletHintNudges = 0;
+  final bool Function(String featureId) _isCcosFeatureActivated;
+  final Listenable? _ccosActivationChanges;
+  final List<CcosFeatureListing> Function() _ccosListings;
+  late Map<String, bool> _ccosActive;
+  final CcosHomeEntryLog? _ccosHomeEntries;
 
   HomeViewModel({
     required HomeConfigurationRepository repository,
@@ -56,13 +63,21 @@ class HomeViewModel extends ChangeNotifier {
     void Function()? onAddWalletHintDismissed,
     bool allFeaturesHintDismissed = false,
     void Function()? onAllFeaturesHintDismissed,
+    bool Function(String featureId)? isCcosFeatureActivated,
+    Listenable? ccosActivationChanges,
+    List<CcosFeatureListing> Function()? ccosListings,
+    CcosHomeEntryLog? ccosHomeEntries,
   }) : _repository = repository,
+       _ccosHomeEntries = ccosHomeEntries,
        _allFeaturesHintDismissed = allFeaturesHintDismissed,
        _onAllFeaturesHintDismissed = onAllFeaturesHintDismissed,
        _walletListChanges = walletListChanges,
        _addWalletHintDismissed = addWalletHintDismissed,
        _onAddWalletHintDismissed = onAddWalletHintDismissed,
        _isFeatureAvailable = isFeatureAvailable ?? ((_) => true),
+       _isCcosFeatureActivated = isCcosFeatureActivated ?? ((_) => false),
+       _ccosActivationChanges = ccosActivationChanges,
+       _ccosListings = ccosListings ?? (() => CcosFeatureRegistrySource.allListings),
        _legacyFakeBalanceActive = legacyFakeBalanceActive,
        _legacyBalanceHidden = legacyBalanceHidden,
        _priceProvider = priceProvider,
@@ -74,9 +89,55 @@ class HomeViewModel extends ChangeNotifier {
       registry.register(definition);
     }
     registry.registerShortcuts(this.features, onTap: onShortcutTap, noWallets: _noWallets);
+    registry.registerCcosEntries(_ccosListings(), onTap: onShortcutTap);
     _configuration = _load();
     _priceProvider?.setHomeWidgetFiats(widgetFiats);
     _walletListChanges?.addListener(_onWalletListChanged);
+    _ccosActive = {for (final listing in _ccosListings()) listing.id: _isCcosFeatureActivated(listing.id)};
+    _ccosActivationChanges?.addListener(_onCcosActivationChanged);
+  }
+
+  /// 아직 추가하지 않은 오픈 스토어 기능의 항목이면 그 기능 id
+  String? lockedCcosFeatureOf(FeatureItem feature) {
+    final featureId = feature.ccosFeatureId;
+    return featureId != null && !_isCcosFeatureActivated(featureId) ? featureId : null;
+  }
+
+  bool isLockedByCcos(HomeItemDefinition definition) {
+    final featureId = definition.ccosFeatureId;
+    return featureId != null && !_isCcosFeatureActivated(featureId);
+  }
+
+  void _onCcosActivationChanged() {
+    for (final listing in _ccosListings()) {
+      final now = _isCcosFeatureActivated(listing.id);
+      final before = _ccosActive[listing.id] ?? false;
+      _ccosActive[listing.id] = now;
+      if (now == before) continue;
+      if (now) {
+        final shortcut = listing.homeShortcut;
+        final definition = shortcut == null ? null : registry.byId(HomeItemIds.shortcut(shortcut.id));
+        if (shortcut != null && shortcut.addToHomeOnActivate && definition != null && !isOnHome(definition)) {
+          addItem(definition);
+          _ccosHomeEntries?.shortcutAdded(listing.id, shortcut.label());
+        }
+      } else {
+        final shortcut = listing.homeShortcut;
+        final definition = shortcut == null ? null : registry.byId(HomeItemIds.shortcut(shortcut.id));
+        if (shortcut != null && definition != null && isOnHome(definition)) {
+          _ccosHomeEntries?.shortcutRemoved(listing.id, shortcut.label());
+        }
+        final ids = {
+          for (final definition in registry.all)
+            if (definition.ccosFeatureId == listing.id) definition.id,
+        };
+        _apply(
+          _configuration.items
+              .where((item) => ids.contains(item.definitionId))
+              .fold(_configuration, (next, item) => next.removeItem(item.id)),
+        );
+      }
+    }
   }
 
   /// 지갑이 하나도 없으면 true. 지갑이 필요한 바로가기를 흐리게 하고 지갑 추가 말풍선을 띄운다.
@@ -124,6 +185,7 @@ class HomeViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _walletListChanges?.removeListener(_onWalletListChanged);
+    _ccosActivationChanges?.removeListener(_onCcosActivationChanged);
     _noWallets.dispose();
     super.dispose();
   }

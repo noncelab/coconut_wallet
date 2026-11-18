@@ -25,6 +25,9 @@ CcosFeatureListing _listing({required CcosListingPriceType priceType, String id 
     featureHelp: 'Test help',
     priceType: priceType,
     linkedVariant: CoconutThemeVariant.dark,
+    subtitle: 'Test subtitle',
+    iconPath: 'test.svg',
+    creatorStory: const CcosCreatorStory(paragraphs: ['a', 'b', 'c'], belief: 'Test belief'),
   );
 }
 

@@ -18,6 +18,9 @@ abstract class HomeItemDefinition {
   final bool allowsMultipleInstances;
   final HomeWidgetSettingsSpec settings;
 
+  /// 이 항목을 제공하는 오픈 스토어 기능. 그 기능을 추가하기 전에는 잠김
+  final String? ccosFeatureId;
+
   const HomeItemDefinition({
     required this.id,
     required this.kind,
@@ -27,6 +30,7 @@ abstract class HomeItemDefinition {
     this.requiresWalletContext = false,
     this.allowsMultipleInstances = false,
     this.settings = const HomeWidgetSettingsSpec(),
+    this.ccosFeatureId,
   });
 
   String displayName() => id;

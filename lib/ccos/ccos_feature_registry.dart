@@ -1,4 +1,7 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/ccos/ccos_home_entry.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 
 enum CcosListingPriceType { free, oneTimePurchase, subscription }
@@ -32,6 +35,31 @@ enum CcosFeatureCategory {
 
   /// 홈 화면 등에 카드/위젯 형태로 붙는 표시 전용 모듈.
   widget,
+
+  /// 온체인과 따로 쓰는 레이어 2 지갑.
+  /// host surface: 홈 바로가기·위젯([CcosFeatureListing.homeShortcut], [CcosFeatureListing.homeWidget]).
+  layer2,
+}
+
+/// 기능 상세 FEATURE 장의 스틸 사진. 한국어 외 언어는 영어 사진
+class CcosFeatureScreenshot {
+  const CcosFeatureScreenshot({required this.koAssetPath, required this.enAssetPath, required this.caption});
+
+  final String koAssetPath;
+  final String enAssetPath;
+  final String caption;
+
+  String assetPathFor(AppLocale locale) => locale == AppLocale.ko ? koAssetPath : enAssetPath;
+}
+
+/// 기능 상세 CREATOR 장의 이야기
+class CcosCreatorStory {
+  const CcosCreatorStory({this.quote, this.quoteAttribution, required this.paragraphs, required this.belief});
+
+  final String? quote;
+  final String? quoteAttribution;
+  final List<String> paragraphs;
+  final String belief;
 }
 
 class CcosFeatureListing {
@@ -46,6 +74,16 @@ class CcosFeatureListing {
     required this.whyItBelongs,
     required this.featureHelp,
     required this.priceType,
+    required this.subtitle,
+    required this.iconPath,
+    required this.creatorStory,
+    this.isListed = _alwaysListed,
+    this.homeShortcut,
+    this.homeWidget,
+    this.addedToast,
+    this.removedToast,
+    this.thumbnailImagePath,
+    this.screenshots = const [],
     this.tags = const [],
     this.priceLabel,
     this.linkedVariant,
@@ -61,6 +99,26 @@ class CcosFeatureListing {
   final String whyItBelongs;
   final String featureHelp;
   final CcosListingPriceType priceType;
+  final String subtitle;
+  final String iconPath;
+  final CcosCreatorStory creatorStory;
+
+  /// 이 빌드에서 스토어·검색에 보일지
+  final bool Function() isListed;
+
+  /// 켜면 기능이 홈 바로가기의 이름·아이콘·실행을 제공한다
+  final CcosHomeShortcut? homeShortcut;
+
+  /// 켜면 기능이 홈 위젯 정의를 제공한다
+  final CcosHomeWidget? homeWidget;
+
+  /// 추가·제거 직후 알림. 기능이 어디에 나타나고 빠지는지 알려 준다
+  final String? addedToast;
+  final String? removedToast;
+
+  /// 스토어 카드 썸네일 이미지. 없으면 아이콘
+  final String? thumbnailImagePath;
+  final List<CcosFeatureScreenshot> screenshots;
   final List<String> tags;
   final String? priceLabel;
   final CoconutThemeVariant? linkedVariant;
@@ -68,6 +126,8 @@ class CcosFeatureListing {
   bool get isSelectableTheme => linkedVariant != null;
 
   bool get requiresEntitlement => priceType != CcosListingPriceType.free;
+
+  static bool _alwaysListed() => true;
 }
 
 /// 실제로 런타임에서 조회/활성화/구매 상태를 판단할 수 있는 기능만 등록합니다.
@@ -79,7 +139,8 @@ class CcosFeatureListing {
 class CcosFeatureRegistrySource {
   static CcosFeatureListing get featuredListing => CoconutThemeFeature.listing;
 
-  static List<CcosFeatureListing> get allListings => [featuredListing];
+  static List<CcosFeatureListing> get allListings =>
+      [ArkFeature.listing, featuredListing].where((listing) => listing.isListed()).toList();
 
   static CcosFeatureListing? findListingById(String featureId) {
     for (final listing in allListings) {

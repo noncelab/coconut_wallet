@@ -7,9 +7,12 @@ class AnalyticsScreenNames {
 
   // CCOS 오픈 스토어 인트로 내부 화면
   static const String ccosOpenStoreIntro = 'ccos-open-store-intro';
+  static const String ccosOpenStore = 'ccos-open-store';
+  static const String ccosOpenStoreFeatureDetail = 'ccos-open-store-feature-detail';
   static const String ccosOpenStoreFirstPowCreatorDetail = 'ccos-open-store-first-pow-creator-detail';
   static const String ccosOpenStoreFirstPowFeatureDetail = 'ccos-open-store-first-pow-feature-detail';
   static const String ccosOpenStoreFirstPowDeliveryDetail = 'ccos-open-store-first-pow-delivery-detail';
+  static const String ccosArkWalletHome = 'ccos-ark-wallet-home';
 
   static const String glossary = 'glossary';
 

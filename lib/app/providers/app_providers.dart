@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
+import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/hot_wallet_usage_tracker.dart';
 import 'package:coconut_wallet/providers/auth_provider.dart';
@@ -71,6 +73,16 @@ List<SingleChildWidget> buildAppProviders({
             featureSettingsProvider: context.read<FeatureSettingsProvider>(),
             iosRegionCode: iosRegionCode,
           ),
+    ),
+    ChangeNotifierProvider<CcosFeatureStatusRegistry>(
+      create: (context) {
+        final preferences = context.read<PreferenceProvider>();
+        return CcosFeatureStatusRegistry()..register(
+          CoconutThemeFeature.id,
+          ({required isActivated}) => CoconutThemeFeature.status(preferences, isActivated: isActivated),
+          changes: preferences,
+        );
+      },
     ),
     ChangeNotifierProvider<PriceProvider>(
       create: (context) => PriceProvider(context.read<ConnectivityProvider>(), context.read<PreferenceProvider>()),

@@ -113,7 +113,7 @@ void main() {
     expect(item.shortcutEligible, isFalse);
     expect(item.category, isNull);
     expect(item.context, FeatureContext.none);
-    expect(item.iconPath, BrandIconPath.coconutPlanet);
+    expect(item.iconPath, FeatureShortcutIconPath.openStore);
     expect(registry.byId(FeatureIds.appSettings)!.iconPath, FeatureSettingsIconPath.settings);
     expect(registry.byId(FeatureIds.tutorial)!.iconPath, FeatureShortcutIconPath.tutorial);
     expect(registry.byId(FeatureIds.walletDetail)!.iconPath, FeatureShortcutIconPath.walletDetail);

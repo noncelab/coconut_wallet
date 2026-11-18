@@ -22,6 +22,8 @@ This document is the baseline checklist to check when reviewing a proposed featu
 - Can it be explained within the allowed contribution area?
 - Does it follow the official paths and folder structure?
 - If this opens up a category for the first time, does the same PR include a working entry point (host surface), not just a registry entry? (see `foundation/architecture.md` section 6.1). Don't reject it just because the entry point looks structurally different from the theme example (`theme_bottom_sheet.dart`) — different categories are expected to have different entry points.
+- If a Home shortcut or widget is turned on (`homeShortcut` / `homeWidget`), does the feature itself provide the name, icon, launch action and widget definition? Is there no Home entry code for a feature that hasn't turned one on? (see `foundation/architecture.md` section 6.1)
+- Do the store, search and Home code stay unaware of specific features, with the feature reporting its own status through `CcosFeatureStatusRegistry`? (see `foundation/architecture.md` section 6.1.1)
 - Does the PR avoid including actual entitlement integration code (purchase button, payment pipeline, receipt verification, etc.)? If it's there, that's not normal — that's the Coconut dev team's job at deploy time, after a contract is signed, not the contributor's (see `foundation/architecture.md` section 6.2)
 
 ## 4. Testing

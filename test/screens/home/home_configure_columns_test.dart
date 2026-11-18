@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -52,6 +54,14 @@ class _Tile extends HomeItemDefinition {
 }
 
 class _Preferences extends Fake with ChangeNotifier implements PreferenceProvider {
+  @override
+  CcosFeatureAvailability getCcosFeatureAvailability(String featureId) => CcosFeatureAvailability(
+    featureId: featureId,
+    isVisible: false,
+    isActivated: false,
+    isEntitled: false,
+    isAvailable: false,
+  );
   @override
   bool get isFakeBalanceActive => false;
   @override
@@ -389,6 +399,7 @@ Future<HomeConfiguration> _saveFrom(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
+        ChangeNotifierProvider<CcosFeatureStatusRegistry>(create: (_) => CcosFeatureStatusRegistry()),
         ChangeNotifierProvider<WalletProvider>(create: (_) => _Wallets()),
         ChangeNotifierProvider<PriceProvider>(create: (_) => _Prices()),
         ChangeNotifierProvider<NodeProvider>(create: (_) => _Node()),

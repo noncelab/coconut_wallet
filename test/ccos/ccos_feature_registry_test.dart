@@ -1,13 +1,19 @@
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(() => ArkServerConfig.isConfiguredOverride = true);
+
   tearDown(() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
+    ArkServerConfig.isConfiguredOverride = null;
   });
 
   group('CcosFeatureRegistrySource', () {
@@ -67,6 +73,92 @@ void main() {
         expect(listing.whyItBelongs, isNotEmpty);
         expect(listing.featureHelp, isNotEmpty);
         expect(listing.tags, isNotEmpty);
+      });
+    }
+  });
+
+  group('store details', () {
+    test('listings carry store details', () {
+      for (final listing in CcosFeatureRegistrySource.allListings) {
+        expect(listing.subtitle, isNotEmpty, reason: listing.id);
+        expect(listing.iconPath, isNotEmpty, reason: listing.id);
+        expect(listing.creatorStory.paragraphs, isNotEmpty, reason: listing.id);
+        expect(listing.creatorStory.belief, isNotEmpty, reason: listing.id);
+      }
+    });
+
+    test('ark is hidden without an ark server', () {
+      ArkServerConfig.isConfiguredOverride = false;
+
+      expect(CcosFeatureRegistrySource.allListings.map((listing) => listing.id), isNot(contains(ArkFeature.id)));
+      expect(CcosFeatureRegistrySource.findListingById(ArkFeature.id), isNull);
+    });
+
+    test('ark offers a home shortcut added on activation', () {
+      final shortcut = ArkFeature.listing.homeShortcut!;
+
+      expect(shortcut.label(), ArkFeature.listing.title);
+      expect(shortcut.iconPath, FeatureArkIconPath.boat);
+      expect(shortcut.addToHomeOnActivate, isTrue);
+    });
+
+    test('the coconut theme offers no home entries', () {
+      final listing = CcosFeatureRegistrySource.featuredListing;
+
+      expect(listing.homeShortcut, isNull);
+      expect(listing.homeWidget, isNull);
+    });
+
+    test('the store lists ark first, then the coconut theme', () {
+      expect(CcosFeatureRegistrySource.allListings.map((listing) => listing.id), [
+        ArkFeature.id,
+        CoconutThemeFeature.id,
+      ]);
+      expect(CcosFeatureRegistrySource.featuredListing.id, CoconutThemeFeature.id);
+    });
+
+    test('ark is authored by the Bark team and has no quote', () {
+      final listing = ArkFeature.listing;
+
+      expect(listing.author, 'Bark 팀');
+      expect(listing.iconPath, FeatureArkIconPath.boat);
+      expect(listing.creatorStory.quote, isNull);
+      expect(listing.creatorStory.quoteAttribution, isNull);
+      expect(listing.screenshots, hasLength(5));
+    });
+
+    test('theme tells its own store creator story without the feedback quote', () {
+      LocaleSettings.setLocaleSync(AppLocale.ko);
+      final story = CoconutThemeFeature.listing.creatorStory;
+
+      expect(story.quote, isNull);
+      expect(story.quoteAttribution, isNull);
+      expect(story.paragraphs, [
+        '코코넛 팀은 비트코인 전용 지갑 코코넛 월렛과 볼트를 만들고 있어요.',
+        '처음에 코코넛 월렛은 볼트와 구분하기 위해 의도적으로 어두운 테마만 제공했어요.',
+        '하지만 코코넛 오픈 스토어를 구상하며, \'누구나 새로운 기능을 제안하고 함께 만들어가는 경험\'을 잘 보여줄 수 있는 예시가 무얼까 고민하며 코코넛 테마를 추가하게 되었어요.',
+      ]);
+      expect(story.belief, '코코넛 테마를 선보이며 누구나 기여할 수 있는 코코넛 오픈 스토어를 그릴 수 있길 바랐어요');
+    });
+
+    test('screenshots fall back to English outside Korean', () {
+      final shot = ArkFeature.listing.screenshots.first;
+
+      expect(shot.assetPathFor(AppLocale.ko), shot.koAssetPath);
+      for (final locale in [AppLocale.en, AppLocale.ja, AppLocale.de, AppLocale.es]) {
+        expect(shot.assetPathFor(locale), shot.enAssetPath);
+      }
+      expect(shot.koAssetPath, isNot(shot.enAssetPath));
+    });
+
+    for (final locale in [AppLocale.en, AppLocale.ja, AppLocale.de, AppLocale.es]) {
+      test('locale=$locale ark store copy is translated', () {
+        LocaleSettings.setLocaleSync(locale);
+        final listing = ArkFeature.listing;
+
+        expect(listing.author, contains('Bark'));
+        expect(listing.subtitle, isNotEmpty);
+        expect(listing.screenshots.every((shot) => shot.caption.isNotEmpty), isTrue);
       });
     }
   });

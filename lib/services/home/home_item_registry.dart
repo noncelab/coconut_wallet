@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
@@ -25,6 +26,7 @@ class ShortcutDefinition extends HomeItemDefinition {
         supportedSpans: const [HomeSpan.shortcut],
         category: HomeItemCategory.shortcut,
         requiresWalletContext: feature.context == FeatureContext.wallet,
+        ccosFeatureId: feature.ccosFeatureId,
       );
 
   @override
@@ -112,6 +114,35 @@ class HomeItemRegistry {
   void registerShortcuts(FeatureRegistry features, {ShortcutTap? onTap, ValueListenable<bool>? noWallets}) {
     for (final feature in features.shortcutEligible) {
       register(ShortcutDefinition(feature, onTap: onTap, noWallets: noWallets));
+    }
+  }
+
+  void registerCcosEntries(List<CcosFeatureListing> listings, {ShortcutTap? onTap}) {
+    for (final listing in listings) {
+      if (listing.homeShortcut case final shortcut?) {
+        register(
+          ShortcutDefinition(
+            FeatureItem(
+              id: shortcut.id,
+              label: shortcut.label,
+              iconPath: shortcut.iconPath,
+              iconScale: shortcut.iconScale,
+              shortcutEligible: true,
+              source: FeatureSource.ccos,
+              ccosFeatureId: listing.id,
+              launch: (context, _) async => shortcut.launch(context),
+            ),
+            onTap: onTap,
+          ),
+        );
+      }
+      if (listing.homeWidget case final widget?) {
+        final definition = widget.definition();
+        if (definition.ccosFeatureId != listing.id) {
+          throw StateError('Home widget ${definition.id} must set ccosFeatureId to ${listing.id}');
+        }
+        register(definition);
+      }
     }
   }
 }

@@ -1,9 +1,5 @@
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
-import 'package:coconut_wallet/model/feature/feature_navigation_target.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
-import 'package:coconut_wallet/screens/settings/app_settings/app_settings_screen.dart';
-import 'package:provider/provider.dart';
 import 'package:coconut_wallet/services/feature/builtin_features.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
 
@@ -35,17 +31,12 @@ class FeatureRegistry {
     return [
       for (final listing in CcosFeatureRegistrySource.allListings)
         FeatureItem(
-          id: '${FeatureIds.appSettings}.ccos.${listing.id}',
+          id: '${FeatureIds.openStore}.${listing.id}',
           label: () => listing.title,
           keywords: listing.tags,
-          parentId: FeatureIds.appSettings,
+          parentId: FeatureIds.openStore,
           source: FeatureSource.ccos,
-          isAvailable: (_) => listing.category == CcosFeatureCategory.theme && listing.isSelectableTheme,
-          launch:
-              (context, _) =>
-                  context.read<PreferenceProvider>().getCcosFeatureAvailability(listing.id).isAvailable
-                      ? AppSettingsScreen.open(context, AppSettingsTarget.theme, highlightTheme: listing.linkedVariant)
-                      : openCoconutOpenStoreIntroScreen(context),
+          launch: (context, _) => openCoconutOpenStoreFeature(context, listing.id),
         ),
     ];
   }

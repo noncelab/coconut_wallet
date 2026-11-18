@@ -1,3 +1,5 @@
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -113,6 +115,10 @@ class _HomeScreenState extends State<HomeScreen> {
       onAddWalletHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAddWalletHintDismissed, true),
       allFeaturesHintDismissed: SharedPrefsRepository().getBool(SharedPrefKeys.kAllFeaturesHintDismissed),
       onAllFeaturesHintDismissed: () => SharedPrefsRepository().setBool(SharedPrefKeys.kAllFeaturesHintDismissed, true),
+      isCcosFeatureActivated:
+          (featureId) => context.read<PreferenceProvider>().getCcosFeatureAvailability(featureId).isActivated,
+      ccosActivationChanges: context.read<PreferenceProvider>(),
+      ccosHomeEntries: context.read<CcosFeatureStatusRegistry>().homeEntries,
     );
     _widgetsViewModel = HomeWidgetsViewModel(
       walletProvider: context.read<WalletProvider>(),
@@ -150,6 +156,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _launch(BuildContext context, FeatureItem feature, {bool useShortcutWallet = true}) async {
+    if (_viewModel.lockedCcosFeatureOf(feature) case final ccosFeatureId?) {
+      await openCoconutOpenStoreFeature(context, ccosFeatureId);
+      return;
+    }
     if (_viewModel.shouldAddWalletBeforeLaunch(feature)) {
       if (useShortcutWallet) {
         _viewModel.remindAddWallet();

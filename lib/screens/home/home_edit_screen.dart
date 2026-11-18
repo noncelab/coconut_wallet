@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_design_system/coconut_design_system.dart'
     show CoconutLayout, CoconutSegmentedControl, CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -44,6 +45,10 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
 
   Future<void> _add(HomeItemDefinition definition) async {
     final viewModel = _viewModel;
+    if (viewModel.isLockedByCcos(definition)) {
+      await openCoconutOpenStoreFeature(context, definition.ccosFeatureId!);
+      return;
+    }
     if (definition.needsConfigureBeforeAdd) {
       final settings = await WidgetConfigureSheet.open(
         context,
@@ -86,7 +91,9 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
       definition.supportedSpans.contains(HomeSpan.wide) ? HomeSpan.wide : definition.supportedSpans.first;
 
   void _onItemTap(HomeViewModel viewModel, HomeItemDefinition definition) =>
-      viewModel.isOnHome(definition) ? _configure(definition) : _add(definition);
+      viewModel.isOnHome(definition) && !viewModel.isLockedByCcos(definition)
+          ? _configure(definition)
+          : _add(definition);
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +103,7 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
       backgroundColor: colors.homeBackground,
       appBar: CoconutAppBar.build(context: context, backgroundColor: colors.homeBackground, title: t.home_edit.title),
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             Padding(
@@ -343,92 +351,95 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
                           key: ValueKey('home-edit-widget-tap-${definition.id}'),
                           behavior: HitTestBehavior.opaque,
                           onTap: () => _onItemTap(viewModel, definition),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                height: smallWidth,
-                                child: DecoratedBox(
-                                  key: ValueKey('home-edit-widget-shadow-${definition.id}'),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: colors.homeWidgetShadow,
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: IgnorePointer(
-                                    child: definition.buildTile(
-                                      HomeItem(
-                                        id: 'preview-${definition.id}',
-                                        definitionId: definition.id,
-                                        kind: definition.kind,
-                                        order: 0,
-                                        span: _previewSpan(definition),
-                                        configuration: viewModel.itemOf(definition)?.configuration ?? const {},
+                          child: Opacity(
+                            opacity: viewModel.isLockedByCcos(definition) ? 0.35 : 1,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  height: smallWidth,
+                                  child: DecoratedBox(
+                                    key: ValueKey('home-edit-widget-shadow-${definition.id}'),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: colors.homeWidgetShadow,
+                                          blurRadius: 16,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: IgnorePointer(
+                                      child: definition.buildTile(
+                                        HomeItem(
+                                          id: 'preview-${definition.id}',
+                                          definitionId: definition.id,
+                                          kind: definition.kind,
+                                          order: 0,
+                                          span: _previewSpan(definition),
+                                          configuration: viewModel.itemOf(definition)?.configuration ?? const {},
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              CoconutLayout.spacing_100h,
-                              // 이름 줄도 타일과 같은 배율에서 멈춰, 좁은 카드에서 이름이 한 글자씩 쌓이지 않게 한다.
-                              MediaQuery.withClampedTextScaling(
-                                maxScaleFactor: kHomeTileMaxTextScale,
-                                child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final name = Text(
-                                        // 좁은 카드에서 '잔/액'처럼 어절 중간이 아니라 띄어쓰기에서 줄을 바꾼다.
-                                        TextUtils.preventLineBreakInsideWords(definition.displayName()),
-                                        key: ValueKey('home-edit-widget-name-${definition.id}'),
-                                        style: CoconutTypography.body2_14.copyWith(
-                                          color: colors.primaryText,
-                                          letterSpacing: -0.3,
-                                        ),
-                                      );
-                                      const iconSize = 22.0;
-                                      if (!viewModel.isOnHome(definition)) {
-                                        // + 아이콘만 있을 때는 이름 옆에 아이콘 폭만 비우고, 48px 터치 영역은 이름 위에 겹친다.
-                                        return Stack(
-                                          alignment: Alignment.centerRight,
-                                          children: [
-                                            ConstrainedBox(
-                                              constraints: const BoxConstraints(minHeight: 48),
-                                              child: Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: Padding(
-                                                  padding: const EdgeInsets.only(right: iconSize + 8),
-                                                  child: name,
+                                CoconutLayout.spacing_100h,
+                                // 이름 줄도 타일과 같은 배율에서 멈춰, 좁은 카드에서 이름이 한 글자씩 쌓이지 않게 한다.
+                                MediaQuery.withClampedTextScaling(
+                                  maxScaleFactor: kHomeTileMaxTextScale,
+                                  child: Padding(
+                                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final name = Text(
+                                          // 좁은 카드에서 '잔/액'처럼 어절 중간이 아니라 띄어쓰기에서 줄을 바꾼다.
+                                          TextUtils.preventLineBreakInsideWords(definition.displayName()),
+                                          key: ValueKey('home-edit-widget-name-${definition.id}'),
+                                          style: CoconutTypography.body2_14.copyWith(
+                                            color: colors.primaryText,
+                                            letterSpacing: -0.3,
+                                          ),
+                                        );
+                                        const iconSize = 22.0;
+                                        if (!viewModel.isOnHome(definition)) {
+                                          // + 아이콘만 있을 때는 이름 옆에 아이콘 폭만 비우고, 48px 터치 영역은 이름 위에 겹친다.
+                                          return Stack(
+                                            alignment: Alignment.centerRight,
+                                            children: [
+                                              ConstrainedBox(
+                                                constraints: const BoxConstraints(minHeight: 48),
+                                                child: Align(
+                                                  alignment: Alignment.centerLeft,
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(right: iconSize + 8),
+                                                    child: name,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                            SizedBox.square(
-                                              dimension: 48,
+                                              SizedBox.square(
+                                                dimension: 48,
+                                                child: _buildToggleButton(viewModel, definition, iconSize: iconSize),
+                                              ),
+                                            ],
+                                          );
+                                        }
+                                        return Row(
+                                          children: [
+                                            Expanded(child: name),
+                                            // 큰 글자·긴 번역에서도 줄을 넘치지 않도록 이름 몫 40px을 남긴다.
+                                            ConstrainedBox(
+                                              constraints: BoxConstraints(maxWidth: constraints.maxWidth - 40),
                                               child: _buildToggleButton(viewModel, definition, iconSize: iconSize),
                                             ),
                                           ],
                                         );
-                                      }
-                                      return Row(
-                                        children: [
-                                          Expanded(child: name),
-                                          // 큰 글자·긴 번역에서도 줄을 넘치지 않도록 이름 몫 40px을 남긴다.
-                                          ConstrainedBox(
-                                            constraints: BoxConstraints(maxWidth: constraints.maxWidth - 40),
-                                            child: _buildToggleButton(viewModel, definition, iconSize: iconSize),
-                                          ),
-                                        ],
-                                      );
-                                    },
+                                      },
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -449,34 +460,37 @@ class _HomeEditScreenState extends State<HomeEditScreen> {
       key: ValueKey('home-edit-shortcut-${definition.id}'),
       behavior: HitTestBehavior.opaque,
       onTap: () => _onItemTap(viewModel, definition),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(10)),
-              child:
-                  iconPath == null
-                      ? null
-                      : SvgPicture.asset(
-                        iconPath,
-                        width: 20 * definition.feature.iconScale,
-                        height: 20 * definition.feature.iconScale,
-                        colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
-                      ),
-            ),
-            CoconutLayout.spacing_300w,
-            Expanded(
-              child: Text(
-                definition.displayName(),
-                style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
+      child: Opacity(
+        opacity: viewModel.isLockedByCcos(definition) ? 0.35 : 1,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(10)),
+                child:
+                    iconPath == null
+                        ? null
+                        : SvgPicture.asset(
+                          iconPath,
+                          width: 20 * definition.feature.iconScale,
+                          height: 20 * definition.feature.iconScale,
+                          colorFilter: ColorFilter.mode(colors.primaryText, BlendMode.srcIn),
+                        ),
               ),
-            ),
-            _buildToggleButton(viewModel, definition, iconSize: 24),
-          ],
+              CoconutLayout.spacing_300w,
+              Expanded(
+                child: Text(
+                  definition.displayName(),
+                  style: CoconutTypography.body2_14.copyWith(color: colors.primaryText),
+                ),
+              ),
+              _buildToggleButton(viewModel, definition, iconSize: 24),
+            ],
+          ),
         ),
       ),
     );

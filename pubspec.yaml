@@ -158,6 +158,7 @@ flutter:
     - assets/svg/common/security/
     - assets/svg/common/state/
     - assets/svg/common/visibility/
+    - assets/svg/features/ark/
     - assets/svg/features/connectivity/
     - assets/svg/features/settings/
     - assets/svg/features/shortcuts/
@@ -195,6 +196,11 @@ flutter:
     - assets/images/ccos/preview_arrow_down.png
     - assets/images/ccos/preview_arrow_up.png
     - assets/images/ccos/preview_address_bar.png
+    - assets/images/ccos/ark_illustration.png
+    - assets/images/ccos/ark/ko/
+    - assets/images/ccos/ark/en/
+    - assets/images/ccos/theme/ko/
+    - assets/images/ccos/theme/en/
     - regtest.env
     - mainnet.env
     - testnet.env

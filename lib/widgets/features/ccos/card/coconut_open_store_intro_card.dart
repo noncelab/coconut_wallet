@@ -29,32 +29,8 @@ class CoconutOpenStoreIntroCard extends StatefulWidget {
   State<CoconutOpenStoreIntroCard> createState() => _CoconutOpenStoreIntroCardState();
 }
 
-class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> with SingleTickerProviderStateMixin {
-  static const Color _primaryTextColor = Color(0xFFF5F7FF);
-  static const Color _secondaryTextColor = Color(0xCCDAE3FF);
-  static const Color _iconColor = Color(0xFFE9EEFF);
+class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> {
   static const Color _iconSecondaryColor = Color(0xB8D4DDFF);
-
-  late final AnimationController _backgroundController = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 22),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
-      _backgroundController.reset();
-    } else if (!_backgroundController.isAnimating) {
-      _backgroundController.repeat();
-    }
-  }
-
-  @override
-  void dispose() {
-    _backgroundController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,96 +47,7 @@ class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> w
         borderRadius: borderRadius,
         child: Stack(
           children: [
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _backgroundController,
-                builder: (context, child) {
-                  final t = _backgroundController.value;
-                  final waveX = math.sin(t * math.pi * 2);
-                  final waveY = math.cos(t * math.pi * 2);
-                  final slowWave = math.sin((t * math.pi * 2) * 0.5);
-                  final driftWave = math.cos((t * math.pi * 2) * 0.7);
-                  return DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment(-1.05 + (waveX * 0.3), -1.1 + (waveY * 0.18)),
-                        end: Alignment(1.02 + (slowWave * 0.2), 1.02 + (driftWave * 0.14)),
-                        colors: const [
-                          Color(0xFF0B1128),
-                          Color(0xFF33205F),
-                          Color(0xFF4A2E86),
-                          Color(0xFF215E8C),
-                          Color(0xFF2A9BB2),
-                        ],
-                        stops: const [0.0, 0.22, 0.48, 0.76, 1.0],
-                      ),
-                    ),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        _AnimatedGlowOrb(
-                          progress: t,
-                          alignment: Alignment(-0.9 + (waveX * 0.13), -0.88 + (waveY * 0.1)),
-                          size: 168,
-                          glowRadius: 0.92,
-                          color: const Color(0x88616CFF),
-                        ),
-                        _AnimatedGlowOrb(
-                          progress: t,
-                          alignment: Alignment(0.86 + (waveY * 0.1), -0.64 + (slowWave * 0.12)),
-                          size: 142,
-                          glowRadius: 0.88,
-                          color: const Color(0x6F7A4CFF),
-                        ),
-                        _AnimatedGlowOrb(
-                          progress: t,
-                          alignment: Alignment(0.4 + (waveX * 0.1), 1.0 + (waveY * 0.06)),
-                          size: 206,
-                          glowRadius: 1.0,
-                          color: const Color(0x6648D1D4),
-                        ),
-                        _AnimatedGlowOrb(
-                          progress: t + 0.18,
-                          alignment: Alignment(-0.18 + (slowWave * 0.08), 0.1 + (waveX * 0.06)),
-                          size: 92,
-                          glowRadius: 0.84,
-                          color: const Color(0x4CCBB8FF),
-                        ),
-                        IgnorePointer(
-                          child: Transform.translate(
-                            offset: Offset(waveX * 18, driftWave * 14),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: RadialGradient(
-                                  center: Alignment(-0.15 + (slowWave * 0.34), -0.25 + (waveY * 0.22)),
-                                  radius: 1.05,
-                                  colors: const [Color(0x242D8DFF), Color(0x1831C9C6), Colors.transparent],
-                                  stops: const [0.0, 0.34, 1.0],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        CustomPaint(painter: _NebulaTexturePainter(progress: t)),
-                        CustomPaint(painter: _CosmicDustPainter(progress: t)),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0x16040816), Color(0x660A1022), Color(0x91111728)],
-                    stops: [0.0, 0.45, 1.0],
-                  ),
-                ),
-              ),
-            ),
+            const Positioned.fill(child: CoconutOpenStoreCosmicBackground()),
             Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,13 +62,18 @@ class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> w
                             BrandIconPath.coconutPlanet,
                             width: Sizes.size18,
                             height: Sizes.size18,
-                            colorFilter: const ColorFilter.mode(_iconColor, BlendMode.srcIn),
+                            colorFilter: const ColorFilter.mode(
+                              CoconutOpenStoreCosmicBackground.iconColor,
+                              BlendMode.srcIn,
+                            ),
                           ),
                           CoconutLayout.spacing_200w,
                           Expanded(
                             child: Text(
                               widget.intro.title,
-                              style: CoconutTypography.body2_14_Bold.setColor(_primaryTextColor),
+                              style: CoconutTypography.body2_14_Bold.setColor(
+                                CoconutOpenStoreCosmicBackground.primaryTextColor,
+                              ),
                             ),
                           ),
                           if (widget.showDismissButton && widget.onDismiss != null) ...[
@@ -223,9 +115,17 @@ class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> w
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.intro.headline, style: CoconutTypography.body3_12_Bold.setColor(_primaryTextColor)),
+                      Text(
+                        widget.intro.headline,
+                        style: CoconutTypography.body3_12_Bold.setColor(
+                          CoconutOpenStoreCosmicBackground.primaryTextColor,
+                        ),
+                      ),
                       CoconutLayout.spacing_100h,
-                      Text(widget.intro.description, style: CoconutTypography.body3_12.setColor(_secondaryTextColor)),
+                      Text(
+                        widget.intro.description,
+                        style: CoconutTypography.body3_12.setColor(CoconutOpenStoreCosmicBackground.secondaryTextColor),
+                      ),
                       CoconutLayout.spacing_200h,
                       SizedBox(height: _ctaLabelHeight(context)),
                     ],
@@ -274,16 +174,154 @@ class _CoconutOpenStoreIntroCardState extends State<CoconutOpenStoreIntroCard> w
   Widget _buildCtaLabel() => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Text(widget.intro.ctaLabel, style: CoconutTypography.caption_10_Bold.setColor(_primaryTextColor)),
+      Text(
+        widget.intro.ctaLabel,
+        style: CoconutTypography.caption_10_Bold.setColor(CoconutOpenStoreCosmicBackground.primaryTextColor),
+      ),
       CoconutLayout.spacing_300w,
       SvgPicture.asset(
         CommonNavigationIconPath.arrowRight,
         width: Sizes.size10,
         height: Sizes.size10,
-        colorFilter: const ColorFilter.mode(_iconColor, BlendMode.srcIn),
+        colorFilter: const ColorFilter.mode(CoconutOpenStoreCosmicBackground.iconColor, BlendMode.srcIn),
       ),
     ],
   );
+}
+
+/// 오픈 스토어 카드·배너의 움직이는 우주 배경
+class CoconutOpenStoreCosmicBackground extends StatefulWidget {
+  const CoconutOpenStoreCosmicBackground({super.key});
+
+  static const Color primaryTextColor = Color(0xFFF5F7FF);
+  static const Color secondaryTextColor = Color(0xCCDAE3FF);
+  static const Color iconColor = Color(0xFFE9EEFF);
+
+  @override
+  State<CoconutOpenStoreCosmicBackground> createState() => _CoconutOpenStoreCosmicBackgroundState();
+}
+
+class _CoconutOpenStoreCosmicBackgroundState extends State<CoconutOpenStoreCosmicBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _backgroundController = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 22),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context)) {
+      _backgroundController.reset();
+    } else if (!_backgroundController.isAnimating) {
+      _backgroundController.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _backgroundController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: AnimatedBuilder(
+            animation: _backgroundController,
+            builder: (context, child) {
+              final t = _backgroundController.value;
+              final waveX = math.sin(t * math.pi * 2);
+              final waveY = math.cos(t * math.pi * 2);
+              final slowWave = math.sin((t * math.pi * 2) * 0.5);
+              final driftWave = math.cos((t * math.pi * 2) * 0.7);
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment(-1.05 + (waveX * 0.3), -1.1 + (waveY * 0.18)),
+                    end: Alignment(1.02 + (slowWave * 0.2), 1.02 + (driftWave * 0.14)),
+                    colors: const [
+                      Color(0xFF0B1128),
+                      Color(0xFF33205F),
+                      Color(0xFF4A2E86),
+                      Color(0xFF215E8C),
+                      Color(0xFF2A9BB2),
+                    ],
+                    stops: const [0.0, 0.22, 0.48, 0.76, 1.0],
+                  ),
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _AnimatedGlowOrb(
+                      progress: t,
+                      alignment: Alignment(-0.9 + (waveX * 0.13), -0.88 + (waveY * 0.1)),
+                      size: 168,
+                      glowRadius: 0.92,
+                      color: const Color(0x88616CFF),
+                    ),
+                    _AnimatedGlowOrb(
+                      progress: t,
+                      alignment: Alignment(0.86 + (waveY * 0.1), -0.64 + (slowWave * 0.12)),
+                      size: 142,
+                      glowRadius: 0.88,
+                      color: const Color(0x6F7A4CFF),
+                    ),
+                    _AnimatedGlowOrb(
+                      progress: t,
+                      alignment: Alignment(0.4 + (waveX * 0.1), 1.0 + (waveY * 0.06)),
+                      size: 206,
+                      glowRadius: 1.0,
+                      color: const Color(0x6648D1D4),
+                    ),
+                    _AnimatedGlowOrb(
+                      progress: t + 0.18,
+                      alignment: Alignment(-0.18 + (slowWave * 0.08), 0.1 + (waveX * 0.06)),
+                      size: 92,
+                      glowRadius: 0.84,
+                      color: const Color(0x4CCBB8FF),
+                    ),
+                    IgnorePointer(
+                      child: Transform.translate(
+                        offset: Offset(waveX * 18, driftWave * 14),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: Alignment(-0.15 + (slowWave * 0.34), -0.25 + (waveY * 0.22)),
+                              radius: 1.05,
+                              colors: const [Color(0x242D8DFF), Color(0x1831C9C6), Colors.transparent],
+                              stops: const [0.0, 0.34, 1.0],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    CustomPaint(painter: _NebulaTexturePainter(progress: t)),
+                    CustomPaint(painter: _CosmicDustPainter(progress: t)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0x16040816), Color(0x660A1022), Color(0x91111728)],
+                stops: [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _AnimatedGlowOrb extends StatelessWidget {

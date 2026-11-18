@@ -124,3 +124,4 @@ Every proposal should end in one of these outcomes:
 - the recommended example covers Green features only
 - Yellow features are not part of the default contribution path
 - Red features are likely to be screened out at the proposal stage, but exceptionally high-value ideas may still be considered through separate review
+- Features built by the Coconut team may ship through the Coconut Open Store even when they use Red-area code (signing, external servers, secret storage, etc.), such as Ark Wallet. Even then, core screens only get an entry point and the feature's code stays in its feature folder

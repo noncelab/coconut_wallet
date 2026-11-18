@@ -162,13 +162,24 @@ class CcosFeatureRegistrySource {
 
 ### 6.1 Categories and entry points (host surfaces)
 
-`CcosFeatureCategory` already defines `analysis` / `tool` / `widget` alongside `theme`. But a category existing doesn't mean a feature in that category automatically shows up anywhere in the app.
+`CcosFeatureCategory` already defines `analysis` / `tool` / `widget` / `layer2` alongside `theme`. But a category existing doesn't mean a feature in that category automatically shows up anywhere in the app.
 
-- Right now, only the `theme` category has a working entry point (host surface): `lib/screens/settings/theme_bottom_sheet.dart`.
+- Right now, the working entry points (host surfaces) are the theme bottom sheet (`lib/screens/settings/theme_bottom_sheet.dart`) and Home shortcuts and widgets.
+- **Home shortcuts and widgets are turned on per feature.** Not every feature has one. Fill in the listing's `homeShortcut` (`CcosHomeShortcut`) or `homeWidget` (`CcosHomeWidget`) to turn it on; leave it empty and nothing appears on Home.
+  - If you turn one on, the feature must provide it: a shortcut needs an id, a name, an icon and what it launches; a widget needs its definition (name, sizes, view), whose `ccosFeatureId` must be the feature's id (the app fails at startup otherwise). See `lib/ccos/ccos_home_entry.dart`.
+  - Until the user adds the feature in the store, it shows as disabled in the Home edit lists, and tapping it opens the feature's store detail. Adding the feature enables it.
+  - With `addToHomeOnActivate` on, the shortcut is placed on Home when the feature is added, with a "Added a … shortcut to Home" notice. Widgets are never placed automatically.
+  - Removing the feature in the store also removes its shortcuts and widgets from Home.
 - **Building the entry point is part of the feature's deliverable, not optional.** A PR that only registers a listing without a working entry point isn't considered a complete contribution. "Choosing a category" and "wiring that category into an actual screen" happen in the same PR.
 - `theme_bottom_sheet.dart` is just **one existing example, not a standard pattern you're expected to follow.** Which screen a feature should attach to, and how (a button, a card, a standalone screen, etc.), depends heavily on what the feature actually is — we deliberately haven't forced this into one common structure. Design the entry point that fits your own feature, and propose it as part of your contribution.
 
 This is because CCOS doesn't support runtime plugin loading yet — whatever category a feature falls into, it's compiled statically into the app, and its entry point has to be wired directly in code. (This isn't the same as saying CCOS only accepts UI features. A Yellow proposal that needs network communication or storage can still be reviewed through the boundary guide — it just also needs a directly-wired entry point, same as everything else.) If you're the first to open up a new category, please propose the entry point design along with it.
+
+### 6.1.1 Feature status and listing visibility
+
+- The store doesn't know about specific features. A feature registers whether it is in use, whether it can be removed (and why not), and what to do before removal in `CcosFeatureStatusRegistry` (`lib/ccos/ccos_feature_status.dart`); the store reads only that. A feature that registers nothing shows as not in use and removable.
+- When a listing's `isListed` is false, that build shows it nowhere: not in the store list, the detail or All Features search. For example, Ark is hidden in builds without an Ark server address.
+- If a listing has `thumbnailImagePath`, the store card uses that image as its thumbnail; otherwise it shows the icon.
 
 ### 6.2 Who owns entitlement integration
 

@@ -29,6 +29,9 @@ class FeatureItem {
   final FeatureCategory? category;
   final FeatureLaunch? launch;
 
+  /// 이 항목을 제공하는 오픈 스토어 기능. 그 기능을 추가하기 전에는 잠김
+  final String? ccosFeatureId;
+
   const FeatureItem({
     required this.id,
     required this.label,
@@ -45,6 +48,7 @@ class FeatureItem {
     this.source = FeatureSource.builtin,
     this.category,
     this.launch,
+    this.ccosFeatureId,
   });
 
   bool get isTopLevel => parentId == null;

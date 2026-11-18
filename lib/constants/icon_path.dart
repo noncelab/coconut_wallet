@@ -133,6 +133,7 @@ abstract final class FeatureSettingsIconPath {
 }
 
 abstract final class FeatureShortcutIconPath {
+  static const String openStore = 'assets/svg/features/shortcuts/open-store.svg';
   static const String calculator = 'assets/svg/features/shortcuts/calculator.svg';
   static const String transactionDraft = 'assets/svg/features/shortcuts/draft.svg';
   static const String walletAddHot = 'assets/svg/features/shortcuts/wallet-add-hot.svg';
@@ -171,6 +172,10 @@ abstract final class FeatureTransactionIconPath {
   static const String txSelfSending = 'assets/svg/features/transaction/tx-self-sending.svg';
   static const String txSending = 'assets/svg/features/transaction/tx-sending.svg';
   static const String txSent = 'assets/svg/features/transaction/tx-sent.svg';
+}
+
+abstract final class FeatureArkIconPath {
+  static const String boat = 'assets/svg/features/ark/boat.svg';
 }
 
 abstract final class FeatureUtxoIconPath {
