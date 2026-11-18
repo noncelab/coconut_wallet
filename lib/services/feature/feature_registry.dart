@@ -2,6 +2,8 @@ import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
 import 'package:coconut_wallet/services/feature/builtin_features.dart';
 import 'package:coconut_wallet/model/feature/feature_item.dart';
+import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:provider/provider.dart';
 
 export 'package:coconut_wallet/services/feature/builtin_features.dart' show FeatureIds, allFeaturesOrder;
 
@@ -38,6 +40,20 @@ class FeatureRegistry {
           source: FeatureSource.ccos,
           launch: (context, _) => openCoconutOpenStoreFeature(context, listing.id),
         ),
+      for (final listing in CcosFeatureRegistrySource.allListings)
+        if (listing.homeShortcut case final shortcut?)
+          FeatureItem(
+            id: '${FeatureIds.openStore}.${listing.id}.${shortcut.id}',
+            label: shortcut.label,
+            iconPath: shortcut.iconPath,
+            iconScale: shortcut.iconScale,
+            keywords: listing.tags,
+            isAvailable:
+                (context) => context.read<PreferenceProvider>().getCcosFeatureAvailability(listing.id).isActivated,
+            source: FeatureSource.ccos,
+            ccosFeatureId: listing.id,
+            launch: (context, _) async => shortcut.launch(context),
+          ),
     ];
   }
 

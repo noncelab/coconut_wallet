@@ -5,6 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/ccos/store/coconut_open_store_feature_detail_screen.dart';
 import 'package:coconut_wallet/screens/ccos/store/coconut_open_store_screen.dart';
 import 'package:coconut_wallet/services/feature/feature_registry.dart';
@@ -66,7 +67,7 @@ void main() {
   });
 
   test('searching ark lists the open store and leads to the ark detail', () {
-    final results = FeatureRegistry.builtin().search('아크');
+    final results = FeatureRegistry.builtin().search('아크', isAvailable: (item) => item.ccosFeatureId == null);
 
     expect(results.map((result) => result.item.id), [FeatureIds.openStore]);
     expect(results.single.matchedItem.id, '${FeatureIds.openStore}.${ArkFeature.id}');
@@ -96,4 +97,26 @@ void main() {
     expect(registry.byId('${FeatureIds.openStore}.${ArkFeature.id}'), isNull);
     expect(registry.all.where((item) => item.id.contains(ArkFeature.id)), isEmpty);
   });
+
+  for (final added in [false, true]) {
+    testWidgets('the ark wallet is searchable only once added (added=$added)', (tester) async {
+      final preferences = FakeStorePreferences();
+      if (added) preferences.activated.add(ArkFeature.id);
+      final context = await _pump(tester, preferences);
+
+      final results = FeatureRegistry.builtin().search(
+        '아크 지갑',
+        isAvailable: (item) => item.ccosFeatureId == null || (item.isAvailable?.call(context) ?? true),
+      );
+      final wallet = results.where((result) => result.item.ccosFeatureId == ArkFeature.id);
+
+      expect(wallet, added ? hasLength(1) : isEmpty);
+      if (added) {
+        expect(wallet.single.item.label(), ArkFeature.listing.title);
+        wallet.single.item.launch!(context, null);
+        await tester.pumpAndSettle();
+        expect(find.byType(ArkWalletHomeScreen), findsOneWidget);
+      }
+    });
+  }
 }
