@@ -75,6 +75,7 @@ class ShowVaultNoWatchOnlyWalletBottomSheet extends StatelessWidget {
         svgIconPath: FeatureWalletIconPath.walletEyes,
         title: t.wallet_detail_screen.vault_watch_only_title,
         description: t.wallet_detail_screen.vault_watch_only_description,
+        keepDescriptionWordsTogether: LocaleSettings.currentLocale == AppLocale.ko,
       ),
       action: InlineActionButton(
         onPressed: () async {

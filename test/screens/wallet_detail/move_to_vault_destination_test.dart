@@ -1,6 +1,7 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/wallet_detail/move_to_vault_bottom_sheets.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/text/icon_title_description.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -23,6 +24,34 @@ void main() {
   });
   test('positive balance with exactly one watch-only wallet shows the selection sheet', () {
     expect(resolveMoveToVaultDestination(1, 1), MoveToVaultDestination.selectWatchOnlyWallet);
+  });
+
+  testWidgets('vault guide separates registration from balance viewing in every supported language', (tester) async {
+    final previousLocale = LocaleSettings.currentLocale;
+    addTearDown(() => LocaleSettings.setLocaleSync(previousLocale));
+    final descriptions = {
+      for (final locale in AppLocale.values)
+        locale: locale.translations.wallet_detail_screen.vault_watch_only_description,
+    };
+    expect(descriptions[AppLocale.ko], '‘보기 전용 지갑’을 등록해 보세요.\n키를 노출하지 않고도 앱에서 금고 속 비트코인 잔액을 확인할 수 있어요.');
+    expect(descriptions.values.toSet(), hasLength(AppLocale.values.length));
+    for (final entry in descriptions.entries) {
+      expect(entry.value.split('\n'), [isNotEmpty, isNotEmpty], reason: entry.key.languageCode);
+      LocaleSettings.setLocaleSync(entry.key);
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey(entry.key),
+          theme: buildCoconutThemeData(),
+          home: const Scaffold(body: ShowVaultNoWatchOnlyWalletBottomSheet(walletId: 1)),
+        ),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(entry.value)).text;
+      expect(paragraph.toPlainText(), entry.value);
+      expect(
+        paragraph.toPlainText(includeSemanticsLabels: false),
+        entry.key == AppLocale.ko ? TextUtils.preventLineBreakInsideWords(entry.value) : entry.value,
+      );
+    }
   });
 
   for (final variant in CoconutThemeVariant.values) {
