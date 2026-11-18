@@ -3,8 +3,10 @@ import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_expiry_reminder.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -42,8 +44,10 @@ class ArkWalletProvider extends ChangeNotifier {
     required ArkWalletStore store,
     required ArkWalletBackend backend,
     Future<Uint8List> Function()? generateMnemonic,
+    ArkExpiryReminder? reminder,
     bool autoSync = true,
   }) : _store = store,
+       _reminder = reminder,
        _autoSync = autoSync,
        _backend = backend,
        _generateMnemonic = generateMnemonic ?? _generateMnemonicInIsolate,
@@ -53,6 +57,10 @@ class ArkWalletProvider extends ChangeNotifier {
   final ArkWalletBackend _backend;
   final Future<Uint8List> Function() _generateMnemonic;
   final bool _autoSync;
+  final ArkExpiryReminder? _reminder;
+
+  /// 알림을 맞춘 가장 이른 만료 높이, 지운 뒤면 0
+  int? _remindedExpiry;
 
   ArkWalletInfo? _info;
   ArkWalletState _state = ArkWalletState.none;
@@ -64,9 +72,20 @@ class ArkWalletProvider extends ChangeNotifier {
   ArkLightningInvoice? _awaitedInvoice;
   Timer? _syncTimer;
   AppLifecycleListener? _lifecycle;
+  List<ArkVtxo> _vtxos = const [];
+  int? _tipHeight;
+  int? _vtxoLifetime;
+  List<String> _expiringIds = const [];
+  Set<String> _renewingIds = const {};
+  Map<int, String>? _memos;
+  Set<int>? _settledIncomingIds;
+  final StreamController<ArkMovement> _received = StreamController.broadcast();
 
   static const _normalSync = Duration(seconds: 30);
   static const _invoiceSync = Duration(seconds: 3);
+
+  /// 자동 갱신이 이만큼 남을 때까지 안 되면 직접 갱신하라고 안내, 메인넷 약 하루(Noah와 같음)
+  static const renewWindowBlocks = 144;
 
   ArkWalletInfo? get info => _info;
   bool get hasWallet => _info != null;
@@ -76,10 +95,30 @@ class ArkWalletProvider extends ChangeNotifier {
   bool get needsBackup => _info != null && !_info!.backupVerified;
   bool get isRecoveryPending => _isRecoveryPending;
 
+  /// 지갑을 연 뒤 새로 들어와 끝난 입금
+  Stream<ArkMovement> get received => _received.stream;
+
   /// 보여 줄 거래, 최신순
   List<ArkMovement> get movements => _movements;
   String? get arkAddress => _arkAddress;
   bool get isSyncing => _syncTimer != null;
+
+  /// 만료가 이른 순
+  List<ArkVtxo> get vtxos => _vtxos;
+  int? get tipHeight => _tipHeight;
+  bool get autoRenew => _info?.autoRenew ?? true;
+  bool isRenewing(String vtxoId) => _renewingIds.contains(vtxoId);
+
+  /// 하루 안에 만료되는데 아직 갱신되지 않은 VTXO. 이미 만료된 것도 넣음(서버가 받아 주면 갱신으로 되찾음)
+  List<ArkVtxo> get vtxosToRenew => [
+    for (final vtxo in _vtxos)
+      if (_expiringIds.contains(vtxo.id) && !vtxo.isLocked && !isRenewing(vtxo.id)) vtxo,
+  ];
+  bool get hasExpiredToRenew => vtxosToRenew.any((vtxo) => (vtxo.blocksLeft(_tipHeight) ?? 1) <= 0);
+
+  /// 서버가 새 VTXO에 주는 수명(블록), 수명 막대에 씀
+  int? get vtxoLifetime => _vtxoLifetime;
+  int get renewAmount => vtxosToRenew.fold(0, (sum, vtxo) => sum + vtxo.amountSats);
 
   /// 인보이스를 보여 주는 동안은 받은 결제를 빨리 수령하도록 짧게
   Duration get syncInterval => _awaitedInvoice == null ? _normalSync : _invoiceSync;
@@ -185,13 +224,60 @@ class ArkWalletProvider extends ChangeNotifier {
     final info = _info;
     if (info == null || !_backend.isOpen(info.fingerprint)) return;
     try {
-      await _backend.sync(info.fingerprint);
+      await _backend.sync(info.fingerprint, autoRenew: info.autoRenew);
       _balance = await _backend.balance(info.fingerprint);
       _isRecoveryPending = await _backend.isRecoveryPending(info.fingerprint);
       await _loadActivity(info.fingerprint, afterSync: true);
     } catch (error) {
       Logger.error('ArkWalletProvider: sync failed: $error');
     }
+    await _loadVtxos(info.fingerprint);
+  });
+
+  Future<void> _loadVtxos(String fingerprint) async {
+    try {
+      _vtxos = [...await _backend.vtxos(fingerprint)]..sort((a, b) => a.expiryHeight.compareTo(b.expiryHeight));
+      _tipHeight = await _backend.tipHeight();
+      _expiringIds = await _backend.expiringVtxoIds(fingerprint, renewWindowBlocks);
+      _renewingIds = await _backend.renewingVtxoIds(fingerprint);
+      _vtxoLifetime ??= await _backend.vtxoLifetime(fingerprint);
+    } catch (error) {
+      Logger.error('ArkWalletProvider: failed to read VTXOs: $error');
+    }
+    notifyListeners();
+    await _updateReminder();
+  }
+
+  /// 갱신 구간에 들어설 때(블록 하나 10분으로 셈) 알림. 이미 구간 안이면 홈 안내가 대신함
+  Future<void> _updateReminder() async {
+    final tip = _tipHeight;
+    if (tip == null) return;
+    final waiting = [
+      for (final vtxo in _vtxos)
+        if (!isRenewing(vtxo.id) && vtxo.expiryHeight - tip > renewWindowBlocks) vtxo.expiryHeight,
+    ];
+    final inWindow = _vtxos.any((vtxo) => !isRenewing(vtxo.id) && vtxo.expiryHeight - tip <= renewWindowBlocks);
+    final earliest = waiting.isEmpty || inWindow ? 0 : waiting.reduce((a, b) => a < b ? a : b);
+    if (earliest == _remindedExpiry) return;
+    _remindedExpiry = earliest;
+    await _reminder?.remindAt(
+      earliest == 0 ? null : DateTime.now().add(const Duration(minutes: 10) * (earliest - tip - renewWindowBlocks)),
+    );
+  }
+
+  Future<void> setAutoRenew(bool autoRenew) async {
+    await _store.setAutoRenew(autoRenew);
+    _info = _store.read();
+    notifyListeners();
+  }
+
+  Future<int> estimateRenewFee(List<String> vtxoIds) =>
+      _serial(() => _backend.estimateRenewFee(_info!.fingerprint, vtxoIds));
+
+  Future<void> renew(List<String> vtxoIds) => _serial(() async {
+    final fingerprint = _info!.fingerprint;
+    await _backend.renew(fingerprint, vtxoIds);
+    await _loadVtxos(fingerprint);
   });
 
   /// 주소는 서버와 동기화한 뒤에만 받음. 서버 없이 만든 직후의 주소는 다른 지갑이 해석하지 못함
@@ -200,8 +286,23 @@ class ArkWalletProvider extends ChangeNotifier {
     _movements =
         history.where((movement) => movement.isVisibleInHistory).toList()
           ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    _announceReceived();
     if (afterSync) _arkAddress ??= await _backend.newArkAddress(fingerprint);
     notifyListeners();
+  }
+
+  void _announceReceived() {
+    final settled = [
+      for (final movement in _movements)
+        if (!movement.isSend && !movement.isPending && !movement.isFailed && movement.effectiveBalanceSats > 0)
+          movement,
+    ];
+    final known = _settledIncomingIds;
+    _settledIncomingIds = {for (final movement in settled) movement.id};
+    if (known == null) return;
+    for (final movement in settled.reversed) {
+      if (!known.contains(movement.id)) _received.add(movement);
+    }
   }
 
   void _startSync() {
@@ -255,11 +356,13 @@ class ArkWalletProvider extends ChangeNotifier {
     String destination,
     int amountSats, {
     bool invoiceHasAmount = false,
+    String? memo,
   }) => _serial(() async {
     final fingerprint = _info!.fingerprint;
     int? movementId;
     try {
       movementId = await _backend.send(fingerprint, rail, destination, amountSats, invoiceHasAmount: invoiceHasAmount);
+      if (movementId != null && memo != null) await _setMemo(movementId, memo);
     } on ArkPaymentException catch (error) {
       Logger.error('ArkWalletProvider: send failed: ${error.cause}');
       await _refreshAfterSend(fingerprint);
@@ -285,6 +388,18 @@ class ArkWalletProvider extends ChangeNotifier {
     }
   }
 
+  String? memoOf(int movementId) => (_memos ??= _store.readMemos())[movementId];
+
+  Future<void> setMemo(int movementId, String memo) async {
+    await _setMemo(movementId, memo);
+    notifyListeners();
+  }
+
+  Future<void> _setMemo(int movementId, String memo) async {
+    await _store.setMemo(movementId, memo);
+    _memos = _store.readMemos();
+  }
+
   Future<Uint8List> readMnemonicForBackup() => _store.readMnemonic(_info!);
 
   Future<void> markBackupVerified() async {
@@ -300,6 +415,15 @@ class ArkWalletProvider extends ChangeNotifier {
     _awaitedInvoice = null;
     _movements = const [];
     _arkAddress = null;
+    _vtxos = const [];
+    _tipHeight = null;
+    _vtxoLifetime = null;
+    _expiringIds = const [];
+    _renewingIds = const {};
+    _memos = null;
+    _settledIncomingIds = null;
+    _remindedExpiry = null;
+    await _reminder?.remindAt(null);
     await _backend.wipeAll();
     await _store.clear();
     _info = null;
@@ -317,6 +441,7 @@ class ArkWalletProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _received.close();
     _stopSync();
     _lifecycle?.dispose();
     super.dispose();

@@ -14,6 +14,7 @@ class ArkWalletInfo {
     required this.source,
     required this.backupVerified,
     required this.createdAt,
+    this.autoRenew = true,
   });
 
   final String secretStorageKey;
@@ -22,12 +23,16 @@ class ArkWalletInfo {
   final bool backupVerified;
   final DateTime createdAt;
 
-  ArkWalletInfo copyWith({bool? backupVerified}) => ArkWalletInfo(
+  /// 만료 전에 앱이 알아서 갱신, 기본으로 켬
+  final bool autoRenew;
+
+  ArkWalletInfo copyWith({bool? backupVerified, bool? autoRenew}) => ArkWalletInfo(
     secretStorageKey: secretStorageKey,
     fingerprint: fingerprint,
     source: source,
     backupVerified: backupVerified ?? this.backupVerified,
     createdAt: createdAt,
+    autoRenew: autoRenew ?? this.autoRenew,
   );
 
   Map<String, dynamic> toJson() => {
@@ -36,6 +41,7 @@ class ArkWalletInfo {
     'source': source.name,
     'backupVerified': backupVerified,
     'createdAt': createdAt.toIso8601String(),
+    'autoRenew': autoRenew,
   };
 
   factory ArkWalletInfo.fromJson(Map<String, dynamic> json) => ArkWalletInfo(
@@ -44,6 +50,7 @@ class ArkWalletInfo {
     source: ArkSeedSource.values.byName(json['source'] as String),
     backupVerified: json['backupVerified'] as bool,
     createdAt: DateTime.parse(json['createdAt'] as String),
+    autoRenew: json['autoRenew'] as bool? ?? true,
   );
 }
 
@@ -90,12 +97,40 @@ class ArkWalletStore {
     await _write(info.copyWith(backupVerified: true));
   }
 
+  Future<void> setAutoRenew(bool autoRenew) async {
+    final info = read();
+    if (info == null) return;
+    await _write(info.copyWith(autoRenew: autoRenew));
+  }
+
+  Map<int, String> readMemos() {
+    final encoded = _prefs.getStringOrNull(SharedPrefKeys.kArkWalletMemos);
+    if (encoded == null || encoded.isEmpty) return {};
+    return (jsonDecode(encoded) as Map<String, dynamic>).map((id, memo) => MapEntry(int.parse(id), memo as String));
+  }
+
+  /// 빈 메모는 지움
+  Future<void> setMemo(int movementId, String memo) async {
+    final memos = readMemos();
+    final trimmed = memo.trim();
+    if (trimmed.isEmpty) {
+      memos.remove(movementId);
+    } else {
+      memos[movementId] = trimmed;
+    }
+    await _prefs.setStringAndConfirm(
+      SharedPrefKeys.kArkWalletMemos,
+      jsonEncode(memos.map((id, memo) => MapEntry('$id', memo))),
+    );
+  }
+
   /// 정보와 이 저장소의 시드를 모두 지움. 정보 없이 남은 시드도 함께
   Future<void> clear() async {
     for (final key in await _secrets.getSecretStorageKeys()) {
       await _secrets.delete(key);
     }
     await _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kArkWallet);
+    await _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kArkWalletMemos);
   }
 
   Future<void> _write(ArkWalletInfo info) => _prefs.setStringAndConfirm(SharedPrefKeys.kArkWallet, jsonEncode(info));

@@ -3,6 +3,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_flow.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_list_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
@@ -49,6 +50,46 @@ class ArkWalletSettingsScreen extends StatelessWidget {
                           )
                           : null,
                   showRightArrowWithRightElement: true,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
+              child: Text(
+                t.ark_wallet.section_funds,
+                style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
+              ),
+            ),
+            ButtonGroup(
+              buttons: [
+                SingleButton(
+                  key: const Key('ark-settings-vtxos'),
+                  title: t.ark_wallet.vtxos,
+                  onPressed: () => ArkVtxoListScreen.open(context),
+                  rightElement: Text(
+                    wallet.vtxosToRenew.isNotEmpty ? t.ark_wallet.renew_needed : '${wallet.vtxos.length}',
+                    style:
+                        wallet.vtxosToRenew.isNotEmpty
+                            ? CoconutTypography.body2_14_Bold.setColor(colors.appLockWarningBackground)
+                            : CoconutTypography.body2_14_Number.setColor(colors.secondaryText),
+                  ),
+                  showRightArrowWithRightElement: true,
+                ),
+                SingleButton(
+                  key: const Key('ark-settings-auto-renew'),
+                  title: t.ark_wallet.auto_renew,
+                  description: t.ark_wallet.auto_renew_line,
+                  rightElement: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: CoconutSwitch(
+                      isOn: wallet.autoRenew,
+                      activeTrackColor: colors.switchActiveTrack,
+                      activeThumbColor: colors.switchActiveThumb,
+                      inactiveTrackColor: colors.switchInactiveTrack,
+                      inactiveThumbColor: colors.switchInactiveThumb,
+                      onChanged: wallet.setAutoRenew,
+                    ),
+                  ),
                 ),
               ],
             ),

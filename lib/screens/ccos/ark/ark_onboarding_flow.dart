@@ -3,6 +3,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_consent_sheet.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_restore_screen.dart';
+import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:flutter/material.dart';
@@ -46,11 +47,16 @@ class ArkOnboardingFlow {
   void _backToWallet(NavigatorState navigator) =>
       navigator.popUntil((route) => route.settings.name == AnalyticsScreenNames.ccosArkWalletHome || route.isFirst);
 
-  void _run(Future<void> Function(ArkWalletProvider wallet) action) {
-    action(context.read<ArkWalletProvider>()).catchError((Object error) {
+  /// 만들거나 복원한 뒤 만료 알림을 받을 수 있게 알림 권한을 물음(동의 시트에서 알린 내용)
+  Future<void> _run(Future<void> Function(ArkWalletProvider wallet) action) async {
+    try {
+      await action(context.read<ArkWalletProvider>());
+    } catch (error) {
       Logger.error('ArkOnboardingFlow: creating the Ark wallet failed: $error');
       if (!context.mounted) return;
       CoconutToast.showToast(context: context, text: t.ark_wallet.create_failed, isVisibleIcon: true);
-    });
+      return;
+    }
+    await LocalNotificationService.instance.requestPermission();
   }
 }

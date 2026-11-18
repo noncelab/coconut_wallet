@@ -1,11 +1,13 @@
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_movement_labels.dart';
+import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
@@ -57,10 +59,26 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
     );
   }
 
+  void _editMemo(String? memo) {
+    final wallet = context.read<ArkWalletProvider>();
+    SingleTextFieldBottomSheet.show(
+      context: context,
+      title: t.ark_wallet.memo,
+      screenName: AnalyticsScreenNames.ccosArkWalletMemo,
+      originalText: memo ?? '',
+      placeholder: t.ark_wallet.memo_hint,
+      maxLength: 50,
+      completeButtonText: t.done,
+      collapsedHeight: 300,
+      onComplete: (text) => wallet.setMemo(widget.movement.id, text),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final movement = widget.movement;
+    final memo = context.select<ArkWalletProvider, String?>((wallet) => wallet.memoOf(movement.id));
     final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
     String sats(int value) => unit.displayBitcoinAmount(value, withUnit: true);
     final amount = movement.effectiveBalanceSats.abs();
@@ -102,6 +120,16 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
             ArkInfoRow(label: t.ark_wallet.total, value: sats(amount), isNumber: true),
           ],
           ArkInfoRow(label: t.ark_wallet.date, value: date, isNumber: true),
+          GestureDetector(
+            key: const Key('ark-movement-memo'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _editMemo(memo),
+            child: ArkInfoRow(
+              label: t.ark_wallet.memo,
+              value: memo ?? t.ark_wallet.memo_add,
+              valueColor: memo == null ? colors.secondaryText : null,
+            ),
+          ),
           CoconutLayout.spacing_300h,
           GestureDetector(
             key: const Key('ark-movement-details'),

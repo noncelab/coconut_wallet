@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
@@ -14,7 +12,6 @@ class ArkReceiveViewModel extends ChangeNotifier {
   }
 
   final ArkWalletProvider _wallet;
-  final StreamController<int> _received = StreamController.broadcast();
 
   int? _amountSats;
   ArkLightningInvoice? _invoice;
@@ -28,9 +25,6 @@ class ArkReceiveViewModel extends ChangeNotifier {
   bool get isCreatingInvoice => _isCreatingInvoice;
   bool get invoiceFailed => _invoiceFailed;
   String? get arkAddress => _wallet.arkAddress;
-
-  /// 라이트닝으로 받은 금액
-  Stream<int> get received => _received.stream;
 
   List<ArkReceiveFormat> get availableFormats =>
       _invoice == null ? const [ArkReceiveFormat.arkAddress] : ArkReceiveFormat.values;
@@ -83,7 +77,6 @@ class ArkReceiveViewModel extends ChangeNotifier {
   void _onWalletChanged() {
     final invoice = _invoice;
     if (invoice == null || !_wallet.isInvoicePaid(invoice.paymentHash)) return;
-    _received.add(invoice.amountSats);
     _clearInvoice();
     notifyListeners();
   }
@@ -106,7 +99,6 @@ class ArkReceiveViewModel extends ChangeNotifier {
   void dispose() {
     _wallet.removeListener(_onWalletChanged);
     _wallet.stopAwaitingInvoice();
-    _received.close();
     super.dispose();
   }
 }

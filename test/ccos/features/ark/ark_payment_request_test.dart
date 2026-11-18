@@ -150,4 +150,23 @@ void main() {
     expect(request.isOnchainOnly, isTrue);
     expect(parse('bitcoin:$_bitcoin?ark=$_ark').isOnchainOnly, isFalse);
   });
+
+  group('memo', () {
+    test('comes from a BIP21 message, then its label', () {
+      expect(parse('bitcoin:?ark=$_ark&message=Coffee%20beans&label=Shop').memo, 'Coffee beans');
+      expect(parse('bitcoin:?ark=$_ark&label=Shop').memo, 'Shop');
+    });
+
+    test('comes from the invoice description when the URI has none', () {
+      const described =
+          'lnbc1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq9qrsgq357wnc5r2ueh7ck6q93dj32dlqnls087fxdwk8qakdyafkq3yap9us6v52vjjsrvywa6rt52cm9r9zqt8r2t7mlcwspyetp5h2tztugp9lfyql';
+      expect(ArkPaymentRequest.bolt11Description(described), 'Please consider supporting this project');
+      expect(ArkPaymentRequest.parse(described, NetworkType.mainnet).memo, 'Please consider supporting this project');
+    });
+
+    test('is empty for an invoice without a description', () {
+      expect(parse(_invoice).memo, isNull);
+      expect(parse(_ark).memo, isNull);
+    });
+  });
 }

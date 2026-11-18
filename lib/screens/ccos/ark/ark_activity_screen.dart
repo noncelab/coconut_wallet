@@ -67,7 +67,10 @@ class ArkActivityScreen extends StatelessWidget {
               ),
               RecentTransactionsView(
                 key: ValueKey('ark-activity-${group.kind.name}-${group.day}'),
-                transactions: group.movements.map(arkMovementAsRecent).toList(),
+                transactions:
+                    group.movements
+                        .map((movement) => arkMovementAsRecent(movement, memo: wallet.memoOf(movement.id)))
+                        .toList(),
                 amountText: (sats) => unit.displayBitcoinAmount(sats, withUnit: true),
                 now: now,
                 showAllTransactions: true,

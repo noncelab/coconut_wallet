@@ -52,19 +52,36 @@ class _ArkSendView extends StatefulWidget {
 }
 
 class _ArkSendViewState extends State<_ArkSendView> {
-  late final TextEditingController _controller = TextEditingController(text: context.read<ArkSendViewModel>().input);
+  late final TextEditingController _controller;
+  late final TextEditingController _memoController;
   final FocusNode _focusNode = FocusNode();
+  final FocusNode _memoFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    final viewModel = context.read<ArkSendViewModel>();
+    _controller = TextEditingController(text: viewModel.input);
+    _memoController = TextEditingController(text: viewModel.memo);
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _memoController.dispose();
     _focusNode.dispose();
+    _memoFocusNode.dispose();
     super.dispose();
   }
 
   void _setInput(String value) {
     _controller.text = value;
-    context.read<ArkSendViewModel>().setInput(value);
+    _onInputChanged(value);
+  }
+
+  void _onInputChanged(String value) {
+    final viewModel = context.read<ArkSendViewModel>()..setInput(value);
+    _memoController.text = viewModel.memo;
   }
 
   Future<void> _scan() async {
@@ -115,7 +132,7 @@ class _ArkSendViewState extends State<_ArkSendView> {
               CoconutTextField(
                 controller: _controller,
                 focusNode: _focusNode,
-                onChanged: viewModel.setInput,
+                onChanged: _onInputChanged,
                 placeholderText: t.ark_wallet.send_to_hint,
                 maxLines: 1,
                 padding: const EdgeInsets.only(left: 16, right: 0),
@@ -157,6 +174,25 @@ class _ArkSendViewState extends State<_ArkSendView> {
                 Text(
                   t.ark_wallet.available(amount: unit.displayBitcoinAmount(wallet.balance.spendable, withUnit: true)),
                   style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                ),
+                CoconutLayout.spacing_500h,
+                Text(t.ark_wallet.memo, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                CoconutLayout.spacing_200h,
+                CoconutTextField(
+                  key: const Key('ark-send-memo'),
+                  controller: _memoController,
+                  focusNode: _memoFocusNode,
+                  onChanged: viewModel.setMemo,
+                  placeholderText: t.ark_wallet.memo_hint,
+                  maxLines: 1,
+                  maxLength: 50,
+                  padding: const EdgeInsets.only(left: 16, right: 0),
+                  backgroundColor: colors.inputSurface,
+                  clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                  onClear: () {
+                    _memoController.clear();
+                    viewModel.setMemo('');
+                  },
                 ),
               ],
               if (problem != null) ...[

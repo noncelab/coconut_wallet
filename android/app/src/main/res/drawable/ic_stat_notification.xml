@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 로컬 알림 상태 표시줄 아이콘(단색). 디자인 확정 아이콘이 나오면 교체한다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,4C7.58,4 4,7.58 4,12s3.58,8 8,8 8,-3.58 8,-8 -3.58,-8 -8,-8zM12,18c-3.31,0 -6,-2.69 -6,-6 0,-1.1 0.3,-2.13 0.82,-3.02L9,10.5 12,8l3,2.5 2.18,-1.52C17.7,9.87 18,10.9 18,12c0,3.31 -2.69,6 -6,6z" />
+</vector>

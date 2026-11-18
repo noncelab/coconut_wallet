@@ -32,6 +32,7 @@ class MainActivity : FlutterFragmentActivity() {
     // Activity Alias 이름 (AndroidManifest.xml과 일치해야 함)
     private val EVENT_ICON_ALIAS = "onl.coconut.wallet.MainActivityEventIcon"
     private val MAIN_ACTIVITY = "onl.coconut.wallet.MainActivity"
+    private val LIGHTNING_LINK_ALIAS = "onl.coconut.wallet.LightningLinkAlias"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -53,6 +54,14 @@ class MainActivity : FlutterFragmentActivity() {
                 } catch (_: Exception) {
                     startActivity(Intent(Settings.ACTION_SECURITY_SETTINGS))
                 }
+                result.success(null)
+            } else if(call.method == "setLightningLinksEnabled"){
+                val enabled = call.arguments as? Boolean ?: false
+                packageManager.setComponentEnabledSetting(
+                    ComponentName(this, LIGHTNING_LINK_ALIAS),
+                    if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP
+                )
                 result.success(null)
             } else if(call.method == "getInitialBitcoinUri" || call.method == "getPendingBitcoinUri"){
                 result.success(pendingBitcoinUri)
@@ -217,7 +226,8 @@ class MainActivity : FlutterFragmentActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return null
 
         val dataString = intent.dataString ?: return null
-        return if (dataString.startsWith("bitcoin:", ignoreCase = true)) {
+        return if (dataString.startsWith("bitcoin:", ignoreCase = true) ||
+            dataString.startsWith("lightning:", ignoreCase = true)) {
             dataString
         } else {
             null

@@ -90,5 +90,16 @@ void main() {
     await tester.tap(find.byKey(const Key('ark-movement-details')));
     await tester.pumpAndSettle();
     expect(find.text(t.ark_wallet.movement_id), findsOneWidget);
+
+    expect(find.text(t.ark_wallet.memo_add), findsOneWidget);
+    await tester.tap(find.byKey(const Key('ark-movement-memo')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(EditableText).last, 'Rent');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.done));
+    await tester.pumpAndSettle();
+
+    expect(wallet.memoOf(8), 'Rent');
+    expect(find.text('Rent'), findsOneWidget);
   });
 }

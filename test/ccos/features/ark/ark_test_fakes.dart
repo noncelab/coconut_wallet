@@ -5,8 +5,10 @@ import 'dart:typed_data';
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_expiry_reminder.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
@@ -42,7 +44,53 @@ class FakeArkSecrets extends Fake implements HotWalletSecretRepository {
   Future<List<String>> getSecretStorageKeys() async => stored.keys.toList();
 }
 
-class FakeArkBackend implements ArkWalletBackend {
+/// VTXO·갱신 쪽 가짜 bark
+mixin FakeArkVtxos implements ArkWalletBackend {
+  List<ArkVtxo> vtxoList = [];
+  int? tip = 1000;
+  List<String> expiring = [];
+  Set<String> renewing = {};
+  int renewFee = 0;
+  int? lifetime;
+  final List<List<String>> renewed = [];
+  final List<bool> syncedWithAutoRenew = [];
+
+  @override
+  Future<List<ArkVtxo>> vtxos(String fingerprint) async => vtxoList;
+
+  @override
+  Future<int?> tipHeight() async => tip;
+
+  @override
+  Future<List<String>> expiringVtxoIds(String fingerprint, int withinBlocks) async => expiring;
+
+  @override
+  Future<Set<String>> renewingVtxoIds(String fingerprint) async => renewing;
+
+  @override
+  Future<int?> vtxoLifetime(String fingerprint) async => lifetime;
+
+  @override
+  Future<int> estimateRenewFee(String fingerprint, List<String> vtxoIds) async => renewFee;
+
+  @override
+  Future<void> renew(String fingerprint, List<String> vtxoIds) async {
+    renewed.add(vtxoIds);
+    renewing = {...renewing, ...vtxoIds};
+  }
+}
+
+class FakeArkReminder implements ArkExpiryReminder {
+  final List<DateTime?> calls = [];
+
+  @override
+  Future<void> remindAt(DateTime? at) async => calls.add(at);
+}
+
+ArkVtxo fakeVtxo(String id, {int sats = 1000, int expiry = 2000, bool locked = false}) =>
+    ArkVtxo(id: id, amountSats: sats, expiryHeight: expiry, kind: 'Pubkey', isLocked: locked);
+
+class FakeArkBackend with FakeArkVtxos implements ArkWalletBackend {
   List<ArkMovement> movements = [];
   String address = 'tark1fakeaddress';
   int sendFee = 0;
@@ -52,7 +100,10 @@ class FakeArkBackend implements ArkWalletBackend {
   final List<int> invoiceAmounts = [];
 
   @override
-  Future<void> sync(String fingerprint) async => syncCount++;
+  Future<void> sync(String fingerprint, {bool autoRenew = false}) async {
+    syncCount++;
+    syncedWithAutoRenew.add(autoRenew);
+  }
 
   @override
   Future<List<ArkMovement>> history(String fingerprint) async => movements;

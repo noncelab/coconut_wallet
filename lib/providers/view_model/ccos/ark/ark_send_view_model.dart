@@ -25,8 +25,18 @@ class ArkSendViewModel extends ChangeNotifier {
   bool _isEstimating = false;
   bool _feeFailed = false;
   Timer? _feeTimer;
+  String? _memo;
 
   String get input => _input;
+
+  /// 직접 고치기 전에는 결제 요청에 담긴 메모
+  String get memo => _memo ?? _request?.memo ?? '';
+
+  void setMemo(String memo) {
+    _memo = memo;
+    notifyListeners();
+  }
+
   ArkPaymentRequest? get request => _request;
   int? get fee => _fee;
   bool get isEstimating => _isEstimating;
@@ -79,6 +89,7 @@ class ArkSendViewModel extends ChangeNotifier {
     _enteredAmount = null;
     _fee = null;
     _feeFailed = false;
+    _memo = null;
     notifyListeners();
     if (amountSats != null) _scheduleFee();
   }
@@ -116,7 +127,8 @@ class ArkSendViewModel extends ChangeNotifier {
     }
   }
 
-  Future<ArkSendResult> send() => _wallet.send(rail!, destination!, amountSats!, invoiceHasAmount: invoiceHasAmount);
+  Future<ArkSendResult> send() =>
+      _wallet.send(rail!, destination!, amountSats!, invoiceHasAmount: invoiceHasAmount, memo: memo);
 
   @override
   void dispose() {

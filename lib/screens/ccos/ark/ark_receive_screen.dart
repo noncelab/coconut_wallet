@@ -8,7 +8,6 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_receive_view_model.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
-import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
@@ -47,20 +46,6 @@ class _ArkReceiveView extends StatefulWidget {
 
 class _ArkReceiveViewState extends State<_ArkReceiveView> {
   final GlobalKey _shareButtonKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    context.read<ArkReceiveViewModel>().received.listen((sats) {
-      if (!mounted) return;
-      final unit = context.read<PreferenceProvider>().currentUnit;
-      CoconutToast.showToast(
-        context: context,
-        text: t.ark_wallet.received(amount: unit.displayBitcoinAmount(sats, withUnit: true)),
-        isVisibleIcon: true,
-      );
-    });
-  }
 
   String _title(ArkReceiveFormat format) => switch (format) {
     ArkReceiveFormat.paymentRequest => t.ark_wallet.format_payment_request,

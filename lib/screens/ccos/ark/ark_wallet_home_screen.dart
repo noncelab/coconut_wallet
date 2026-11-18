@@ -1,6 +1,9 @@
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
+import 'dart:async';
+
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutToast;
 
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -9,11 +12,14 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_flow.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_nudge.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_expiry_text.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_onboarding_flow.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_renew_sheet.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_progress_view.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_settings_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_welcome_view.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/amount/animated_balance.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_movement_labels.dart';
@@ -102,6 +108,27 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
 
   final GlobalKey _topKey = GlobalKey();
   double? _topHeight;
+  StreamSubscription<ArkMovement>? _received;
+
+  @override
+  void initState() {
+    super.initState();
+    _received = widget.wallet.received.listen((movement) {
+      if (!mounted) return;
+      final unit = context.read<PreferenceProvider>().currentUnit;
+      CoconutToast.showToast(
+        context: context,
+        text: t.ark_wallet.received(amount: unit.displayBitcoinAmount(movement.effectiveBalanceSats, withUnit: true)),
+        isVisibleIcon: true,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _received?.cancel();
+    super.dispose();
+  }
 
   int _rowsFor(double viewportHeight) {
     final top = _topHeight;
@@ -188,7 +215,26 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                         ),
                       ],
                     ),
-                    if (wallet.needsBackup) ...[
+                    if (wallet.vtxosToRenew.isNotEmpty) ...[
+                      CoconutLayout.spacing_500h,
+                      ArkNudgeCard(
+                        key: const Key('ark-renew-nudge'),
+                        title: t.ark_wallet.renew_title(
+                          amount: unit.displayBitcoinAmount(wallet.renewAmount, withUnit: true),
+                        ),
+                        line:
+                            wallet.hasExpiredToRenew
+                                ? t.ark_wallet.renew_line_expired
+                                : t.ark_wallet.renew_line(
+                                  time: arkExpiryText(
+                                    wallet.vtxosToRenew.first.blocksLeft(wallet.tipHeight) ??
+                                        ArkWalletProvider.renewWindowBlocks,
+                                  ),
+                                ),
+                        buttonText: t.ark_wallet.renew_button,
+                        onPressed: () => showArkRenewSheet(context, wallet.vtxosToRenew),
+                      ),
+                    ] else if (wallet.needsBackup) ...[
                       CoconutLayout.spacing_500h,
                       ArkBackupNudge(onBackup: () => startArkWalletBackup(context, wallet)),
                     ],
@@ -209,7 +255,11 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                       height: RecentTransactionsView.heightFor(rows),
                       child: RecentTransactionsView(
                         rows: rows,
-                        transactions: recent.take(rows).map(arkMovementAsRecent).toList(),
+                        transactions:
+                            recent
+                                .take(rows)
+                                .map((movement) => arkMovementAsRecent(movement, memo: wallet.memoOf(movement.id)))
+                                .toList(),
                         amountText: (sats) => unit.displayBitcoinAmount(sats, withUnit: true),
                         now: DateTime.now(),
                         emptyMessage: t.ark_wallet.no_activity,

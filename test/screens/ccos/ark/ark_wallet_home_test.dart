@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
-import 'package:coconut_design_system/coconut_design_system.dart' show CoconutButton;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutButton, CoconutSwitch;
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
@@ -14,6 +14,7 @@ import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_wallet_home_view_model.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_settings_screen.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_list_screen.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +61,12 @@ class _Authenticator implements HotWalletAuthenticator {
 void main() {
   setUp(() => LocaleSettings.setLocaleSync(AppLocale.ko));
 
-  Future<ArkWalletProvider> walletWith({required bool restored, int sats = 0, int movements = 0}) async {
+  Future<ArkWalletProvider> walletWith({
+    required bool restored,
+    int sats = 0,
+    int movements = 0,
+    void Function(FakeArkBackend backend)? setup,
+  }) async {
     final backend =
         FakeArkBackend()
           ..movements = [for (var i = 1; i <= movements; i++) _movement(i)]
@@ -76,6 +82,10 @@ void main() {
     restored
         ? await wallet.restore(Uint8List.fromList(utf8.encode('${'abandon ' * 11}about')))
         : await wallet.createNew();
+    if (setup != null) {
+      setup(backend);
+      await wallet.syncNow();
+    }
     return wallet;
   }
 
@@ -262,5 +272,119 @@ void main() {
     expect(wallet.needsBackup, isTrue);
     await viewModel.finishBackup(confirmed: true);
     expect(wallet.needsBackup, isFalse);
+  });
+
+  group('renew', () {
+    void dueSoon(FakeArkBackend backend) {
+      backend
+        ..vtxoList = [fakeVtxo('due', sats: 2000, expiry: 1060), fakeVtxo('fine', expiry: 5000)]
+        ..expiring = ['due']
+        ..tip = 1000
+        ..lifetime = 4320
+        ..renewFee = 30;
+    }
+
+    testWidgets('VTXOs due within a day take the nudge before the backup prompt', (tester) async {
+      await pump(tester, await walletWith(restored: false, setup: dueSoon));
+
+      expect(find.byKey(const Key('ark-renew-nudge')), findsOneWidget);
+      expect(find.text(t.ark_wallet.backup_title), findsNothing);
+      expect(find.text(t.ark_wallet.renew_line(time: t.ark_wallet.expiry_hours(n: 10))), findsOneWidget);
+    });
+
+    testWidgets('renewing shows the fee and only renews after confirming', (tester) async {
+      late FakeArkBackend fake;
+      await pump(tester, await walletWith(restored: true, setup: (backend) => dueSoon(fake = backend)));
+
+      await tester.tap(
+        find.descendant(of: find.byKey(const Key('ark-renew-nudge')), matching: find.byType(CoconutButton)),
+      );
+      await tester.pumpAndSettle();
+      expect(fake.renewed, isEmpty);
+      expect(find.text(t.ark_wallet.renew_sheet_title), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('ark-renew-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(fake.renewed.single, ['due']);
+      expect(find.byKey(const Key('ark-renew-nudge')), findsNothing);
+    });
+
+    testWidgets('settings show VTXOs needing renewal and auto renew on by default', (tester) async {
+      final wallet = await walletWith(restored: true, setup: dueSoon);
+      await pump(tester, wallet);
+      await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(t.ark_wallet.renew_needed), findsOneWidget);
+      await tester.tap(find.byType(CoconutSwitch));
+      await tester.pumpAndSettle();
+      expect(wallet.autoRenew, isFalse);
+    });
+
+    testWidgets('the VTXO list groups VTXOs and renews the due ones', (tester) async {
+      await pump(tester, await walletWith(restored: true, setup: dueSoon));
+      await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ark-settings-vtxos')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ArkVtxoListScreen), findsOneWidget);
+      expect(find.text(t.ark_wallet.group_expiring), findsOneWidget);
+      expect(find.text(t.ark_wallet.group_spendable), findsOneWidget);
+      expect(find.textContaining(t.ark_wallet.renew_button), findsWidgets);
+
+      await tester.tap(find.byKey(const ValueKey('ark-vtxo-fine')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('ark-vtxo-lifetime')), findsOneWidget);
+    });
+
+    testWidgets('an expired VTXO still gets the renew nudge, saying it already expired', (tester) async {
+      await pump(
+        tester,
+        await walletWith(
+          restored: true,
+          setup: (backend) {
+            dueSoon(backend);
+            backend.vtxoList = [fakeVtxo('due', expiry: 990)];
+          },
+        ),
+      );
+
+      expect(find.text(t.ark_wallet.renew_line_expired), findsOneWidget);
+    });
+
+    testWidgets('picking VTXOs starts with the due ones and renews what is picked', (tester) async {
+      late FakeArkBackend fake;
+      await pump(tester, await walletWith(restored: true, setup: (backend) => dueSoon(fake = backend)));
+      await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ark-settings-vtxos')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('ark-vtxo-select')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('ark-vtxo-fine')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(t.ark_wallet.renew_selected(n: 2)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ark-renew-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(fake.renewed.single, ['due', 'fine']);
+    });
+  });
+
+  testWidgets('a payment that arrives while the wallet is open shows a toast', (tester) async {
+    late FakeArkBackend fake;
+    final wallet = await walletWith(restored: true, setup: (backend) => fake = backend);
+    await pump(tester, wallet);
+
+    fake.movements = [_movement(1, sats: 3000)];
+    await wallet.syncNow();
+    await tester.pump();
+
+    expect(find.text(t.ark_wallet.received(amount: '3,000 sats')), findsOneWidget);
+    await tester.pumpAndSettle(const Duration(seconds: 5));
   });
 }

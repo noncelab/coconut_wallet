@@ -91,4 +91,27 @@ void main() {
     expect(result.outcome, ArkSendOutcome.sent);
     expect(backend.sent.single, (ArkPaymentRail.ark, _ark, 1000));
   });
+
+  group('memo', () {
+    test('starts with the memo the request carries and resets with a new request', () {
+      viewModel.setInput('bitcoin:?ark=$_ark&message=Lunch');
+      expect(viewModel.memo, 'Lunch');
+
+      viewModel.setMemo('Lunch with Mina');
+      expect(viewModel.memo, 'Lunch with Mina');
+
+      viewModel.setInput(_ark);
+      expect(viewModel.memo, '');
+    });
+
+    test('is saved on the movement the send made', () async {
+      viewModel.setInput(_ark);
+      await viewModel.setAmount(1000);
+      viewModel.setMemo('Rent');
+
+      final result = await viewModel.send();
+
+      expect(wallet.memoOf(result.movementId!), 'Rent');
+    });
+  });
 }

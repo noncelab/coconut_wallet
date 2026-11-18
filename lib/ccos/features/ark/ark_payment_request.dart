@@ -60,6 +60,7 @@ class ArkPaymentRequest {
     this.invoiceAmountSats,
     this.problem,
     this.problemDetail,
+    this.message,
   });
 
   final ArkPaymentRequestKind kind;
@@ -80,6 +81,12 @@ class ArkPaymentRequest {
 
   /// What the problem is about, when it names something (a `req-` parameter).
   final String? problemDetail;
+
+  /// BIP21 `message`, 없으면 `label`
+  final String? message;
+
+  /// 받는 쪽이 붙인 메모. BIP21 메모가 없으면 인보이스 설명
+  String? get memo => message ?? invoiceDescription;
 
   bool get hasArkOrLightning => arkAddress != null || lightningInvoice != null || lightningAddress != null;
 
@@ -339,6 +346,11 @@ class ArkPaymentRequest {
       lightningInvoice: invoice,
       amountSats: amount ?? invoiceAmount,
       invoiceAmountSats: invoiceAmount,
+      message:
+          [
+            params['message'],
+            params['label'],
+          ].map((text) => text?.trim()).where((text) => text?.isNotEmpty == true).firstOrNull,
     );
   }
 }

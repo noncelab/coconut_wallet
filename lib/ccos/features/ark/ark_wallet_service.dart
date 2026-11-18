@@ -7,10 +7,12 @@ import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_lifecycle_lock.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 String _masterFingerprint(({Uint8List mnemonic, String networkType}) input) {
@@ -107,10 +109,50 @@ class ArkWalletService implements ArkWalletBackend {
       withWallet(fingerprint, (wallet) async => ArkBalance.fromBark(await wallet.balance()));
 
   @override
-  Future<void> sync(String fingerprint) => withWallet(fingerprint, (wallet) async {
-    await wallet.sync_();
+  Future<void> sync(String fingerprint, {bool autoRenew = false}) => withWallet(fingerprint, (wallet) async {
+    if (autoRenew) {
+      await wallet.maintenanceDelegated();
+    } else {
+      await wallet.sync_();
+      await wallet.progressPendingRounds();
+    }
     await wallet.syncExits();
   });
+
+  @override
+  Future<List<ArkVtxo>> vtxos(String fingerprint) =>
+      withWallet(fingerprint, (wallet) async => (await wallet.vtxos()).map(ArkVtxo.fromBark).toList());
+
+  @override
+  Future<int?> tipHeight() async {
+    final response = await http
+        .get(Uri.parse('${ArkServerConfig.esploraUrl.replaceFirst(RegExp(r'/+$'), '')}/blocks/tip/height'))
+        .timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) return null;
+    return int.tryParse(response.body.trim());
+  }
+
+  @override
+  Future<List<String>> expiringVtxoIds(String fingerprint, int withinBlocks) => withWallet(
+    fingerprint,
+    (wallet) async => (await wallet.getExpiringVtxos(thresholdBlocks: withinBlocks)).map((vtxo) => vtxo.id).toList(),
+  );
+
+  @override
+  Future<Set<String>> renewingVtxoIds(String fingerprint) =>
+      withWallet(fingerprint, (wallet) async => (await wallet.pendingRoundInputVtxos()).map((vtxo) => vtxo.id).toSet());
+
+  @override
+  Future<int> estimateRenewFee(String fingerprint, List<String> vtxoIds) =>
+      withWallet(fingerprint, (wallet) async => (await wallet.estimateRefreshFee(vtxoIds: vtxoIds)).feeSats);
+
+  @override
+  Future<int?> vtxoLifetime(String fingerprint) =>
+      withWallet(fingerprint, (wallet) async => (await wallet.arkInfo())?.vtxoLifetime);
+
+  @override
+  Future<void> renew(String fingerprint, List<String> vtxoIds) =>
+      withWallet(fingerprint, (wallet) => wallet.refreshVtxosDelegated(vtxoIds: vtxoIds));
 
   @override
   Future<List<ArkMovement>> history(String fingerprint) =>

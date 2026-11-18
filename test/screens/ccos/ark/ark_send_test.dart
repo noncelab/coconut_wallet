@@ -88,4 +88,22 @@ void main() {
 
     expect(find.text(t.ark_wallet.problem_onchain), findsOneWidget);
   });
+
+  testWidgets('the memo a request carries is filled in, shown on confirm and kept on the movement', (tester) async {
+    await pump(tester, 'lightning:${_invoice.toUpperCase()}');
+    await tester.enterText(
+      find.descendant(of: find.byKey(const Key('ark-send-memo')), matching: find.byType(EditableText)),
+      'Pizza',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.next));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pizza'), findsOneWidget);
+    await tester.tap(find.text(t.send).last);
+    await tester.pumpAndSettle();
+
+    final wallet = Provider.of<ArkWalletProvider>(tester.element(find.byType(ArkSendResultScreen)), listen: false);
+    expect(wallet.memoOf(99), 'Pizza');
+  });
 }

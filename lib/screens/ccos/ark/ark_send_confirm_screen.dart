@@ -87,6 +87,7 @@ class _ArkSendConfirmScreenState extends State<ArkSendConfirmScreen> {
               ),
               ArkInfoRow(label: t.fee, value: fee == 0 ? t.ark_wallet.fee_free : sats(fee), isNumber: fee != 0),
               ArkInfoRow(label: t.ark_wallet.total, value: sats(amount + fee), isNumber: true),
+              if (viewModel.memo.trim().isNotEmpty) ArkInfoRow(label: t.ark_wallet.memo, value: viewModel.memo.trim()),
             ],
           ),
           FixedBottomButton(text: t.send, isActive: !_sending, onButtonClicked: () => _send(viewModel)),

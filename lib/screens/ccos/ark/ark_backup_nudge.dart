@@ -3,11 +3,20 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:flutter/material.dart';
 
-/// 새로 만든 아크 지갑의 백업 안내. 백업을 마칠 때까지 보임
-class ArkBackupNudge extends StatelessWidget {
-  const ArkBackupNudge({super.key, required this.onBackup});
+/// 아크 지갑 홈의 안내 카드 하나. 제목, 한 줄 설명, 오른쪽 버튼
+class ArkNudgeCard extends StatelessWidget {
+  const ArkNudgeCard({
+    super.key,
+    required this.title,
+    required this.line,
+    required this.buttonText,
+    required this.onPressed,
+  });
 
-  final VoidCallback onBackup;
+  final String title;
+  final String line;
+  final String buttonText;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -22,17 +31,18 @@ class ArkBackupNudge extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(t.ark_wallet.backup_title, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
+                  Text(title, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
                   CoconutLayout.spacing_100h,
-                  Text(t.ark_wallet.backup_line, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
+                  Text(line, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                 ],
               ),
             ),
+            CoconutLayout.spacing_300w,
             CoconutButton(
-              text: t.ark_wallet.backup_button,
+              text: buttonText,
               height: 36,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              onPressed: onBackup,
+              onPressed: onPressed,
               backgroundColor: colors.primaryText,
               foregroundColor: colors.background,
             ),
@@ -41,4 +51,19 @@ class ArkBackupNudge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 새로 만든 아크 지갑의 백업 안내. 백업을 마칠 때까지 보임
+class ArkBackupNudge extends StatelessWidget {
+  const ArkBackupNudge({super.key, required this.onBackup});
+
+  final VoidCallback onBackup;
+
+  @override
+  Widget build(BuildContext context) => ArkNudgeCard(
+    title: t.ark_wallet.backup_title,
+    line: t.ark_wallet.backup_line,
+    buttonText: t.ark_wallet.backup_button,
+    onPressed: onBackup,
+  );
 }

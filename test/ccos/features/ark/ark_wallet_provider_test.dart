@@ -17,6 +17,8 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ark_test_fakes.dart';
+
 class _Secrets extends Fake implements HotWalletSecretRepository {
   final Map<String, Uint8List> stored = {};
   var _next = 0;
@@ -39,7 +41,7 @@ class _Secrets extends Fake implements HotWalletSecretRepository {
   Future<List<String>> getSecretStorageKeys() async => stored.keys.toList();
 }
 
-class _Backend implements ArkWalletBackend {
+class _Backend with FakeArkVtxos implements ArkWalletBackend {
   List<ArkMovement> movements = [];
   String address = 'tark1fakeaddress';
   int sendFee = 0;
@@ -49,7 +51,10 @@ class _Backend implements ArkWalletBackend {
   final List<int> invoiceAmounts = [];
 
   @override
-  Future<void> sync(String fingerprint) async => syncCount++;
+  Future<void> sync(String fingerprint, {bool autoRenew = false}) async {
+    syncCount++;
+    syncedWithAutoRenew.add(autoRenew);
+  }
 
   @override
   Future<List<ArkMovement>> history(String fingerprint) async => movements;
@@ -138,6 +143,7 @@ void main() {
   late SharedPrefsRepository prefs;
   late _Secrets secrets;
   late _Backend backend;
+  late FakeArkReminder reminder;
   final created = '${'zoo ' * 11}wrong';
   final restored = '${'abandon ' * 11}about';
 
@@ -148,12 +154,14 @@ void main() {
     prefs = SharedPrefsRepository()..setSharedPreferencesForTest(await SharedPreferences.getInstance());
     secrets = _Secrets();
     backend = _Backend();
+    reminder = FakeArkReminder();
   });
 
   ArkWalletProvider create() {
     final provider = ArkWalletProvider(
       store: ArkWalletStore(prefs, secrets),
       backend: backend,
+      reminder: reminder,
       generateMnemonic: () async => Uint8List.fromList(utf8.encode(created)),
     );
     addTearDown(provider.dispose);
@@ -392,5 +400,184 @@ void main() {
 
     await provider.syncNow();
     expect(backend.addressCalls, 1);
+  });
+
+  group('renew', () {
+    test('auto renew is on by default and hands the sync to bark maintenance', () async {
+      final provider = create();
+      await provider.createNew();
+
+      await provider.syncNow();
+
+      expect(provider.autoRenew, isTrue);
+      expect(backend.syncedWithAutoRenew.last, isTrue);
+    });
+
+    test('turning auto renew off is kept and plain syncs follow', () async {
+      final provider = create();
+      await provider.createNew();
+
+      await provider.setAutoRenew(false);
+      await provider.syncNow();
+
+      expect(backend.syncedWithAutoRenew.last, isFalse);
+      expect(create().autoRenew, isFalse);
+    });
+
+    test('a sync reads the VTXOs and which ones are due within a day', () async {
+      backend.vtxoList = [
+        fakeVtxo('a', expiry: 1100),
+        fakeVtxo('b', expiry: 5000),
+        fakeVtxo('c', expiry: 1050, locked: true),
+      ];
+      backend.expiring = ['a', 'c'];
+      backend.tip = 1000;
+      final provider = create();
+      await provider.createNew();
+
+      await provider.syncNow();
+
+      expect(provider.vtxos.map((vtxo) => vtxo.id), ['c', 'a', 'b']);
+      expect(provider.tipHeight, 1000);
+      expect(provider.vtxosToRenew.map((vtxo) => vtxo.id), ['a']);
+      expect(provider.renewAmount, 1000);
+    });
+
+    test('renewing hands exactly the chosen VTXOs to a round and stops nudging for them', () async {
+      backend.vtxoList = [fakeVtxo('a', expiry: 1100)];
+      backend.expiring = ['a'];
+      backend.renewFee = 21;
+      final provider = create();
+      await provider.createNew();
+      await provider.syncNow();
+
+      expect(await provider.estimateRenewFee(['a']), 21);
+      await provider.renew(['a']);
+
+      expect(backend.renewed.single, ['a']);
+      expect(provider.isRenewing('a'), isTrue);
+      expect(provider.vtxosToRenew, isEmpty);
+    });
+
+    test('expired VTXOs are still offered for renewal, as the server may take them back', () async {
+      backend.vtxoList = [fakeVtxo('gone', expiry: 990), fakeVtxo('due', expiry: 1010)];
+      backend.expiring = ['gone', 'due'];
+      final provider = create();
+      await provider.createNew();
+
+      await provider.syncNow();
+
+      expect(provider.vtxosToRenew.map((vtxo) => vtxo.id), ['gone', 'due']);
+      expect(provider.hasExpiredToRenew, isTrue);
+    });
+
+    test('the server VTXO lifetime is read after a sync', () async {
+      backend.lifetime = 4320;
+      final provider = create();
+      await provider.createNew();
+
+      await provider.syncNow();
+
+      expect(provider.vtxoLifetime, 4320);
+    });
+
+    test('a failed VTXO read keeps the wallet usable', () async {
+      final provider = create();
+      await provider.createNew();
+      backend.tip = null;
+
+      await provider.syncNow();
+
+      expect(provider.tipHeight, isNull);
+      expect(provider.vtxosToRenew, isEmpty);
+    });
+  });
+
+  group('memo', () {
+    test('a send keeps its memo on the movement it made', () async {
+      final provider = create();
+      await provider.createNew();
+
+      await provider.send(ArkPaymentRail.ark, 'tark1to', 500, memo: ' Coffee ');
+
+      expect(provider.memoOf(99), 'Coffee');
+    });
+
+    test('a memo can be edited, cleared and survives a restart', () async {
+      final provider = create();
+      await provider.createNew();
+
+      await provider.setMemo(7, 'Rent');
+      expect(create().memoOf(7), 'Rent');
+
+      await provider.setMemo(7, '  ');
+      expect(provider.memoOf(7), isNull);
+    });
+
+    test('wiping removes the memos', () async {
+      final provider = create();
+      await provider.createNew();
+      await provider.setMemo(7, 'Rent');
+
+      await provider.wipe();
+
+      expect(create().memoOf(7), isNull);
+    });
+  });
+
+  test('a payment that arrives after opening is announced once', () async {
+    backend.movements = [movement(1)];
+    final provider = create();
+    final announced = <int>[];
+    provider.received.listen((movement) => announced.add(movement.id));
+    await provider.createNew();
+    await provider.syncNow();
+
+    backend.movements = [
+      movement(1),
+      movement(2, sats: 500),
+      movement(3, kind: 'send', sats: -100),
+      movement(4, subsystem: 'bark.lightning_receive', status: 'pending'),
+    ];
+    await provider.syncNow();
+    await provider.syncNow();
+    backend.movements = [...backend.movements.take(3), movement(4, subsystem: 'bark.lightning_receive')];
+    await provider.syncNow();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(announced, [2, 4]);
+  });
+
+  group('expiry reminder', () {
+    test('is set for when the first VTXO enters the renew window, once per expiry', () async {
+      backend.vtxoList = [fakeVtxo('a', expiry: 1300), fakeVtxo('b', expiry: 2000)];
+      backend.tip = 1000;
+      final provider = create();
+      await provider.createNew();
+
+      final before = DateTime.now();
+      await provider.syncNow();
+      await provider.syncNow();
+
+      expect(reminder.calls, hasLength(1));
+      final expected = before.add(const Duration(minutes: 10) * (300 - ArkWalletProvider.renewWindowBlocks));
+      expect(reminder.calls.single!.difference(expected).inSeconds.abs(), lessThan(5));
+    });
+
+    test('is cleared once nothing waits, inside the window and on wipe', () async {
+      backend.vtxoList = [fakeVtxo('a', expiry: 1100)];
+      final provider = create();
+      await provider.createNew();
+
+      await provider.syncNow();
+      expect(reminder.calls.last, isNull);
+
+      backend.vtxoList = [fakeVtxo('a', expiry: 1300)];
+      await provider.syncNow();
+      expect(reminder.calls.last, isNotNull);
+
+      await provider.wipe();
+      expect(reminder.calls.last, isNull);
+    });
   });
 }

@@ -141,6 +141,7 @@ class SharedPrefKeys {
     kAllFeaturesHintDismissed,
     kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
     kArkWallet,
+    kArkWalletMemos,
   ];
 
   /// 코코넛 오픈 스토어 소개 카드 숨김 만료일
@@ -148,6 +149,9 @@ class SharedPrefKeys {
 
   /// 아크 지갑 정보(시드는 보안 저장소)
   static const String kArkWallet = 'ark_wallet_v1';
+
+  /// 아크 거래 메모, 거래 id → 메모
+  static const String kArkWalletMemos = 'ark_wallet_memos_v1';
 
   /// CCOS feature runtime
   static const String kCcosActivatedFeatureIds = 'CCOS_ACTIVATED_FEATURE_IDS';

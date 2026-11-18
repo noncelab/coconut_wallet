@@ -1,5 +1,6 @@
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_expiry_reminder.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_service.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
@@ -85,6 +86,7 @@ List<SingleChildWidget> buildAppProviders({
           (_) => ArkWalletProvider(
             store: ArkWalletStore(SharedPrefsRepository(), HotWalletSecretRepository(namespace: 'ark_wallet')),
             backend: ArkWalletService(),
+            reminder: const LocalArkExpiryReminder(),
           ),
     ),
     ChangeNotifierProvider<CcosFeatureStatusRegistry>(
