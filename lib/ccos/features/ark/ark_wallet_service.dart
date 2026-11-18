@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_lifecycle_lock.dart';
@@ -26,6 +28,12 @@ String _masterFingerprint(({Uint8List mnemonic, String networkType}) input) {
     seed?.wipe();
     input.mnemonic.fillRange(0, input.mnemonic.length, 0);
   }
+}
+
+/// 결제 호출 전후 내역을 비교해 그 호출이 만든 거래 id. bark 결제 호출은 거래 id를 돌려주지 않음
+int? newestCreatedMovementId(Set<int> before, Iterable<int> after) {
+  final created = after.where((id) => !before.contains(id));
+  return created.isEmpty ? null : created.reduce((a, b) => a > b ? a : b);
 }
 
 class ArkWalletLockedException implements Exception {
@@ -98,9 +106,80 @@ class ArkWalletService implements ArkWalletBackend {
   Future<ArkBalance> balance(String fingerprint) =>
       withWallet(fingerprint, (wallet) async => ArkBalance.fromBark(await wallet.balance()));
 
+  @override
   Future<void> sync(String fingerprint) => withWallet(fingerprint, (wallet) async {
     await wallet.sync_();
     await wallet.syncExits();
+  });
+
+  @override
+  Future<List<ArkMovement>> history(String fingerprint) =>
+      withWallet(fingerprint, (wallet) async => (await wallet.history()).map(ArkMovement.fromBark).toList());
+
+  @override
+  Future<String> newArkAddress(String fingerprint) => withWallet(fingerprint, (wallet) => wallet.newAddress());
+
+  @override
+  Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description}) =>
+      withWallet(fingerprint, (wallet) async {
+        final fee = await wallet.estimateLightningReceiveFee(amountSats: amountSats);
+        final invoice = await wallet.bolt11Invoice(amountSats: amountSats, description: description, token: null);
+        return ArkLightningInvoice(
+          invoice: invoice.invoice,
+          paymentHash: invoice.paymentHash,
+          amountSats: invoice.amountSats,
+          feeSats: fee.feeSats,
+        );
+      });
+
+  @override
+  Future<int> estimateSendFee(String fingerprint, ArkPaymentRail rail, int amountSats) =>
+      withWallet(fingerprint, (wallet) async {
+        final estimate = switch (rail) {
+          ArkPaymentRail.ark => await wallet.estimateArkoorPaymentFee(amountSats: amountSats),
+          ArkPaymentRail.lightningInvoice ||
+          ArkPaymentRail.lightningAddress => await wallet.estimateLightningSendFee(amountSats: amountSats),
+          ArkPaymentRail.onchain => throw UnsupportedError('on-chain sends come in step 4'),
+        };
+        return estimate.feeSats;
+      });
+
+  @override
+  Future<int?> send(
+    String fingerprint,
+    ArkPaymentRail rail,
+    String destination,
+    int amountSats, {
+    bool invoiceHasAmount = false,
+  }) => withWallet(fingerprint, (wallet) async {
+    final before = (await wallet.history()).map((movement) => movement.id).toSet();
+    Object? error;
+    try {
+      switch (rail) {
+        case ArkPaymentRail.ark:
+          await wallet.sendArkoorPayment(arkAddress: destination, amountSats: amountSats);
+        case ArkPaymentRail.lightningInvoice:
+          await wallet.payLightningInvoice(
+            invoice: destination,
+            amountSats: invoiceHasAmount ? null : amountSats,
+            wait: false,
+          );
+        case ArkPaymentRail.lightningAddress:
+          await wallet.payLightningAddress(
+            lightningAddress: destination,
+            amountSats: amountSats,
+            comment: null,
+            wait: false,
+          );
+        case ArkPaymentRail.onchain:
+          throw UnsupportedError('on-chain sends come in step 4');
+      }
+    } catch (e) {
+      error = e;
+    }
+    final movementId = newestCreatedMovementId(before, (await wallet.history()).map((movement) => movement.id));
+    if (error != null) throw ArkPaymentException(error, movementId: movementId);
+    return movementId;
   });
 
   @override

@@ -171,6 +171,7 @@ abstract final class FeatureTransactionIconPath {
   static const String txSelf = 'assets/svg/features/transaction/tx-self.svg';
   static const String txSelfSending = 'assets/svg/features/transaction/tx-self-sending.svg';
   static const String txSending = 'assets/svg/features/transaction/tx-sending.svg';
+  static const String txLightning = 'assets/svg/features/transaction/tx-lightning.svg';
   static const String txSent = 'assets/svg/features/transaction/tx-sent.svg';
 }
 

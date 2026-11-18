@@ -14,6 +14,16 @@ class AnalyticsScreenNames {
   static const String ccosOpenStoreFirstPowDeliveryDetail = 'ccos-open-store-first-pow-delivery-detail';
   static const String ccosArkWalletHome = 'ccos-ark-wallet-home';
   static const String ccosArkWalletSettings = 'ccos-ark-wallet-settings';
+  static const String ccosArkWalletReceive = 'ccos-ark-wallet-receive';
+  static const String ccosArkWalletSend = 'ccos-ark-wallet-send';
+  static const String ccosArkWalletActivity = 'ccos-ark-wallet-activity';
+  static const String ccosArkWalletMovement = 'ccos-ark-wallet-movement';
+  static const String ccosArkWalletSendAmount = 'ccos-ark-wallet-send-amount';
+  static const String ccosArkWalletSendConfirm = 'ccos-ark-wallet-send-confirm';
+  static const String ccosArkWalletSendResult = 'ccos-ark-wallet-send-result';
+  static const String ccosArkWalletScan = 'ccos-ark-wallet-scan';
+  static const String ccosArkWalletReceiveWays = 'ccos-ark-wallet-receive-ways';
+  static const String ccosArkWalletReceiveAmount = 'ccos-ark-wallet-receive-amount';
   static const String ccosArkWalletConsent = 'ccos-ark-wallet-consent';
   static const String ccosArkWalletRestore = 'ccos-ark-wallet-restore';
 

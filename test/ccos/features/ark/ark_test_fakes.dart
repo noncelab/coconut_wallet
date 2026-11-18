@@ -3,13 +3,21 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/providers/connectivity_provider.dart';
+import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:provider/single_child_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeArkSecrets extends Fake implements HotWalletSecretRepository {
@@ -35,6 +43,50 @@ class FakeArkSecrets extends Fake implements HotWalletSecretRepository {
 }
 
 class FakeArkBackend implements ArkWalletBackend {
+  List<ArkMovement> movements = [];
+  String address = 'tark1fakeaddress';
+  int sendFee = 0;
+  Object? sendError;
+  int syncCount = 0;
+  final List<(ArkPaymentRail, String, int)> sent = [];
+  final List<int> invoiceAmounts = [];
+
+  @override
+  Future<void> sync(String fingerprint) async => syncCount++;
+
+  @override
+  Future<List<ArkMovement>> history(String fingerprint) async => movements;
+
+  @override
+  Future<String> newArkAddress(String fingerprint) async => address;
+
+  @override
+  Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description}) async {
+    invoiceAmounts.add(amountSats);
+    return ArkLightningInvoice(
+      invoice: 'lnbcrt${amountSats}n1fake',
+      paymentHash: 'hash-$amountSats',
+      amountSats: amountSats,
+      feeSats: 0,
+    );
+  }
+
+  @override
+  Future<int> estimateSendFee(String fingerprint, ArkPaymentRail rail, int amountSats) async => sendFee;
+
+  @override
+  Future<int?> send(
+    String fingerprint,
+    ArkPaymentRail rail,
+    String destination,
+    int amountSats, {
+    bool invoiceHasAmount = false,
+  }) async {
+    if (sendError != null) throw ArkPaymentException(sendError!);
+    sent.add((rail, destination, amountSats));
+    return 99;
+  }
+
   final Set<String> wallets = {};
   final Set<String> opened = {};
   ArkBalance currentBalance = ArkBalance.zero;
@@ -90,5 +142,22 @@ Future<ArkWalletProvider> fakeArkWalletProvider({
     store: ArkWalletStore(prefs, secrets ?? FakeArkSecrets()),
     backend: backend ?? FakeArkBackend(),
     generateMnemonic: () async => Uint8List.fromList(utf8.encode('${'zoo ' * 11}wrong')),
+    autoSync: false,
   );
 }
+
+class FakeArkPrice extends Fake with ChangeNotifier implements PriceProvider {
+  @override
+  String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '₩ 0';
+}
+
+class FakeArkConnectivity extends Fake with ChangeNotifier implements ConnectivityProvider {
+  @override
+  bool get isInternetOn => true;
+}
+
+/// 아크 지갑 홈의 법정화폐 환산에 필요한 provider
+List<SingleChildWidget> fakeArkPriceProviders() => [
+  ChangeNotifierProvider<PriceProvider>.value(value: FakeArkPrice()),
+  ChangeNotifierProvider<ConnectivityProvider>.value(value: FakeArkConnectivity()),
+];

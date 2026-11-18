@@ -17,7 +17,16 @@ import 'package:flutter/cupertino.dart';
 /// 4×2: 최근 24시간 거래 목록
 /// 4×2: 가장 최근 거래 세 건. 거래가 모자라면 남은 줄 자리를 비워 두고 안내 문구를 둔다.
 class RecentTransactionsView extends StatelessWidget {
-  static const rows = 3;
+  static const defaultRows = 3;
+
+  /// 보여 줄 줄 수. 높이는 부모가 정하고 줄은 그 높이를 나눠 씀
+  final int rows;
+
+  /// 상태 아이콘을 회색 한 가지로
+  final bool monochrome;
+
+  /// 줄마다 상태 아이콘 대신 쓸 아이콘, null이면 상태 아이콘
+  final String? Function(HomeRecentTransaction tx)? iconPathOf;
 
   final List<HomeRecentTransaction> transactions;
   final String Function(int sats) amountText;
@@ -44,7 +53,13 @@ class RecentTransactionsView extends StatelessWidget {
     this.emptyMessage,
     this.highlightedTxHash,
     this.highlightAnimation,
+    this.rows = defaultRows,
+    this.monochrome = false,
+    this.iconPathOf,
   });
+
+  /// [rows]줄을 줄 높이 [rowHeight]로 그릴 때의 전체 높이
+  static double heightFor(int rows, {double rowHeight = 66}) => 16 + rows * rowHeight + (rows - 1);
 
   Widget _highlightRow(BuildContext context, HomeRecentTransaction tx, Widget child) {
     final animation = highlightAnimation;
@@ -102,6 +117,8 @@ class RecentTransactionsView extends StatelessWidget {
                     amountText: amountText,
                     now: now,
                     showWalletName: showWalletName,
+                    monochrome: monochrome,
+                    iconPath: iconPathOf?.call(tx),
                     height: 64,
                     onTap:
                         onTransactionSelected != null
@@ -139,6 +156,8 @@ class RecentTransactionsView extends StatelessWidget {
                     amountText: amountText,
                     now: now,
                     showWalletName: showWalletName,
+                    monochrome: monochrome,
+                    iconPath: iconPathOf?.call(tx),
                     height: rowHeight,
                     onTap:
                         onTransactionSelected != null
@@ -177,6 +196,8 @@ class _TransactionRow extends StatelessWidget {
   final DateTime now;
   final double height;
   final bool showWalletName;
+  final bool monochrome;
+  final String? iconPath;
   final VoidCallback? onTap;
 
   const _TransactionRow({
@@ -186,6 +207,8 @@ class _TransactionRow extends StatelessWidget {
     required this.now,
     required this.height,
     this.showWalletName = true,
+    this.monochrome = false,
+    this.iconPath,
     this.onTap,
   });
 
@@ -231,18 +254,23 @@ class _TransactionRow extends StatelessWidget {
         child: Row(
           children: [
             TransactionStatusGradientMask(
-              enabled: status == TransactionStatus.self || status == TransactionStatus.selfsending,
+              enabled: !monochrome && (status == TransactionStatus.self || status == TransactionStatus.selfsending),
               child: SvgPicture.asset(
-                TransactionUtil.getStatusIconAsset(status),
+                iconPath ?? TransactionUtil.getStatusIconAsset(status),
                 key: ValueKey('recent-transactions-icon-${status.name}'),
                 fit: BoxFit.fill,
                 width: 30,
                 height: 30,
-                colorFilter: ColorFilter.mode(switch (status) {
-                  TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
-                  TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
-                  _ => colors.iconPrimary,
-                }, BlendMode.srcIn),
+                colorFilter: ColorFilter.mode(
+                  monochrome
+                      ? colors.secondaryText
+                      : switch (status) {
+                        TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
+                        TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
+                        _ => colors.iconPrimary,
+                      },
+                  BlendMode.srcIn,
+                ),
               ),
             ),
             const SizedBox(width: 8),

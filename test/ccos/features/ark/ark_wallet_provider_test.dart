@@ -2,8 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
@@ -37,6 +40,55 @@ class _Secrets extends Fake implements HotWalletSecretRepository {
 }
 
 class _Backend implements ArkWalletBackend {
+  List<ArkMovement> movements = [];
+  String address = 'tark1fakeaddress';
+  int sendFee = 0;
+  Object? sendError;
+  int syncCount = 0;
+  final List<(ArkPaymentRail, String, int)> sent = [];
+  final List<int> invoiceAmounts = [];
+
+  @override
+  Future<void> sync(String fingerprint) async => syncCount++;
+
+  @override
+  Future<List<ArkMovement>> history(String fingerprint) async => movements;
+
+  int addressCalls = 0;
+
+  @override
+  Future<String> newArkAddress(String fingerprint) async {
+    addressCalls++;
+    return address;
+  }
+
+  @override
+  Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description}) async {
+    invoiceAmounts.add(amountSats);
+    return ArkLightningInvoice(
+      invoice: 'lnbcrt${amountSats}n1fake',
+      paymentHash: 'hash-$amountSats',
+      amountSats: amountSats,
+      feeSats: 0,
+    );
+  }
+
+  @override
+  Future<int> estimateSendFee(String fingerprint, ArkPaymentRail rail, int amountSats) async => sendFee;
+
+  @override
+  Future<int?> send(
+    String fingerprint,
+    ArkPaymentRail rail,
+    String destination,
+    int amountSats, {
+    bool invoiceHasAmount = false,
+  }) async {
+    if (sendError != null) throw ArkPaymentException(sendError!);
+    sent.add((rail, destination, amountSats));
+    return 99;
+  }
+
   final Set<String> wallets = {};
   final Set<String> opened = {};
   final List<String> openedWith = [];
@@ -82,6 +134,7 @@ class _Backend implements ArkWalletBackend {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late SharedPrefsRepository prefs;
   late _Secrets secrets;
   late _Backend backend;
@@ -240,5 +293,104 @@ void main() {
 
     expect(provider.state, ArkWalletState.failed);
     expect(provider.isBalanceKnown, isFalse);
+  });
+
+  ArkMovement movement(
+    int id, {
+    String subsystem = 'bark.arkoor',
+    String kind = 'receive',
+    String status = 'successful',
+    int sats = 1000,
+    String? hash,
+  }) => ArkMovement.fromBark(
+    bark.Movement(
+      id: id,
+      status: status,
+      subsystemName: subsystem,
+      subsystemKind: kind,
+      metadataJson: '{}',
+      intendedBalanceSats: sats,
+      effectiveBalanceSats: sats,
+      offchainFeeSats: 0,
+      sentToAddresses: const [],
+      receivedOnAddresses: const [],
+      inputVtxoIds: const [],
+      outputVtxoIds: const [],
+      exitedVtxoIds: const [],
+      createdAt: '2026-11-18T10:00:0${id % 10}Z',
+      updatedAt: '2026-11-18T10:00:00Z',
+      paymentHash: hash,
+    ),
+  );
+
+  group('activity', () {
+    test('an open wallet syncs its history newest first and hides empty failures', () async {
+      backend.movements = [movement(1), movement(2, status: 'failed', sats: 0), movement(3)];
+      final provider = create();
+      await provider.createNew();
+
+      await provider.syncNow();
+
+      expect(backend.syncCount, greaterThan(0));
+      expect(provider.movements.map((m) => m.id), [3, 1]);
+      expect(provider.arkAddress, backend.address);
+    });
+
+    test('showing an invoice syncs fast until it is paid or closed', () async {
+      final provider = create();
+      await provider.createNew();
+      expect(provider.syncInterval, const Duration(seconds: 30));
+
+      final invoice = await provider.createInvoice(1000);
+      expect(provider.syncInterval, const Duration(seconds: 3));
+      expect(provider.isInvoicePaid(invoice.paymentHash), isFalse);
+
+      backend.movements = [movement(5, subsystem: 'bark.lightning_receive', hash: invoice.paymentHash)];
+      await provider.syncNow();
+      expect(provider.isInvoicePaid(invoice.paymentHash), isTrue);
+
+      provider.stopAwaitingInvoice();
+      expect(provider.syncInterval, const Duration(seconds: 30));
+    });
+
+    test('a send reports the state bark recorded', () async {
+      final provider = create();
+      await provider.createNew();
+      backend.movements = [movement(99, kind: 'send', sats: -500)];
+
+      final sent = await provider.send(ArkPaymentRail.ark, 'tark1to', 500);
+      expect(sent.outcome, ArkSendOutcome.sent);
+      expect(backend.sent.single, (ArkPaymentRail.ark, 'tark1to', 500));
+
+      backend.movements = [movement(99, subsystem: 'bark.lightning_send', kind: 'send', status: 'pending', sats: -500)];
+      expect((await provider.send(ArkPaymentRail.lightningInvoice, 'lnbcrt1', 500)).outcome, ArkSendOutcome.pending);
+
+      backend.sendError = StateError('refused');
+      expect((await provider.send(ArkPaymentRail.ark, 'tark1to', 500)).outcome, ArkSendOutcome.failed);
+    });
+
+    test('wiping stops syncing', () async {
+      final provider = create();
+      await provider.createNew();
+
+      await provider.wipe();
+
+      expect(provider.isSyncing, isFalse);
+      expect(provider.movements, isEmpty);
+    });
+  });
+
+  test('the receive address is taken only after the first sync with the server', () async {
+    final provider = create();
+    await provider.createNew();
+
+    expect(provider.arkAddress, isNull);
+    expect(backend.addressCalls, 0);
+
+    await provider.syncNow();
+    expect(provider.arkAddress, backend.address);
+
+    await provider.syncNow();
+    expect(backend.addressCalls, 1);
   });
 }

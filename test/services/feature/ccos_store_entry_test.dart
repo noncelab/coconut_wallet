@@ -26,6 +26,7 @@ Future<BuildContext> _pump(WidgetTester tester, FakeStorePreferences preferences
         ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
         ChangeNotifierProvider<CcosFeatureStatusRegistry>.value(value: storeStatusRegistry(preferences)),
         ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
+        ...fakeArkPriceProviders(),
       ],
       child: MaterialApp(
         theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),

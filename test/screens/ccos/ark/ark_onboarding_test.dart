@@ -25,6 +25,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<PreferenceProvider>.value(value: FakeStorePreferences()),
           if (wallet != null) ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
+          ...fakeArkPriceProviders(),
         ],
         child: MaterialApp(theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark), home: home),
       ),

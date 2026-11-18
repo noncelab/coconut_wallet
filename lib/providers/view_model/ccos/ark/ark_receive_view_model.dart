@@ -1,0 +1,112 @@
+import 'dart:async';
+
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
+import 'package:coconut_wallet/utils/logger.dart';
+import 'package:flutter/foundation.dart';
+
+/// 받는 방법. 결제 요청은 아크 주소와 라이트닝 인보이스를 함께 담은 BIP321
+enum ArkReceiveFormat { paymentRequest, lightningInvoice, arkAddress }
+
+class ArkReceiveViewModel extends ChangeNotifier {
+  ArkReceiveViewModel(this._wallet) {
+    _wallet.addListener(_onWalletChanged);
+  }
+
+  final ArkWalletProvider _wallet;
+  final StreamController<int> _received = StreamController.broadcast();
+
+  int? _amountSats;
+  ArkLightningInvoice? _invoice;
+  ArkReceiveFormat _format = ArkReceiveFormat.arkAddress;
+  bool _isCreatingInvoice = false;
+  bool _invoiceFailed = false;
+
+  int? get amountSats => _amountSats;
+  ArkLightningInvoice? get invoice => _invoice;
+  ArkReceiveFormat get format => _format;
+  bool get isCreatingInvoice => _isCreatingInvoice;
+  bool get invoiceFailed => _invoiceFailed;
+  String? get arkAddress => _wallet.arkAddress;
+
+  /// 라이트닝으로 받은 금액
+  Stream<int> get received => _received.stream;
+
+  List<ArkReceiveFormat> get availableFormats =>
+      _invoice == null ? const [ArkReceiveFormat.arkAddress] : ArkReceiveFormat.values;
+
+  String? valueOf(ArkReceiveFormat format) {
+    final address = arkAddress;
+    final invoice = _invoice;
+    return switch (format) {
+      ArkReceiveFormat.arkAddress => address,
+      ArkReceiveFormat.lightningInvoice => invoice == null ? null : 'lightning:${invoice.invoice}'.toUpperCase(),
+      ArkReceiveFormat.paymentRequest =>
+        invoice == null || address == null
+            ? null
+            : 'bitcoin:?ark=$address&lightning=${invoice.invoice}&amount=${_btc(invoice.amountSats)}',
+    };
+  }
+
+  String? get qrData => valueOf(_format);
+
+  void select(ArkReceiveFormat format) {
+    if (!availableFormats.contains(format)) return;
+    _format = format;
+    notifyListeners();
+  }
+
+  Future<void> setAmount(int? amountSats) async {
+    if (amountSats == null || amountSats <= 0) {
+      _clearInvoice();
+      notifyListeners();
+      return;
+    }
+    _amountSats = amountSats;
+    _isCreatingInvoice = true;
+    _invoiceFailed = false;
+    notifyListeners();
+    try {
+      _invoice = await _wallet.createInvoice(amountSats);
+      _format = ArkReceiveFormat.paymentRequest;
+    } catch (error) {
+      Logger.error('ArkReceiveViewModel: invoice failed: $error');
+      _invoice = null;
+      _invoiceFailed = true;
+      _format = ArkReceiveFormat.arkAddress;
+    } finally {
+      _isCreatingInvoice = false;
+      notifyListeners();
+    }
+  }
+
+  void _onWalletChanged() {
+    final invoice = _invoice;
+    if (invoice == null || !_wallet.isInvoicePaid(invoice.paymentHash)) return;
+    _received.add(invoice.amountSats);
+    _clearInvoice();
+    notifyListeners();
+  }
+
+  void _clearInvoice() {
+    _amountSats = null;
+    _invoice = null;
+    _invoiceFailed = false;
+    _format = ArkReceiveFormat.arkAddress;
+    _wallet.stopAwaitingInvoice();
+  }
+
+  static String _btc(int sats) {
+    final whole = sats ~/ 100000000;
+    final fraction = (sats % 100000000).toString().padLeft(8, '0').replaceFirst(RegExp(r'0+$'), '');
+    return fraction.isEmpty ? '$whole' : '$whole.$fraction';
+  }
+
+  @override
+  void dispose() {
+    _wallet.removeListener(_onWalletChanged);
+    _wallet.stopAwaitingInvoice();
+    _received.close();
+    super.dispose();
+  }
+}

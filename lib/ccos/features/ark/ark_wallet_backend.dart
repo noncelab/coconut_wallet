@@ -1,6 +1,38 @@
 import 'dart:typed_data';
 
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
+
+/// 라이트닝으로 받을 BOLT11 인보이스
+class ArkLightningInvoice {
+  const ArkLightningInvoice({
+    required this.invoice,
+    required this.paymentHash,
+    required this.amountSats,
+    required this.feeSats,
+  });
+
+  final String invoice;
+  final String paymentHash;
+  final int amountSats;
+
+  /// 받을 때 아크 서버가 [amountSats]에서 떼는 수수료
+  final int feeSats;
+
+  int get netAmountSats => amountSats - feeSats;
+}
+
+/// 보내기 실패. bark가 그 사이에 거래를 남겼으면 [movementId]
+class ArkPaymentException implements Exception {
+  ArkPaymentException(this.cause, {this.movementId});
+
+  final Object cause;
+  final int? movementId;
+
+  @override
+  String toString() => 'ArkPaymentException($cause, movement $movementId)';
+}
 
 abstract interface class ArkWalletBackend {
   Future<String> fingerprintOf(Uint8List mnemonic);
@@ -11,4 +43,20 @@ abstract interface class ArkWalletBackend {
   Future<bool> isRecoveryPending(String fingerprint);
   Future<List<String>> listFingerprints();
   Future<void> wipeAll();
+
+  /// 우편함·라운드·라이트닝 받기 수령까지 맞춤
+  Future<void> sync(String fingerprint);
+  Future<List<ArkMovement>> history(String fingerprint);
+  Future<String> newArkAddress(String fingerprint);
+  Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description});
+  Future<int> estimateSendFee(String fingerprint, ArkPaymentRail rail, int amountSats);
+
+  /// 만든 거래 id를 돌려줌. 실패하면 [ArkPaymentException]
+  Future<int?> send(
+    String fingerprint,
+    ArkPaymentRail rail,
+    String destination,
+    int amountSats, {
+    bool invoiceHasAmount,
+  });
 }

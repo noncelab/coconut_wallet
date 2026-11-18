@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
+import 'package:coconut_design_system/coconut_design_system.dart' show CoconutButton;
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -25,6 +28,26 @@ class _Auth extends Fake implements AuthProvider {
   bool get isAuthEnabled => false;
 }
 
+ArkMovement _movement(int id, {int sats = 1000}) => ArkMovement.fromBark(
+  bark.Movement(
+    id: id,
+    status: 'successful',
+    subsystemName: 'bark.arkoor',
+    subsystemKind: sats < 0 ? 'send' : 'receive',
+    metadataJson: '{}',
+    intendedBalanceSats: sats,
+    effectiveBalanceSats: sats,
+    offchainFeeSats: 0,
+    sentToAddresses: const [],
+    receivedOnAddresses: const [],
+    inputVtxoIds: const [],
+    outputVtxoIds: const [],
+    exitedVtxoIds: const [],
+    createdAt: '2026-11-1${id % 9}T10:00:00Z',
+    updatedAt: '2026-11-18T10:00:00Z',
+  ),
+);
+
 class _Authenticator implements HotWalletAuthenticator {
   _Authenticator(this.result);
 
@@ -37,9 +60,10 @@ class _Authenticator implements HotWalletAuthenticator {
 void main() {
   setUp(() => LocaleSettings.setLocaleSync(AppLocale.ko));
 
-  Future<ArkWalletProvider> walletWith({required bool restored, int sats = 0}) async {
+  Future<ArkWalletProvider> walletWith({required bool restored, int sats = 0, int movements = 0}) async {
     final backend =
         FakeArkBackend()
+          ..movements = [for (var i = 1; i <= movements; i++) _movement(i)]
           ..currentBalance = ArkBalance(
             spendable: sats,
             pendingInRound: 0,
@@ -55,8 +79,8 @@ void main() {
     return wallet;
   }
 
-  Future<void> pump(WidgetTester tester, ArkWalletProvider wallet) async {
-    tester.view.physicalSize = const Size(430, 932);
+  Future<void> pump(WidgetTester tester, ArkWalletProvider wallet, {Size size = const Size(430, 932)}) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
@@ -65,6 +89,7 @@ void main() {
           ChangeNotifierProvider<PreferenceProvider>.value(value: FakeStorePreferences()),
           ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
           InheritedProvider<AuthProvider>.value(value: _Auth()),
+          ...fakeArkPriceProviders(),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
@@ -74,6 +99,48 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('receive and send sit side by side and send needs a balance', (tester) async {
+    await pump(tester, await walletWith(restored: true));
+
+    expect(find.byKey(const Key('ark-wallet-receive')), findsOneWidget);
+    expect(tester.widget<CoconutButton>(find.byKey(const Key('ark-wallet-send'))).isActive, isFalse);
+  });
+
+  testWidgets('with a balance send is active', (tester) async {
+    await pump(tester, await walletWith(restored: true, sats: 1000));
+
+    expect(tester.widget<CoconutButton>(find.byKey(const Key('ark-wallet-send'))).isActive, isTrue);
+  });
+
+  testWidgets('recent activity fills a tall screen with five rows', (tester) async {
+    await pump(tester, await walletWith(restored: true, movements: 6), size: const Size(402, 874));
+
+    expect(find.byKey(const ValueKey('recent-transactions-row-4')), findsOneWidget);
+    expect(find.byKey(const ValueKey('recent-transactions-row-5')), findsNothing);
+    expect(find.text(t.view_more), findsOneWidget);
+  });
+
+  testWidgets('recent activity shows only the transactions there are, without placeholders', (tester) async {
+    await pump(tester, await walletWith(restored: true, movements: 2), size: const Size(402, 874));
+
+    expect(find.byKey(const ValueKey('recent-transactions-row-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('recent-transactions-row-2')), findsNothing);
+    expect(find.byKey(const Key('recent-transactions-waiting')), findsNothing);
+  });
+
+  testWidgets('without transactions it says there are none yet', (tester) async {
+    await pump(tester, await walletWith(restored: true));
+
+    expect(find.text(t.ark_wallet.no_activity), findsOneWidget);
+  });
+
+  testWidgets('recent activity keeps three rows on a short screen', (tester) async {
+    await pump(tester, await walletWith(restored: true, movements: 6), size: const Size(375, 560));
+
+    expect(find.byKey(const ValueKey('recent-transactions-row-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('recent-transactions-row-3')), findsNothing);
+  });
 
   testWidgets('a new wallet shows the backup prompt', (tester) async {
     await pump(tester, await walletWith(restored: false));

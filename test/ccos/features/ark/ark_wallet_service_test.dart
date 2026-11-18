@@ -5,6 +5,7 @@ import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,5 +37,16 @@ void main() {
   test('without a server address the server counts as reachable', () async {
     expect(ArkServerConfig.serverUrl, isEmpty);
     expect(await ArkWalletService.canReachServer(), isTrue);
+  });
+
+  test('the movement a payment created is the newest id not seen before', () {
+    expect(newestCreatedMovementId({1, 2, 3}, [1, 2, 3, 5, 4]), 5);
+    expect(newestCreatedMovementId({1, 2}, [1, 2]), isNull);
+  });
+
+  test('a receive invoice nets the server fee', () {
+    const invoice = ArkLightningInvoice(invoice: 'lnbcrt1', paymentHash: 'h', amountSats: 1000, feeSats: 30);
+
+    expect(invoice.netAmountSats, 970);
   });
 }

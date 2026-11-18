@@ -56,6 +56,7 @@ import 'package:coconut_wallet/services/home/home_widget_math.dart';
 import 'package:coconut_wallet/widgets/wallet_balance_history_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/widgets/common/text/section_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -700,59 +701,8 @@ class _WalletCardDetailScreenState extends State<WalletCardDetailScreen> with Si
     VoidCallback? onMore,
     bool moreEnabled = true,
   }) => _onBackground(
-    Builder(
-      builder:
-          (context) => _buildSectionHeader(context, key: key, title: title, onMore: onMore, moreEnabled: moreEnabled),
-    ),
+    Builder(builder: (context) => SectionHeader(key: key, title: title, onMore: onMore, moreEnabled: moreEnabled)),
   );
-
-  Widget _buildSectionHeader(
-    BuildContext context, {
-    Key? key,
-    required String title,
-    VoidCallback? onMore,
-    required bool moreEnabled,
-  }) {
-    final colors = context.coconutColors;
-    final moreColor = moreEnabled ? colors.primaryText : colors.mutedText;
-    return Padding(
-      key: key,
-      padding: const EdgeInsets.fromLTRB(4, 0, 0, 6),
-      child: Row(
-        children: [
-          Expanded(child: Text(title, style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText))),
-          if (onMore != null)
-            Semantics(
-              button: true,
-              enabled: moreEnabled,
-              child: Transform.translate(
-                offset: const Offset(8, 0),
-                child: InkWell(
-                  key: key == null ? null : ValueKey(('more', key)),
-                  onTap: moreEnabled ? onMore : null,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Row(
-                      children: [
-                        Text(t.view_more, style: CoconutTypography.body2_14.setColor(moreColor)),
-                        const SizedBox(width: 6),
-                        SvgPicture.asset(
-                          CommonNavigationIconPath.arrowRight,
-                          width: 7,
-                          height: 12,
-                          colorFilter: ColorFilter.mode(moreColor, BlendMode.srcIn),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildMoveToVault(BuildContext context) {
     final colors = context.coconutColors;
