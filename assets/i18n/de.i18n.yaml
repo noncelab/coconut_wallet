@@ -1265,7 +1265,7 @@ wallet_detail_screen:
   vault_sync_required_description: "Transaktionsverlauf und Empfangsadresse konnten noch nicht geprüft werden. Prüfe die Verbindung und den Synchronisierungsstatus und wähle den Tresor nach Abschluss erneut aus."
   vault_select_receiving_wallet: "Empfangstresor auswählen"
   vault_connect_watch_only_wallet: "Wallet zur Tresorüberwachung verbinden"
-  vault_watch_only_description: "Registrieren Sie eine „Wallet zur Tresorüberwachung (nur zum Beobachten)“ in der App. So können Sie Ihre Bitcoin sicher in Echtzeit überprüfen, ohne Ihr dediziertes Gerät jedes Mal einzuschalten."
+  vault_watch_only_description: "Fügen Sie eine Watch-only-Wallet hinzu.\nIn der App können Sie das Bitcoin-Guthaben Ihres Tresors prüfen, ohne Ihre Schlüssel offenzulegen."
   vault_watch_only_title: "Lassen Sie Ihr Gerät offline und prüfen Sie Ihr Vermögen bequem in der App!"
   vault_no_balance_title: "Sie haben derzeit keine Bitcoin zum Senden"
   vault_no_balance_description: "Bitte versuchen Sie es erneut, nachdem Sie Bitcoin erhalten haben"

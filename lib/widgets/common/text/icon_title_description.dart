@@ -1,5 +1,6 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -8,6 +9,7 @@ class IconTitleDescription extends StatelessWidget {
   final String title;
   final String description;
   final Color? iconColor;
+  final bool keepDescriptionWordsTogether;
 
   const IconTitleDescription({
     super.key,
@@ -15,6 +17,7 @@ class IconTitleDescription extends StatelessWidget {
     required this.title,
     required this.description,
     this.iconColor,
+    this.keepDescriptionWordsTogether = false,
   });
 
   @override
@@ -31,6 +34,7 @@ class IconTitleDescription extends StatelessWidget {
     )..layout();
     final firstLineHeight = titlePainter.preferredLineHeight;
     titlePainter.dispose();
+    final descriptionSpan = TextSpan(text: description);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,8 +60,8 @@ class IconTitleDescription extends StatelessWidget {
           ],
         ),
         CoconutLayout.spacing_200h,
-        Text(
-          description,
+        Text.rich(
+          keepDescriptionWordsTogether ? TextUtils.preventLineBreakInsideWordsInSpan(descriptionSpan) : descriptionSpan,
           style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText).copyWith(height: 1.5),
         ),
       ],

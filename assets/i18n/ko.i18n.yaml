@@ -1330,7 +1330,7 @@ wallet_detail_screen:
   vault_sync_required_description: "아직 금고의 거래 내역과 수신 주소를 확인할 수 없어요. 네트워크 연결과 동기화 상태를 확인하고, 동기화가 완료된 후 다시 선택해 주세요."
   vault_select_receiving_wallet: "받을 금고 선택"
   vault_connect_watch_only_wallet: "금고 확인용 지갑 연결하기"
-  vault_watch_only_description: "앱에 ‘금고 확인용(보기 전용) 지갑’을 등록해 보세요. 전용 기기를 매번 켜지 않아도, 비트코인이 잘 있는지 앱에서 실시간으로 안전하게 볼 수 있습니다."
+  vault_watch_only_description: "‘보기 전용 지갑’을 등록해 보세요.\n키를 노출하지 않고도 앱에서 금고 속 비트코인 잔액을 확인할 수 있어요."
   vault_watch_only_title: "기기는 오프라인에 두고, 자산은 앱에서 편하게 확인하세요!"
   vault_no_balance_title: "지금은 보낼 수 있는 비트코인이 없어요"
   vault_no_balance_description: "비트코인을 받은 뒤 다시 이용해 주세요"

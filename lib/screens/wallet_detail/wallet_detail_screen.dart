@@ -227,11 +227,7 @@ class _WalletDetailScreenState extends State<WalletDetailScreen> with TickerProv
             listenable: _viewModel,
             builder:
                 (context, _) => WalletSettingsBackupBadge(
-                  visible:
-                      _viewModel.getSecurityWarningType(
-                        isAppLockEnabled: context.watch<AuthProvider>().isAuthEnabled,
-                      ) ==
-                      WalletDetailSecurityWarningType.unbackedHotWallet,
+                  visible: _viewModel.shouldShowBackupBadge,
                   child: SvgPicture.asset(
                     FeatureSettingsIconPath.settings,
                     width: 24,
