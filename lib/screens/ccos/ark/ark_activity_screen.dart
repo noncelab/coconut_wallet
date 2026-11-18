@@ -4,7 +4,6 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_activity_groups.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_movement_detail_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_movement_labels.dart';
@@ -36,7 +35,7 @@ class ArkActivityScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final wallet = context.watch<ArkWalletProvider>();
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final now = DateTime.now();
     final groups = groupArkMovements(wallet.movements, now);
     return Scaffold(
@@ -76,6 +75,7 @@ class ArkActivityScreen extends StatelessWidget {
                 showAllTransactions: true,
                 monochrome: true,
                 iconPathOf: (tx) => arkMovementIconPath(group.movements, tx),
+                timeDetailOf: (tx) => arkMovementTimeDetail(group.movements, tx),
                 onTransactionSelected: (tx) {
                   final movement = group.movements.where((movement) => '${movement.id}' == tx.txHash).firstOrNull;
                   if (movement != null) ArkMovementDetailScreen.open(context, movement);

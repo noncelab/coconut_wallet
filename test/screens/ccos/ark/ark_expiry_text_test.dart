@@ -12,4 +12,10 @@ void main() {
     expect(arkExpiryText(60), '약 10시간 뒤');
     expect(arkExpiryText(4320), '약 30일 뒤');
   });
+
+  test('a span of blocks reads as rough days or hours', () {
+    expect(arkDurationText(4320), '약 30일');
+    expect(arkDurationText(60), '약 10시간');
+    expect(arkDurationText(3), '1시간 미만');
+  });
 }

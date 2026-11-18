@@ -4,11 +4,11 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_receive_view_model.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_box_text.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
@@ -62,7 +62,7 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
   Future<void> _enterAmount(ArkReceiveViewModel viewModel) async {
     final result = await Bip21AmountBottomSheet.show(
       context: context,
-      currentUnit: context.read<PreferenceProvider>().currentUnit,
+      currentUnit: context.read<ArkWalletProvider>().unit,
       initialAmountSats: viewModel.amountSats,
       screenName: AnalyticsScreenNames.ccosArkWalletReceiveAmount,
     );
@@ -252,9 +252,13 @@ class _WayRow extends StatelessWidget {
                     if (value == null)
                       Text(emptyText, style: CoconutTypography.body3_12.setColor(colors.secondaryText))
                     else
-                      CopyTextContainer(
-                        text: value,
-                        textStyle: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
+                      DefaultTextHeightBehavior(
+                        textHeightBehavior: arkBoxTextHeight,
+                        child: CopyTextContainer(
+                          text: value,
+                          padding: const EdgeInsets.all(16),
+                          textStyle: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
+                        ),
                       ),
                   ],
                 ),

@@ -5,7 +5,6 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_send_view_model.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/ccos/ark/ark_info_row.dart';
@@ -34,7 +33,7 @@ class ArkSendResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final viewModel = context.watch<ArkSendViewModel>();
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final amount = viewModel.amountSats ?? 0;
     final fee = viewModel.fee ?? 0;
     final isArk = viewModel.rail == ArkPaymentRail.ark;

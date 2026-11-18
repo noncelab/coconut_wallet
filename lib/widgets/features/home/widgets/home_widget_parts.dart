@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutTypography;
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_settings.dart';
@@ -115,8 +116,18 @@ const kHomeWidgetHeaderHeight = 20.0;
 class HomePressableRow extends StatefulWidget {
   final VoidCallback onTap;
   final Widget child;
+  final double borderRadius;
 
-  const HomePressableRow({super.key, required this.onTap, required this.child});
+  /// 바탕이 칠해진 자식(칸, 카드)은 눌림 색을 자식 위에 깐다
+  final bool overlayInFront;
+
+  const HomePressableRow({
+    super.key,
+    required this.onTap,
+    required this.child,
+    this.borderRadius = 12,
+    this.overlayInFront = false,
+  });
 
   @override
   State<HomePressableRow> createState() => _HomePressableRowState();
@@ -148,18 +159,21 @@ class _HomePressableRowState extends State<HomePressableRow> {
         duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
         child: AnimatedContainer(
           duration: _snapBack ? Duration.zero : const Duration(milliseconds: 100),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color:
-                _pressed
-                    ? colors.homeSurfacePressOverlay.withValues(alpha: colors.homeSurfacePressOverlayOpacity)
-                    : colors.homeSurfacePressOverlay.withValues(alpha: 0),
-          ),
+          foregroundDecoration: widget.overlayInFront ? _overlay(colors) : null,
+          decoration: widget.overlayInFront ? null : _overlay(colors),
           child: widget.child,
         ),
       ),
     );
   }
+
+  BoxDecoration _overlay(CoconutColors colors) => BoxDecoration(
+    borderRadius: BorderRadius.circular(widget.borderRadius),
+    color:
+        _pressed
+            ? colors.homeSurfacePressOverlay.withValues(alpha: colors.homeSurfacePressOverlayOpacity)
+            : colors.homeSurfacePressOverlay.withValues(alpha: 0),
+  );
 }
 
 class HomeWidgetHeader extends StatelessWidget {

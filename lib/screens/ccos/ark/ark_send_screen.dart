@@ -7,7 +7,6 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_send_view_model.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_send_confirm_screen.dart';
 import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
@@ -92,7 +91,7 @@ class _ArkSendViewState extends State<_ArkSendView> {
   Future<void> _enterAmount(ArkSendViewModel viewModel) async {
     final result = await Bip21AmountBottomSheet.show(
       context: context,
-      currentUnit: context.read<PreferenceProvider>().currentUnit,
+      currentUnit: context.read<ArkWalletProvider>().unit,
       initialAmountSats: viewModel.amountSats,
       screenName: AnalyticsScreenNames.ccosArkWalletSendAmount,
     );
@@ -115,7 +114,7 @@ class _ArkSendViewState extends State<_ArkSendView> {
     final colors = context.coconutColors;
     final viewModel = context.watch<ArkSendViewModel>();
     final wallet = context.watch<ArkWalletProvider>();
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final problem = _problemText(viewModel.problem);
     final rail = viewModel.rail;
     final amount = viewModel.amountSats;

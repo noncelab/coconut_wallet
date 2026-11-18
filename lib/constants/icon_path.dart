@@ -171,15 +171,23 @@ abstract final class FeatureTransactionIconPath {
   static const String txSelf = 'assets/svg/features/transaction/tx-self.svg';
   static const String txSelfSending = 'assets/svg/features/transaction/tx-self-sending.svg';
   static const String txSending = 'assets/svg/features/transaction/tx-sending.svg';
-  static const String txLightningReceived = 'assets/svg/features/transaction/tx-lightning-received.svg';
-  static const String txLightningReceiving = 'assets/svg/features/transaction/tx-lightning-receiving.svg';
-  static const String txLightningSent = 'assets/svg/features/transaction/tx-lightning-sent.svg';
-  static const String txLightningSending = 'assets/svg/features/transaction/tx-lightning-sending.svg';
   static const String txSent = 'assets/svg/features/transaction/tx-sent.svg';
 }
 
 abstract final class FeatureArkIconPath {
   static const String boat = 'assets/svg/features/ark/boat.svg';
+  static const String receive = 'assets/svg/features/ark/receive.svg';
+  static const String send = 'assets/svg/features/ark/send.svg';
+
+  /// 아크 거래 줄 상태 아이콘. 코코넛 상태 아이콘과 같은 모양이고 원 채움 진하기만 상태끼리 같음
+  static const String txReceived = 'assets/svg/features/ark/tx-received.svg';
+  static const String txReceiving = 'assets/svg/features/ark/tx-receiving.svg';
+  static const String txSent = 'assets/svg/features/ark/tx-sent.svg';
+  static const String txSending = 'assets/svg/features/ark/tx-sending.svg';
+  static const String txLightningReceived = 'assets/svg/features/ark/tx-lightning-received.svg';
+  static const String txLightningReceiving = 'assets/svg/features/ark/tx-lightning-receiving.svg';
+  static const String txLightningSent = 'assets/svg/features/ark/tx-lightning-sent.svg';
+  static const String txLightningSending = 'assets/svg/features/ark/tx-lightning-sending.svg';
 }
 
 abstract final class FeatureUtxoIconPath {

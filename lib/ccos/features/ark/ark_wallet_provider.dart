@@ -9,6 +9,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_vtxo.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -51,7 +52,8 @@ class ArkWalletProvider extends ChangeNotifier {
        _autoSync = autoSync,
        _backend = backend,
        _generateMnemonic = generateMnemonic ?? _generateMnemonicInIsolate,
-       _info = store.read();
+       _info = store.read(),
+       _unit = store.readUnit();
 
   final ArkWalletStore _store;
   final ArkWalletBackend _backend;
@@ -63,6 +65,7 @@ class ArkWalletProvider extends ChangeNotifier {
   int? _remindedExpiry;
 
   ArkWalletInfo? _info;
+  BitcoinUnit _unit;
   ArkWalletState _state = ArkWalletState.none;
   ArkCreateStep? _step;
   ArkBalance _balance = ArkBalance.zero;
@@ -88,6 +91,16 @@ class ArkWalletProvider extends ChangeNotifier {
   static const renewWindowBlocks = 144;
 
   ArkWalletInfo? get info => _info;
+
+  /// 아크 지갑 화면의 금액 단위. 잔액을 누르면 sats와 ₿ 사이를 오감
+  BitcoinUnit get unit => _unit;
+
+  Future<void> toggleUnit() async {
+    _unit = _unit == BitcoinUnit.sats ? BitcoinUnit.bip177 : BitcoinUnit.sats;
+    notifyListeners();
+    await _store.setUnit(_unit);
+  }
+
   bool get hasWallet => _info != null;
   ArkWalletState get state => _state;
   ArkCreateStep? get step => _step;
@@ -106,7 +119,6 @@ class ArkWalletProvider extends ChangeNotifier {
   /// 만료가 이른 순
   List<ArkVtxo> get vtxos => _vtxos;
   int? get tipHeight => _tipHeight;
-  bool get autoRenew => _info?.autoRenew ?? true;
   bool isRenewing(String vtxoId) => _renewingIds.contains(vtxoId);
 
   /// 하루 안에 만료되는데 아직 갱신되지 않은 VTXO. 이미 만료된 것도 넣음(서버가 받아 주면 갱신으로 되찾음)
@@ -224,7 +236,7 @@ class ArkWalletProvider extends ChangeNotifier {
     final info = _info;
     if (info == null || !_backend.isOpen(info.fingerprint)) return;
     try {
-      await _backend.sync(info.fingerprint, autoRenew: info.autoRenew);
+      await _backend.sync(info.fingerprint);
       _balance = await _backend.balance(info.fingerprint);
       _isRecoveryPending = await _backend.isRecoveryPending(info.fingerprint);
       await _loadActivity(info.fingerprint, afterSync: true);
@@ -263,12 +275,6 @@ class ArkWalletProvider extends ChangeNotifier {
     await _reminder?.remindAt(
       earliest == 0 ? null : DateTime.now().add(const Duration(minutes: 10) * (earliest - tip - renewWindowBlocks)),
     );
-  }
-
-  Future<void> setAutoRenew(bool autoRenew) async {
-    await _store.setAutoRenew(autoRenew);
-    _info = _store.read();
-    notifyListeners();
   }
 
   Future<int> estimateRenewFee(List<String> vtxoIds) =>

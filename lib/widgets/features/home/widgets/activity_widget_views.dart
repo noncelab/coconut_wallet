@@ -28,6 +28,9 @@ class RecentTransactionsView extends StatelessWidget {
   /// 줄마다 상태 아이콘 대신 쓸 아이콘, null이면 상태 아이콘
   final String? Function(HomeRecentTransaction tx)? iconPathOf;
 
+  /// 줄마다 시각 옆에 붙일 말(예: 경로), null이면 시각만
+  final String? Function(HomeRecentTransaction tx)? timeDetailOf;
+
   final List<HomeRecentTransaction> transactions;
   final String Function(int sats) amountText;
   final DateTime now;
@@ -56,6 +59,7 @@ class RecentTransactionsView extends StatelessWidget {
     this.rows = defaultRows,
     this.monochrome = false,
     this.iconPathOf,
+    this.timeDetailOf,
   });
 
   /// [rows]줄을 줄 높이 [rowHeight]로 그릴 때의 전체 높이
@@ -119,6 +123,7 @@ class RecentTransactionsView extends StatelessWidget {
                     showWalletName: showWalletName,
                     monochrome: monochrome,
                     iconPath: iconPathOf?.call(tx),
+                    timeDetail: timeDetailOf?.call(tx),
                     height: 64,
                     onTap:
                         onTransactionSelected != null
@@ -158,6 +163,7 @@ class RecentTransactionsView extends StatelessWidget {
                     showWalletName: showWalletName,
                     monochrome: monochrome,
                     iconPath: iconPathOf?.call(tx),
+                    timeDetail: timeDetailOf?.call(tx),
                     height: rowHeight,
                     onTap:
                         onTransactionSelected != null
@@ -198,6 +204,7 @@ class _TransactionRow extends StatelessWidget {
   final bool showWalletName;
   final bool monochrome;
   final String? iconPath;
+  final String? timeDetail;
   final VoidCallback? onTap;
 
   const _TransactionRow({
@@ -209,6 +216,7 @@ class _TransactionRow extends StatelessWidget {
     this.showWalletName = true,
     this.monochrome = false,
     this.iconPath,
+    this.timeDetail,
     this.onTap,
   });
 
@@ -243,8 +251,9 @@ class _TransactionRow extends StatelessWidget {
         style: CoconutTypography.body2_14_NumberBold.copyWith(color: colors.primaryText, height: 1),
       ),
     );
+    final time = formatHomeDateTime(tx.time, now);
     final timeLabel = Text(
-      formatHomeDateTime(tx.time, now),
+      timeDetail == null ? time : '$time · $timeDetail',
       style: CoconutTypography.caption_10.copyWith(color: colors.tertiaryText, height: 1),
     );
     final row = SizedBox(
@@ -261,16 +270,14 @@ class _TransactionRow extends StatelessWidget {
                 fit: BoxFit.fill,
                 width: 30,
                 height: 30,
-                colorFilter: ColorFilter.mode(
-                  monochrome
-                      ? colors.secondaryText
-                      : switch (status) {
-                        TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
-                        TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
-                        _ => colors.iconPrimary,
-                      },
-                  BlendMode.srcIn,
-                ),
+                colorFilter:
+                    monochrome
+                        ? monochromeIconFilter(colors.secondaryText)
+                        : ColorFilter.mode(switch (status) {
+                          TransactionStatus.sent || TransactionStatus.sending => colors.sendingColor,
+                          TransactionStatus.received || TransactionStatus.receiving => colors.receivingColor,
+                          _ => colors.iconPrimary,
+                        }, BlendMode.srcIn),
               ),
             ),
             const SizedBox(width: 8),
@@ -837,4 +844,21 @@ class UtxoStatusView extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 모노크롬 아이콘에서 이만큼 아래의 불투명도를 깎아 반투명 원 채움을 카드 바탕에 가깝게. 테두리·그림은 그대로
+const _monochromeFillCut = 0.06;
+
+double monochromeIconAlpha(double alpha) =>
+    ((alpha - _monochromeFillCut) / (1 - _monochromeFillCut)).clamp(0, 1).toDouble();
+
+/// [color] 한 색으로 칠하면서 [monochromeIconAlpha]로 불투명도를 바꿈
+ColorFilter monochromeIconFilter(Color color) {
+  final scale = color.a / (1 - _monochromeFillCut);
+  return ColorFilter.matrix(<double>[
+    0, 0, 0, 0, color.r * 255, //
+    0, 0, 0, 0, color.g * 255,
+    0, 0, 0, 0, color.b * 255,
+    0, 0, 0, scale, -_monochromeFillCut * scale * 255,
+  ]);
 }

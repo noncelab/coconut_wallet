@@ -10,6 +10,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_backend.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/wallet/hot_wallet_secret.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
@@ -51,10 +52,7 @@ class _Backend with FakeArkVtxos implements ArkWalletBackend {
   final List<int> invoiceAmounts = [];
 
   @override
-  Future<void> sync(String fingerprint, {bool autoRenew = false}) async {
-    syncCount++;
-    syncedWithAutoRenew.add(autoRenew);
-  }
+  Future<void> sync(String fingerprint) async => syncCount++;
 
   @override
   Future<List<ArkMovement>> history(String fingerprint) async => movements;
@@ -403,27 +401,6 @@ void main() {
   });
 
   group('renew', () {
-    test('auto renew is on by default and hands the sync to bark maintenance', () async {
-      final provider = create();
-      await provider.createNew();
-
-      await provider.syncNow();
-
-      expect(provider.autoRenew, isTrue);
-      expect(backend.syncedWithAutoRenew.last, isTrue);
-    });
-
-    test('turning auto renew off is kept and plain syncs follow', () async {
-      final provider = create();
-      await provider.createNew();
-
-      await provider.setAutoRenew(false);
-      await provider.syncNow();
-
-      expect(backend.syncedWithAutoRenew.last, isFalse);
-      expect(create().autoRenew, isFalse);
-    });
-
     test('a sync reads the VTXOs and which ones are due within a day', () async {
       backend.vtxoList = [
         fakeVtxo('a', expiry: 1100),
@@ -579,5 +556,18 @@ void main() {
       await provider.wipe();
       expect(reminder.calls.last, isNull);
     });
+  });
+
+  test('the Ark wallet shows sats by default and keeps a switch to ₿', () async {
+    final provider = create();
+    await provider.createNew();
+    expect(provider.unit, BitcoinUnit.sats);
+
+    await provider.toggleUnit();
+    expect(provider.unit, BitcoinUnit.bip177);
+    expect(create().unit, BitcoinUnit.bip177);
+
+    await provider.toggleUnit();
+    expect(provider.unit, BitcoinUnit.sats);
   });
 }

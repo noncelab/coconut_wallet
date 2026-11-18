@@ -6,7 +6,6 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -78,11 +77,11 @@ class _ArkRenewSheetState extends State<_ArkRenewSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final amount = widget.vtxos.fold(0, (sum, vtxo) => sum + vtxo.amountSats);
     final fee = _fee;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -94,6 +93,7 @@ class _ArkRenewSheetState extends State<_ArkRenewSheet> {
             value: unit.displayBitcoinAmount(amount, withUnit: true),
             isNumber: true,
           ),
+          Divider(height: 1, color: colors.divider),
           ArkInfoRow(
             label: t.fee,
             value:
@@ -107,10 +107,10 @@ class _ArkRenewSheetState extends State<_ArkRenewSheet> {
             isNumber: fee != null && fee != 0,
             valueColor: _feeFailed ? colors.danger : null,
           ),
-          CoconutLayout.spacing_500h,
+          CoconutLayout.spacing_1000h,
           CoconutButton(
             key: const Key('ark-renew-confirm'),
-            text: t.ark_wallet.renew_button,
+            text: t.ark_wallet.renew_confirm,
             isActive: fee != null && !_renewing,
             onPressed: _renew,
             backgroundColor: colors.primaryText,

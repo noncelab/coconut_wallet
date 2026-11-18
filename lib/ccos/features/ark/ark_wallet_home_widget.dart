@@ -8,7 +8,6 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_item.dart';
 import 'package:coconut_wallet/model/home/home_item_definition.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +30,7 @@ class ArkWalletHomeWidget extends HomeItemDefinition {
   Widget build(BuildContext context, HomeItem item) {
     final colors = context.coconutColors;
     final wallet = context.watch<ArkWalletProvider>();
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     return HomeWidgetCard(
       key: const ValueKey('ark-wallet-home-widget'),
       onPressed: () => ArkFeature.openWallet(context),

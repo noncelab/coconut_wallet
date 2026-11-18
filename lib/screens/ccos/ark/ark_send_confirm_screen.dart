@@ -4,8 +4,8 @@ import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_send_view_model.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_send_result_screen.dart';
 import 'package:coconut_wallet/screens/common/flutter_hot_wallet_authenticator.dart';
@@ -48,7 +48,7 @@ class _ArkSendConfirmScreenState extends State<ArkSendConfirmScreen> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final viewModel = context.watch<ArkSendViewModel>();
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final isArk = viewModel.rail == ArkPaymentRail.ark;
     final amount = viewModel.amountSats ?? 0;
     final fee = viewModel.fee ?? 0;

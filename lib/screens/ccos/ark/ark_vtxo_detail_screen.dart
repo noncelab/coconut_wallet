@@ -5,13 +5,13 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_expiry_text.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_renew_sheet.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_groups.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_box_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/ccos/ark/ark_info_row.dart';
 import 'package:flutter/material.dart';
@@ -34,7 +34,7 @@ class ArkVtxoDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final wallet = context.watch<ArkWalletProvider>();
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final current = wallet.vtxos.where((candidate) => candidate.id == vtxo.id).firstOrNull ?? vtxo;
     final blocksLeft = current.blocksLeft(wallet.tipHeight);
     final renewing = wallet.isRenewing(current.id);
@@ -80,11 +80,38 @@ class ArkVtxoDetailScreen extends StatelessWidget {
                     color: dueSoon ? colors.warning : colors.secondaryText,
                   ),
                 ),
+                CoconutLayout.spacing_100h,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      arkBlockText(current.expiryHeight - wallet.vtxoLifetime!),
+                      style: CoconutTypography.caption_10_Number.setColor(colors.tertiaryText),
+                    ),
+                    Text(
+                      arkBlockText(current.expiryHeight),
+                      style: CoconutTypography.caption_10_Number.setColor(colors.tertiaryText),
+                    ),
+                  ],
+                ),
+                CoconutLayout.spacing_200h,
+                Text(
+                  t.ark_wallet.vtxo_lifetime_line(
+                    total: arkDurationText(wallet.vtxoLifetime!),
+                    left: arkDurationText(blocksLeft == null || blocksLeft < 0 ? 0 : blocksLeft),
+                  ),
+                  key: const Key('ark-vtxo-lifetime-line'),
+                  style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                ),
               ],
               CoconutLayout.spacing_500h,
               ArkInfoRow(label: t.ark_wallet.vtxo_status, value: status),
               ArkInfoRow(label: t.ark_wallet.vtxo_expires, value: arkExpiryText(blocksLeft)),
-              ArkInfoRow(label: t.ark_wallet.vtxo_expiry_height, value: '${current.expiryHeight}', isNumber: true),
+              ArkInfoRow(
+                label: t.ark_wallet.vtxo_expiry_height,
+                value: arkBlockText(current.expiryHeight),
+                isNumber: true,
+              ),
               if (blocksLeft != null)
                 ArkInfoRow(
                   label: t.ark_wallet.vtxo_blocks_left,
@@ -98,9 +125,13 @@ class ArkVtxoDetailScreen extends StatelessWidget {
                   children: [
                     Text(t.ark_wallet.vtxo_id, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
                     CoconutLayout.spacing_200h,
-                    CopyTextContainer(
-                      text: current.id,
-                      textStyle: CoconutTypography.body2_14_Number.setColor(colors.primaryText),
+                    DefaultTextHeightBehavior(
+                      textHeightBehavior: arkBoxTextHeight,
+                      child: CopyTextContainer(
+                        text: current.id,
+                        padding: const EdgeInsets.all(16),
+                        textStyle: CoconutTypography.body2_14_Number.setColor(colors.primaryText),
+                      ),
                     ),
                   ],
                 ),

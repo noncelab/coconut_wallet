@@ -6,9 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class FiatPrice extends StatefulWidget {
-  const FiatPrice({super.key, required this.satoshiAmount, this.textStyle, this.textColor});
+  const FiatPrice({super.key, required this.satoshiAmount, this.textStyle, this.textColor, this.sign});
 
   final int satoshiAmount;
+
+  /// 금액 앞에 붙일 부호(+, -), 거래 금액처럼 방향이 있을 때
+  final String? sign;
   final TextStyle? textStyle;
   final Color? textColor;
 
@@ -41,7 +44,11 @@ class _FiatPriceState extends State<FiatPrice> {
             return const SizedBox.shrink();
           }
 
-          return FittedBox(fit: BoxFit.scaleDown, child: Text(priceText, style: appliedStyle));
+          final sign = widget.sign;
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(sign == null ? priceText : '$sign $priceText', style: appliedStyle),
+          );
         } catch (e) {
           // 오류 발생 시 빈 공간으로 표시
           return const SizedBox.shrink();

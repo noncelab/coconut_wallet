@@ -55,6 +55,7 @@ import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/numeric_input_formatters.dart';
 import 'package:coconut_wallet/extensions/string_extensions.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
+import 'package:coconut_wallet/widgets/common/info/info_section.dart';
 import 'package:coconut_wallet/widgets/common/clipper/bubble_clipper.dart';
 import 'package:coconut_wallet/screens/wallet_detail/wallet_info/bitbox02_section.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
@@ -208,7 +209,7 @@ class _MnemonicBackupButtonState extends State<_MnemonicBackupButton> with Singl
                   ),
                 ),
                 const SizedBox(width: _WalletInfoScreenState._trailingGap),
-                const _RowArrow(),
+                const InfoRowArrow(),
               ],
             ),
           ),
@@ -1082,26 +1083,10 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     }
   }
 
-  Widget _section(String title, List<Widget> children) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(height: 12, color: context.coconutColors.divider),
-          const SizedBox(height: 24),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: Text(title, style: CoconutTypography.body1_16_Bold.setColor(context.coconutColors.primaryText)),
-          ),
-          Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Column(children: children)),
-        ],
-      ),
-    );
-  }
+  Widget _section(String title, List<Widget> children) => InfoSection(title: title, children: children);
 
-  static const double _rowHeight = 52;
-  static const double _trailingGap = 8;
+  static const double _rowHeight = InfoMenuRow.height;
+  static const double _trailingGap = InfoMenuRow.trailingGap;
 
   Widget _walletInfoSubheader(String title) {
     return SizedBox(
@@ -1116,7 +1101,6 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     );
   }
 
-  /// 지갑 정보의 한 줄. 높이가 같고, 화살표나 [trailing]이 없으면 값이 오른쪽 끝에 붙는다.
   Widget _walletInfoMenu({
     required String title,
     VoidCallback? onPressed,
@@ -1127,62 +1111,17 @@ class _WalletInfoScreenState extends State<WalletInfoScreen> {
     TextStyle? titleStyle,
     bool showArrowRight = true,
     bool indent = false,
-  }) {
-    final resolvedTitleStyle = titleStyle ?? CoconutTypography.body2_14.setColor(context.coconutColors.primaryText);
-    final row = SizedBox(
-      height: _rowHeight,
-      child: Padding(
-        padding: EdgeInsets.only(left: indent ? 28 : 12, right: 8),
-        child: Row(
-          children: [
-            Text(title, style: resolvedTitleStyle),
-            if (titleTrailing != null) ...[const SizedBox(width: 2), titleTrailing],
-            CoconutLayout.spacing_200w,
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (subWidget != null)
-                    Flexible(
-                      child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: subWidget),
-                    ),
-                  if (rightWidget != null) ...[CoconutLayout.spacing_100w, rightWidget],
-                ],
-              ),
-            ),
-            if (trailing != null || showArrowRight) ...[
-              const SizedBox(width: _trailingGap),
-              trailing ?? const _RowArrow(),
-            ],
-          ],
-        ),
-      ),
-    );
-    if (onPressed == null) return row;
-    return ShrinkAnimationButton(
-      onPressed: onPressed,
-      defaultColor: Colors.transparent,
-      pressedOverlayColor: context.coconutColors.primaryText,
-      pressedOverlayOpacity: 0.08,
-      borderRadius: 12,
-      child: row,
-    );
-  }
+  }) => InfoMenuRow(
+    title: title,
+    onPressed: onPressed,
+    subWidget: subWidget,
+    rightWidget: rightWidget,
+    trailing: trailing,
+    titleTrailing: titleTrailing,
+    titleStyle: titleStyle,
+    showArrowRight: showArrowRight,
+    indent: indent,
+  );
 
   TextStyle get _menuSubTextStyle => CoconutTypography.body2_14.setColor(context.coconutColors.tertiaryText);
-}
-
-/// 지갑 정보 행의 화살표. 여백 없는 화살표라 글자 행과 오른쪽 끝이 맞는다.
-class _RowArrow extends StatelessWidget {
-  const _RowArrow();
-
-  @override
-  Widget build(BuildContext context) {
-    return SvgPicture.asset(
-      CommonNavigationIconPath.arrowRight,
-      width: 7,
-      height: 12,
-      colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-    );
-  }
 }

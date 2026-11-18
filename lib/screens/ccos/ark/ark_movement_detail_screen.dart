@@ -5,18 +5,19 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_movement_labels.dart';
 import 'package:coconut_wallet/screens/common/single_text_field_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/utils/datetime_util.dart';
-import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_box_text.dart';
 import 'package:coconut_wallet/widgets/features/ccos/ark/ark_info_row.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_signed_amount.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// 아크 거래 상세. 기술 정보는 접힌 "자세히" 안에
+/// 아크 거래 상세. 경로·날짜·메모만 보이고, 주소·보낸 금액·수수료·기술 정보는 접힌 "자세히" 안에(Noah와 같음)
 class ArkMovementDetailScreen extends StatefulWidget {
   const ArkMovementDetailScreen({super.key, required this.movement});
 
@@ -53,7 +54,14 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
         children: [
           Text(label, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
           CoconutLayout.spacing_200h,
-          CopyTextContainer(text: value, textStyle: CoconutTypography.body2_14_Number.setColor(colors.primaryText)),
+          DefaultTextHeightBehavior(
+            textHeightBehavior: arkBoxTextHeight,
+            child: CopyTextContainer(
+              text: value,
+              padding: const EdgeInsets.all(16),
+              textStyle: CoconutTypography.body2_14_Number.setColor(colors.primaryText),
+            ),
+          ),
         ],
       ),
     );
@@ -79,7 +87,7 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
     final colors = context.coconutColors;
     final movement = widget.movement;
     final memo = context.select<ArkWalletProvider, String?>((wallet) => wallet.memoOf(movement.id));
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     String sats(int value) => unit.displayBitcoinAmount(value, withUnit: true);
     final amount = movement.effectiveBalanceSats.abs();
     final fee = movement.offchainFeeSats;
@@ -91,34 +99,27 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
-          BitcoinAmountUnit(
-            currentUnit: unit,
-            unitStyle: CoconutTypography.heading4_18_Number.setColor(colors.primaryText),
-            spacing: CoconutLayout.spacing_100w,
-            child: Text(
-              '${movement.isSend ? '-' : '+'}${unit.displayBitcoinAmount(amount)}',
-              style: CoconutTypography.heading2_28_NumberBold
-                  .setColor(colors.primaryText)
-                  .copyWith(decoration: movement.isFailed ? TextDecoration.lineThrough : null),
+          Center(child: ArkSignedAmount(unit: unit, sats: movement.effectiveBalanceSats, struck: movement.isFailed)),
+          CoconutLayout.spacing_100h,
+          Center(
+            child: FiatPrice(
+              key: const Key('ark-movement-fiat'),
+              satoshiAmount: amount,
+              sign: movement.isSend ? '-' : '+',
+              textColor: colors.secondaryText,
             ),
           ),
-          CoconutLayout.spacing_200h,
-          Text(
-            _status(movement),
-            style: CoconutTypography.body1_16.setColor(movement.isFailed ? colors.danger : colors.secondaryText),
-          ),
-          CoconutLayout.spacing_500h,
-          if (counterparty != null)
-            ArkInfoRow(
-              label: movement.isSend ? t.ark_wallet.recipient : t.ark_wallet.from,
-              value: counterparty,
-              isNumber: true,
+          if (movement.isPending || movement.isFailed) ...[
+            CoconutLayout.spacing_200h,
+            Center(
+              child: Text(
+                _status(movement),
+                style: CoconutTypography.body2_14.setColor(movement.isFailed ? colors.danger : colors.secondaryText),
+              ),
             ),
-          ArkInfoRow(label: t.ark_wallet.route, value: arkMovementRouteLabel(movement)),
-          if (movement.isSend) ...[
-            ArkInfoRow(label: t.fee, value: fee == 0 ? t.ark_wallet.fee_free : sats(fee), isNumber: fee != 0),
-            ArkInfoRow(label: t.ark_wallet.total, value: sats(amount), isNumber: true),
           ],
+          CoconutLayout.spacing_500h,
+          ArkInfoRow(label: t.ark_wallet.route, value: arkMovementRouteLabel(movement)),
           ArkInfoRow(label: t.ark_wallet.date, value: date, isNumber: true),
           GestureDetector(
             key: const Key('ark-movement-memo'),
@@ -151,10 +152,16 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> {
             ),
           ),
           if (_showDetails) ...[
+            if (movement.isSend) ...[
+              ArkInfoRow(label: t.ark_wallet.sent_amount, value: sats(amount - fee), isNumber: true),
+              ArkInfoRow(label: t.fee, value: sats(fee), isNumber: true),
+            ],
+            if (counterparty != null)
+              _copyRow(movement.isSend ? t.ark_wallet.recipient : t.ark_wallet.from, counterparty),
             if (movement.paymentHash != null) _copyRow(t.ark_wallet.payment_hash, movement.paymentHash!),
             if (movement.lightningInvoice != null) _copyRow(t.ark_wallet.invoice, movement.lightningInvoice!),
             _copyRow(t.ark_wallet.movement_id, '${movement.id}'),
-            for (final vtxo in movement.outputVtxoIds) _copyRow('VTXO', vtxo),
+            if (movement.outputVtxoIds.isNotEmpty) _copyRow('VTXO', movement.outputVtxoIds.join('\n')),
           ],
         ],
       ),

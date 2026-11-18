@@ -17,6 +17,7 @@ import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_settings_screen.dart'
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_list_screen.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -110,17 +111,27 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('receive and send sit side by side and send needs a balance', (tester) async {
+  /// 누를 수 있는 칸은 코코넛 홈처럼 누르는 동안 줄어들고 눌림 색이 깔림
+  bool isActive(WidgetTester tester, String key) => tester.widget(find.byKey(Key(key))) is HomePressableRow;
+
+  testWidgets('add funds, withdraw, receive and send sit in one row of home shortcut tiles', (tester) async {
     await pump(tester, await walletWith(restored: true));
 
-    expect(find.byKey(const Key('ark-wallet-receive')), findsOneWidget);
-    expect(tester.widget<CoconutButton>(find.byKey(const Key('ark-wallet-send'))).isActive, isFalse);
+    final tiles = ['ark-wallet-fill', 'ark-wallet-export', 'ark-wallet-receive', 'ark-wallet-send'];
+    final positions = [for (final key in tiles) tester.getTopLeft(find.byKey(Key(key)))];
+    expect(positions.map((position) => position.dy).toSet(), hasLength(1));
+    expect(positions.map((position) => position.dx).toList(), orderedEquals([...positions.map((p) => p.dx)]..sort()));
+    expect(tester.getSize(find.byKey(const Key('ark-wallet-send'))).aspectRatio, 1);
+    final labels = [t.ark_wallet.fill, t.ark_wallet.export, t.receive, t.send];
+    expect(labels.map((label) => tester.getTopLeft(find.text(label)).dy).toSet(), hasLength(1));
+    expect(isActive(tester, 'ark-wallet-receive'), isTrue);
+    expect(isActive(tester, 'ark-wallet-send'), isFalse);
   });
 
   testWidgets('with a balance send is active', (tester) async {
     await pump(tester, await walletWith(restored: true, sats: 1000));
 
-    expect(tester.widget<CoconutButton>(find.byKey(const Key('ark-wallet-send'))).isActive, isTrue);
+    expect(isActive(tester, 'ark-wallet-send'), isTrue);
   });
 
   testWidgets('recent activity fills a tall screen with five rows', (tester) async {
@@ -164,13 +175,19 @@ void main() {
     expect(find.text(t.ark_wallet.backup_title), findsNothing);
   });
 
-  testWidgets('the balance follows the unit setting', (tester) async {
-    await pump(tester, await walletWith(restored: true, sats: 12345));
+  testWidgets('the balance is in sats whatever the app unit and a tap switches it to ₿', (tester) async {
+    final wallet = await walletWith(restored: true, sats: 12345);
+    await pump(tester, wallet);
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
-    expect(find.text(t.ark_wallet.balance_label), findsOneWidget);
-    expect(find.textContaining(BitcoinUnit.sats.displayBitcoinAmount(12345)), findsOneWidget);
     expect(find.text(BitcoinUnit.sats.symbol), findsOneWidget);
+    expect(find.textContaining(BitcoinUnit.sats.displayBitcoinAmount(12345)), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('ark-wallet-balance')));
+    await tester.pumpAndSettle(const Duration(seconds: 2));
+
+    expect(wallet.unit, BitcoinUnit.bip177);
+    expect(find.text(BitcoinUnit.sats.symbol), findsNothing);
   });
 
   testWidgets('the gear opens settings with the mnemonic backup row', (tester) async {
@@ -310,16 +327,13 @@ void main() {
       expect(find.byKey(const Key('ark-renew-nudge')), findsNothing);
     });
 
-    testWidgets('settings show VTXOs needing renewal and auto renew on by default', (tester) async {
-      final wallet = await walletWith(restored: true, setup: dueSoon);
-      await pump(tester, wallet);
+    testWidgets('settings show VTXOs needing renewal and no switch to turn auto renew off', (tester) async {
+      await pump(tester, await walletWith(restored: true, setup: dueSoon));
       await tester.tap(find.byKey(const Key('ark-wallet-settings')));
       await tester.pumpAndSettle();
 
       expect(find.text(t.ark_wallet.renew_needed), findsOneWidget);
-      await tester.tap(find.byType(CoconutSwitch));
-      await tester.pumpAndSettle();
-      expect(wallet.autoRenew, isFalse);
+      expect(find.byType(CoconutSwitch), findsNothing);
     });
 
     testWidgets('the VTXO list groups VTXOs and renews the due ones', (tester) async {
@@ -330,13 +344,30 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(ArkVtxoListScreen), findsOneWidget);
-      expect(find.text(t.ark_wallet.group_expiring), findsOneWidget);
-      expect(find.text(t.ark_wallet.group_spendable), findsOneWidget);
+      expect(find.byKey(const Key('ark-vtxo-about')), findsOneWidget);
+      expect(
+        find.text(
+          '${t.ark_wallet.vtxo_count(n: 2)} · ${t.ark_wallet.vtxo_next_expiry(time: t.ark_wallet.duration_hours(n: 10))}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text(t.ark_wallet.vtxo_row_detail(block: '5,000', id: 'fine…')), findsOneWidget);
+      expect(find.text('${t.ark_wallet.group_expiring} · 1'), findsOneWidget);
+      expect(find.text('${t.ark_wallet.group_spendable} · 1'), findsOneWidget);
       expect(find.textContaining(t.ark_wallet.renew_button), findsWidgets);
 
       await tester.tap(find.byKey(const ValueKey('ark-vtxo-fine')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('ark-vtxo-lifetime')), findsOneWidget);
+      expect(
+        find.text(
+          t.ark_wallet.vtxo_lifetime_line(
+            total: t.ark_wallet.duration_days(n: 30),
+            left: t.ark_wallet.duration_days(n: 27),
+          ),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('an expired VTXO still gets the renew nudge, saying it already expired', (tester) async {

@@ -53,7 +53,6 @@ mixin FakeArkVtxos implements ArkWalletBackend {
   int renewFee = 0;
   int? lifetime;
   final List<List<String>> renewed = [];
-  final List<bool> syncedWithAutoRenew = [];
 
   @override
   Future<List<ArkVtxo>> vtxos(String fingerprint) async => vtxoList;
@@ -100,10 +99,7 @@ class FakeArkBackend with FakeArkVtxos implements ArkWalletBackend {
   final List<int> invoiceAmounts = [];
 
   @override
-  Future<void> sync(String fingerprint, {bool autoRenew = false}) async {
-    syncCount++;
-    syncedWithAutoRenew.add(autoRenew);
-  }
+  Future<void> sync(String fingerprint) async => syncCount++;
 
   @override
   Future<List<ArkMovement>> history(String fingerprint) async => movements;

@@ -9,7 +9,6 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
-import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_flow.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_nudge.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_expiry_text.dart';
@@ -27,6 +26,9 @@ import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_navigation.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/text/section_header.dart';
+import 'package:coconut_wallet/widgets/features/home/home_items_view.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_shortcut_tile.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -115,7 +117,7 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
     super.initState();
     _received = widget.wallet.received.listen((movement) {
       if (!mounted) return;
-      final unit = context.read<PreferenceProvider>().currentUnit;
+      final unit = context.read<ArkWalletProvider>().unit;
       CoconutToast.showToast(
         context: context,
         text: t.ark_wallet.received(amount: unit.displayBitcoinAmount(movement.effectiveBalanceSats, withUnit: true)),
@@ -152,7 +154,7 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
     final colors = context.coconutColors;
     final navigation = ArkWalletNavigation(context);
     final balance = wallet.balance.total;
-    final unit = context.select<PreferenceProvider, BitcoinUnit>((preferences) => preferences.currentUnit);
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final recent = wallet.movements;
     _measureTop();
     return LayoutBuilder(
@@ -166,53 +168,105 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                 key: _topKey,
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(t.ark_wallet.balance_label, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
-                    CoconutLayout.spacing_100h,
-                    BitcoinAmountUnit(
-                      currentUnit: unit,
-                      unitStyle: CoconutTypography.heading4_18_Number.setColor(colors.primaryText),
-                      spacing: CoconutLayout.spacing_100w,
-                      child: AnimatedBalance(
-                        prevValue: balance,
-                        value: balance,
-                        currentUnit: unit,
-                        textStyle: CoconutTypography.heading2_28_NumberBold.setColor(colors.primaryText),
+                    GestureDetector(
+                      key: const Key('ark-wallet-balance'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: wallet.toggleUnit,
+                      child: Column(
+                        children: [
+                          BitcoinAmountUnit(
+                            currentUnit: unit,
+                            unitStyle: CoconutTypography.heading4_18_Number.setColor(colors.primaryText),
+                            spacing: CoconutLayout.spacing_100w,
+                            child: AnimatedBalance(
+                              prevValue: balance,
+                              value: balance,
+                              currentUnit: unit,
+                              textStyle: CoconutTypography.heading2_28_NumberBold.setColor(colors.primaryText),
+                            ),
+                          ),
+                          CoconutLayout.spacing_100h,
+                          FiatPrice(satoshiAmount: balance, textColor: colors.secondaryText),
+                        ],
                       ),
                     ),
-                    CoconutLayout.spacing_100h,
-                    FiatPrice(satoshiAmount: balance, textColor: colors.secondaryText),
                     if (wallet.isRecoveryPending) ...[
                       CoconutLayout.spacing_200h,
                       Text(
                         t.ark_wallet.recovery_pending,
+                        textAlign: TextAlign.center,
                         style: CoconutTypography.body3_12.setColor(colors.secondaryText),
                       ),
                     ],
                     CoconutLayout.spacing_500h,
                     Row(
                       children: [
-                        Expanded(
-                          child: CoconutButton(
-                            key: const Key('ark-wallet-receive'),
-                            onPressed: navigation.openReceive,
-                            text: t.receive,
-                            backgroundColor: colors.surfaceButton,
-                            foregroundColor: colors.surfaceButtonText,
+                        for (final (index, tile)
+                            in [
+                              (
+                                id: 'ark-wallet-fill',
+                                icon: CommonActionIconPath.plus,
+                                scale: 14 / 24,
+                                label: t.ark_wallet.fill,
+                                onPressed: null,
+                              ),
+                              (
+                                id: 'ark-wallet-export',
+                                icon: CommonActionIconPath.removeMinus,
+                                scale: 1.0,
+                                label: t.ark_wallet.export,
+                                onPressed: null,
+                              ),
+                              (
+                                id: 'ark-wallet-receive',
+                                icon: FeatureArkIconPath.receive,
+                                scale: 1.0,
+                                label: t.receive,
+                                onPressed: navigation.openReceive,
+                              ),
+                              (
+                                id: 'ark-wallet-send',
+                                icon: FeatureArkIconPath.send,
+                                scale: 1.0,
+                                label: t.send,
+                                onPressed: balance > 0 ? navigation.openSend : null,
+                              ),
+                            ].indexed) ...[
+                          if (index > 0) const SizedBox(width: HomeItemsView.gap),
+                          Expanded(
+                            child: AspectRatio(
+                              aspectRatio: 1,
+                              child: switch (tile.onPressed) {
+                                final onPressed? => HomePressableRow(
+                                  key: Key(tile.id),
+                                  onTap: onPressed,
+                                  borderRadius: 16,
+                                  overlayInFront: true,
+                                  child: HomeShortcutTile(
+                                    id: tile.id,
+                                    label: tile.label,
+                                    iconPath: tile.icon,
+                                    iconScale: tile.scale,
+                                    onPressed: null,
+                                  ),
+                                ),
+                                null => Opacity(
+                                  key: Key(tile.id),
+                                  opacity: 0.35,
+                                  child: HomeShortcutTile(
+                                    id: tile.id,
+                                    label: tile.label,
+                                    iconPath: tile.icon,
+                                    iconScale: tile.scale,
+                                    onPressed: null,
+                                  ),
+                                ),
+                              },
+                            ),
                           ),
-                        ),
-                        CoconutLayout.spacing_300w,
-                        Expanded(
-                          child: CoconutButton(
-                            key: const Key('ark-wallet-send'),
-                            onPressed: navigation.openSend,
-                            isActive: balance > 0,
-                            text: t.send,
-                            backgroundColor: colors.surfaceButton,
-                            foregroundColor: colors.surfaceButtonText,
-                          ),
-                        ),
+                        ],
                       ],
                     ),
                     if (wallet.vtxosToRenew.isNotEmpty) ...[
@@ -265,6 +319,7 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                         emptyMessage: t.ark_wallet.no_activity,
                         monochrome: true,
                         iconPathOf: (tx) => arkMovementIconPath(recent, tx),
+                        timeDetailOf: (tx) => arkMovementTimeDetail(recent, tx),
                         onTransactionSelected: (tx) {
                           final movement = recent.where((movement) => '${movement.id}' == tx.txHash).firstOrNull;
                           if (movement != null) navigation.openMovement(movement);

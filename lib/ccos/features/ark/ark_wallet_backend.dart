@@ -45,8 +45,8 @@ abstract interface class ArkWalletBackend {
   Future<List<String>> listFingerprints();
   Future<void> wipeAll();
 
-  /// 우편함·라운드·라이트닝 받기 수령까지 맞춤. [autoRenew]면 만료가 다가온 VTXO 갱신도 서버에 맡김
-  Future<void> sync(String fingerprint, {bool autoRenew = false});
+  /// 우편함·라운드·라이트닝 받기 수령에 더해 만료가 다가온 VTXO 갱신도 서버에 맡김(자동 갱신, 늘 켬)
+  Future<void> sync(String fingerprint);
   Future<List<ArkMovement>> history(String fingerprint);
   Future<String> newArkAddress(String fingerprint);
   Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description});

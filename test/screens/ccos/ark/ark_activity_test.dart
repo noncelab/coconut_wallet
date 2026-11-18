@@ -14,26 +14,27 @@ import 'package:provider/provider.dart';
 import '../../../ccos/ccos_store_test_fakes.dart';
 import '../../../ccos/features/ark/ark_test_fakes.dart';
 
-ArkMovement _movement(int id, DateTime at, {String status = 'successful'}) => ArkMovement.fromBark(
-  bark.Movement(
-    id: id,
-    status: status,
-    subsystemName: 'bark.arkoor',
-    subsystemKind: 'receive',
-    metadataJson: '{}',
-    intendedBalanceSats: 100,
-    effectiveBalanceSats: 100,
-    offchainFeeSats: 0,
-    sentToAddresses: const [],
-    receivedOnAddresses: const [],
-    inputVtxoIds: const [],
-    outputVtxoIds: const [],
-    exitedVtxoIds: const [],
-    createdAt: at.toUtc().toIso8601String(),
-    updatedAt: at.toUtc().toIso8601String(),
-    completedAt: status == 'pending' ? null : at.toUtc().toIso8601String(),
-  ),
-);
+ArkMovement _movement(int id, DateTime at, {String status = 'successful', List<String> outputs = const []}) =>
+    ArkMovement.fromBark(
+      bark.Movement(
+        id: id,
+        status: status,
+        subsystemName: 'bark.arkoor',
+        subsystemKind: 'receive',
+        metadataJson: '{}',
+        intendedBalanceSats: 100,
+        effectiveBalanceSats: 100,
+        offchainFeeSats: 0,
+        sentToAddresses: const [],
+        receivedOnAddresses: const [],
+        inputVtxoIds: const [],
+        outputVtxoIds: outputs,
+        exitedVtxoIds: const [],
+        createdAt: at.toUtc().toIso8601String(),
+        updatedAt: at.toUtc().toIso8601String(),
+        completedAt: status == 'pending' ? null : at.toUtc().toIso8601String(),
+      ),
+    );
 
 void main() {
   test('pending comes first, then today, yesterday and older days, newest first', () {
@@ -62,7 +63,12 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final now = DateTime.now();
-    final backend = FakeArkBackend()..movements = [_movement(8, now), _movement(9, now, status: 'pending')];
+    final backend =
+        FakeArkBackend()
+          ..movements = [
+            _movement(8, now, outputs: ['vtxo-a:0', 'vtxo-b:1']),
+            _movement(9, now, status: 'pending'),
+          ];
     final wallet = await fakeArkWalletProvider(backend: backend);
     await wallet.createNew();
     await tester.pumpWidget(
@@ -70,6 +76,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<PreferenceProvider>.value(value: FakeStorePreferences()),
           ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
+          ...fakeArkPriceProviders(),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
@@ -81,15 +88,23 @@ void main() {
 
     expect(find.text(t.ark_wallet.group_pending), findsOneWidget);
     expect(find.text(t.home_widgets.today), findsOneWidget);
+    expect(find.textContaining(' · ${t.ark_wallet.route_ark}'), findsNWidgets(2));
 
     await tester.tap(find.byKey(const ValueKey('recent-transactions-row-0')).last);
     await tester.pumpAndSettle();
     expect(find.byType(ArkMovementDetailScreen), findsOneWidget);
-    expect(find.text(t.ark_wallet.status_received), findsOneWidget);
+    expect(find.text(t.ark_wallet.status_received), findsNothing);
+    expect(find.text('+ ₩ 0'), findsOneWidget);
+
+    expect(find.text(t.ark_wallet.route), findsOneWidget);
+    expect(find.text(t.ark_wallet.date), findsOneWidget);
+    expect(find.text(t.ark_wallet.movement_id), findsNothing);
 
     await tester.tap(find.byKey(const Key('ark-movement-details')));
     await tester.pumpAndSettle();
     expect(find.text(t.ark_wallet.movement_id), findsOneWidget);
+    expect(find.text('VTXO'), findsOneWidget);
+    expect(find.text('vtxo-a:0\nvtxo-b:1'), findsOneWidget);
 
     expect(find.text(t.ark_wallet.memo_add), findsOneWidget);
     await tester.tap(find.byKey(const Key('ark-movement-memo')));

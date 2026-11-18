@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 
@@ -14,7 +15,6 @@ class ArkWalletInfo {
     required this.source,
     required this.backupVerified,
     required this.createdAt,
-    this.autoRenew = true,
   });
 
   final String secretStorageKey;
@@ -23,16 +23,12 @@ class ArkWalletInfo {
   final bool backupVerified;
   final DateTime createdAt;
 
-  /// 만료 전에 앱이 알아서 갱신, 기본으로 켬
-  final bool autoRenew;
-
-  ArkWalletInfo copyWith({bool? backupVerified, bool? autoRenew}) => ArkWalletInfo(
+  ArkWalletInfo copyWith({bool? backupVerified}) => ArkWalletInfo(
     secretStorageKey: secretStorageKey,
     fingerprint: fingerprint,
     source: source,
     backupVerified: backupVerified ?? this.backupVerified,
     createdAt: createdAt,
-    autoRenew: autoRenew ?? this.autoRenew,
   );
 
   Map<String, dynamic> toJson() => {
@@ -41,7 +37,6 @@ class ArkWalletInfo {
     'source': source.name,
     'backupVerified': backupVerified,
     'createdAt': createdAt.toIso8601String(),
-    'autoRenew': autoRenew,
   };
 
   factory ArkWalletInfo.fromJson(Map<String, dynamic> json) => ArkWalletInfo(
@@ -50,7 +45,6 @@ class ArkWalletInfo {
     source: ArkSeedSource.values.byName(json['source'] as String),
     backupVerified: json['backupVerified'] as bool,
     createdAt: DateTime.parse(json['createdAt'] as String),
-    autoRenew: json['autoRenew'] as bool? ?? true,
   );
 }
 
@@ -97,11 +91,13 @@ class ArkWalletStore {
     await _write(info.copyWith(backupVerified: true));
   }
 
-  Future<void> setAutoRenew(bool autoRenew) async {
-    final info = read();
-    if (info == null) return;
-    await _write(info.copyWith(autoRenew: autoRenew));
-  }
+  /// 아크 지갑은 sats가 기본
+  BitcoinUnit readUnit() =>
+      _prefs.getStringOrNull(SharedPrefKeys.kArkWalletUnit) == BitcoinUnit.bip177.name
+          ? BitcoinUnit.bip177
+          : BitcoinUnit.sats;
+
+  Future<void> setUnit(BitcoinUnit unit) => _prefs.setStringAndConfirm(SharedPrefKeys.kArkWalletUnit, unit.name);
 
   Map<int, String> readMemos() {
     final encoded = _prefs.getStringOrNull(SharedPrefKeys.kArkWalletMemos);

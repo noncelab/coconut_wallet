@@ -1,6 +1,7 @@
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_movement_labels.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -31,20 +32,28 @@ void main() {
   test('Lightning rows keep the status circle of the matching Ark row and swap only the glyph', () {
     expect(
       iconOf(_movement(1, subsystem: 'bark.lightning_receive', sats: 100)),
-      FeatureTransactionIconPath.txLightningReceived,
+      FeatureArkIconPath.txLightningReceived,
     );
     expect(
       iconOf(_movement(2, subsystem: 'bark.lightning_receive', sats: 100, status: 'pending')),
-      FeatureTransactionIconPath.txLightningReceiving,
+      FeatureArkIconPath.txLightningReceiving,
     );
-    expect(
-      iconOf(_movement(3, subsystem: 'bark.lightning_send', sats: -100)),
-      FeatureTransactionIconPath.txLightningSent,
-    );
+    expect(iconOf(_movement(3, subsystem: 'bark.lightning_send', sats: -100)), FeatureArkIconPath.txLightningSent);
     expect(
       iconOf(_movement(4, subsystem: 'bark.lightning_send', sats: -100, status: 'pending')),
-      FeatureTransactionIconPath.txLightningSending,
+      FeatureArkIconPath.txLightningSending,
     );
-    expect(iconOf(_movement(5, subsystem: 'bark.arkoor', sats: -100)), isNull);
+    expect(iconOf(_movement(5, subsystem: 'bark.arkoor', sats: -100)), FeatureArkIconPath.txSent);
+    expect(iconOf(_movement(6, subsystem: 'bark.arkoor', sats: 100)), FeatureArkIconPath.txReceived);
+  });
+
+  test('the route goes next to the time and the right side keeps only the memo', () {
+    final lightning = _movement(1, subsystem: 'bark.lightning_receive', sats: 100);
+    final failed = _movement(2, subsystem: 'bark.arkoor', sats: -100, status: 'failed');
+
+    expect(arkMovementAsRecent(lightning).walletName, '');
+    expect(arkMovementAsRecent(lightning, memo: 'Coffee').walletName, 'Coffee');
+    expect(arkMovementRouteLabel(lightning), t.ark_wallet.route_lightning);
+    expect(arkMovementRouteLabel(failed), '${t.ark_wallet.route_ark} · ${t.ark_wallet.failed}');
   });
 }

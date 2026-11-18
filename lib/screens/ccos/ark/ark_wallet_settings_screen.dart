@@ -5,8 +5,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_flow.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_list_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
-import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
-import 'package:coconut_wallet/widgets/common/buttons/single_button.dart';
+import 'package:coconut_wallet/widgets/common/info/info_section.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
@@ -29,83 +28,52 @@ class ArkWalletSettingsScreen extends StatelessWidget {
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(context: context, title: t.ark_wallet.settings_title),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-              child: Text(t.security, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
-            ),
-            ButtonGroup(
-              buttons: [
-                SingleButton(
+            InfoSection(
+              title: t.security,
+              dividerHeight: 0,
+              children: [
+                InfoMenuRow(
                   title: t.wallet_info_screen.mnemonic_backup,
                   onPressed: () => startArkWalletBackup(context, wallet),
-                  rightElement:
+                  subWidget:
                       wallet.needsBackup
                           ? Text(
                             t.wallet_info_screen.backup_required,
                             style: CoconutTypography.body2_14_Bold.setColor(colors.appLockWarningBackground),
                           )
                           : null,
-                  showRightArrowWithRightElement: true,
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-              child: Text(
-                t.ark_wallet.section_funds,
-                style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
-              ),
-            ),
-            ButtonGroup(
-              buttons: [
-                SingleButton(
+            InfoSection(
+              title: t.ark_wallet.section_funds,
+              dividerHeight: _dividerHeight,
+              children: [
+                InfoMenuRow(
                   key: const Key('ark-settings-vtxos'),
                   title: t.ark_wallet.vtxos,
                   onPressed: () => ArkVtxoListScreen.open(context),
-                  rightElement: Text(
+                  subWidget: Text(
                     wallet.vtxosToRenew.isNotEmpty ? t.ark_wallet.renew_needed : '${wallet.vtxos.length}',
                     style:
                         wallet.vtxosToRenew.isNotEmpty
                             ? CoconutTypography.body2_14_Bold.setColor(colors.appLockWarningBackground)
-                            : CoconutTypography.body2_14_Number.setColor(colors.secondaryText),
-                  ),
-                  showRightArrowWithRightElement: true,
-                ),
-                SingleButton(
-                  key: const Key('ark-settings-auto-renew'),
-                  title: t.ark_wallet.auto_renew,
-                  description: t.ark_wallet.auto_renew_line,
-                  rightElement: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: CoconutSwitch(
-                      isOn: wallet.autoRenew,
-                      activeTrackColor: colors.switchActiveTrack,
-                      activeThumbColor: colors.switchActiveThumb,
-                      inactiveTrackColor: colors.switchInactiveTrack,
-                      inactiveThumbColor: colors.switchInactiveThumb,
-                      onChanged: wallet.setAutoRenew,
-                    ),
+                            : CoconutTypography.body2_14_Number.setColor(colors.tertiaryText),
                   ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 20, 0, 12),
-              child: Text(
-                t.wallet_info_screen.section_danger,
-                style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
-              ),
-            ),
-            ButtonGroup(
-              buttons: [
-                SingleButton(
+            InfoSection(
+              title: t.wallet_info_screen.section_danger,
+              dividerHeight: _dividerHeight,
+              children: [
+                InfoMenuRow(
                   title: t.wallet_info_screen.delete_wallet,
                   onPressed: () => _delete(context, wallet),
-                  rightElement: SvgPicture.asset(
+                  trailing: SvgPicture.asset(
                     CommonActionIconPath.trash,
                     width: 20,
                     height: 20,
@@ -114,11 +82,15 @@ class ArkWalletSettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
+            CoconutLayout.spacing_2500h,
           ],
         ),
       ),
     );
   }
+
+  /// 코코넛 지갑 정보 화면과 같은 묶음, 구분선만 얇게
+  static const _dividerHeight = 1.0;
 
   Future<void> _delete(BuildContext context, ArkWalletProvider wallet) async {
     final language = context.read<PreferenceProvider>().language;

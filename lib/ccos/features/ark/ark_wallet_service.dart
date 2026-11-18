@@ -109,13 +109,8 @@ class ArkWalletService implements ArkWalletBackend {
       withWallet(fingerprint, (wallet) async => ArkBalance.fromBark(await wallet.balance()));
 
   @override
-  Future<void> sync(String fingerprint, {bool autoRenew = false}) => withWallet(fingerprint, (wallet) async {
-    if (autoRenew) {
-      await wallet.maintenanceDelegated();
-    } else {
-      await wallet.sync_();
-      await wallet.progressPendingRounds();
-    }
+  Future<void> sync(String fingerprint) => withWallet(fingerprint, (wallet) async {
+    await wallet.maintenanceDelegated();
     await wallet.syncExits();
   });
 
