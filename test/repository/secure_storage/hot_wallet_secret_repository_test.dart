@@ -403,4 +403,29 @@ void main() {
       await expectLater(repository.unlockAfterAuthentication(storageKey), throwsA(isA<FormatException>()));
     });
   }
+
+  test('another namespace keeps its secrets and device keys out of hot wallet cleanup', () async {
+    final ark = HotWalletSecretRepository(
+      namespace: 'ark_wallet',
+      cryptoService: HotWalletCryptoService(random: Random(44)),
+      random: Random(45),
+    );
+    final arkKey = ark.newSecretStorageKey();
+    expect(arkKey, startsWith('ark_wallet_secret_'));
+    await ark.create(
+      storageKey: arkKey,
+      mnemonic: Uint8List.fromList(utf8.encode('${'abandon ' * 11}about')),
+      passphrase: Uint8List(0),
+    );
+
+    expect(await repository.getSecretStorageKeys(), isEmpty);
+    await repository.cleanupOrphanHardwareAliases({});
+
+    expect(await ark.getSecretStorageKeys(), [arkKey]);
+    expect(utf8.decode((await ark.unlockAfterAuthentication(arkKey)).mnemonic), '${'abandon ' * 11}about');
+    expect(
+      () => repository.create(storageKey: arkKey, mnemonic: Uint8List(0), passphrase: Uint8List(0)),
+      throwsArgumentError,
+    );
+  });
 }

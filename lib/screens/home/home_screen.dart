@@ -120,6 +120,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ccosActivationChanges: context.read<PreferenceProvider>(),
       ccosHomeEntries: context.read<CcosFeatureStatusRegistry>().homeEntries,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<CcosFeatureStatusRegistry>().appEntered();
+    });
     _widgetsViewModel = HomeWidgetsViewModel(
       walletProvider: context.read<WalletProvider>(),
       preferenceProvider: context.read<PreferenceProvider>(),

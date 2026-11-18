@@ -1,0 +1,33 @@
+[package]
+name = "bark_ffi_dart"
+description = "This is a simple wrapper crate which re-exports bark-ffi as needed for dart bindings."
+version = "0.7.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[lib]
+crate-type = ["staticlib", "cdylib"]
+name = "bark_ffi_dart"
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[dependencies]
+bark-ffi = { git = "https://gitlab.com/ark-bitcoin/bark-ffi", tag = "v0.29.0+bark-0.7.1.uniffi-0.31.1" }
+uniffi = { version = "=0.31.1", features = ["cli"] }
+uniffi-dart = { git = "https://github.com/Uniffi-Dart/uniffi-dart", tag = "v0.2.0+v0.31.1" }
+camino = "1.2"
+# COCONUT PATCH: logcat logger in src/lib.rs
+log = "0.4"
+
+[build-dependencies]
+uniffi = { version = "=0.31.1", features = ["build"] }
+uniffi-dart = { git = "https://github.com/Uniffi-Dart/uniffi-dart", tag = "v0.2.0+v0.31.1", features = ["build"] }
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = "s"
+panic = "abort"

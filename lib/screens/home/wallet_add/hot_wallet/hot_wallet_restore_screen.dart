@@ -57,12 +57,26 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 
 enum _RestoreInputMode { mnemonic, seedQr }
 
+/// 지갑을 저장하지 않고 12단어만 받아 넘기는 복원. 패스프레이즈·이름 입력 없음
+class MnemonicOnlyRestore {
+  const MnemonicOnlyRestore({required this.title, required this.submitLabel, required this.onSubmit});
+
+  final String title;
+  final String submitLabel;
+  final Future<void> Function(Uint8List mnemonic) onSubmit;
+}
+
 class HotWalletRestoreScreen extends StatelessWidget {
-  const HotWalletRestoreScreen({super.key});
+  const HotWalletRestoreScreen({super.key, this.mnemonicOnly});
+
+  final MnemonicOnlyRestore? mnemonicOnly;
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(create: (_) => HotWalletRestoreViewModel(), child: const _HotWalletRestoreView());
+    return ChangeNotifierProvider(
+      create: (_) => HotWalletRestoreViewModel(),
+      child: _HotWalletRestoreView(mnemonicOnly: mnemonicOnly),
+    );
   }
 }
 
@@ -120,7 +134,9 @@ class WordSuggestableController extends TextEditingController {
 }
 
 class _HotWalletRestoreView extends StatefulWidget {
-  const _HotWalletRestoreView();
+  const _HotWalletRestoreView({this.mnemonicOnly});
+
+  final MnemonicOnlyRestore? mnemonicOnly;
 
   @override
   State<_HotWalletRestoreView> createState() => _HotWalletRestoreViewState();
@@ -383,7 +399,7 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
               appBar: CoconutAppBar.build(
                 title:
                     _inputMode == _RestoreInputMode.mnemonic
-                        ? t.wallet_home_screen.hot_wallet_restore.title
+                        ? widget.mnemonicOnly?.title ?? t.wallet_home_screen.hot_wallet_restore.title
                         : t.wallet_home_screen.hot_wallet_restore.seed_qr_title,
                 context: context,
                 onBackPressed: _handleAppBarBackPressed,
@@ -430,9 +446,15 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
                           (_inputMode == _RestoreInputMode.seedQr && viewModel.hasScannedMnemonic))
                         FixedBottomButton(
                           buttonKey: _bottomButtonKey,
-                          text: t.wallet_home_screen.hot_wallet_restore.restore_wallet,
+                          text:
+                              widget.mnemonicOnly?.submitLabel ??
+                              t.wallet_home_screen.hot_wallet_restore.restore_wallet,
                           isActive:
-                              viewModel.canRestore && !_isSubmitting && !_isLeavingScreen && !_isWalletNameDuplicated,
+                              (widget.mnemonicOnly == null
+                                  ? viewModel.canRestore && !_isWalletNameDuplicated
+                                  : viewModel.isMnemonicValid && viewModel.mnemonicWordCount == 12) &&
+                              !_isSubmitting &&
+                              !_isLeavingScreen,
                           subWidget: _inputMode == _RestoreInputMode.mnemonic ? _buildMnemonicError(viewModel) : null,
                           surroundingsColor: context.coconutColors.background,
                           onButtonClicked: _restore,
@@ -692,8 +714,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
           ],
         ),
       ),
-      passphraseOptions: _buildPassphraseSection(viewModel),
-      walletNameField: _buildWalletNameField(),
+      passphraseOptions: widget.mnemonicOnly == null ? _buildPassphraseSection(viewModel) : const SizedBox.shrink(),
+      walletNameField: widget.mnemonicOnly == null ? _buildWalletNameField() : const SizedBox.shrink(),
     );
   }
 
@@ -832,29 +854,30 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
               ],
             ),
           ),
-          CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            onPressed: () => setState(() => _isWordCountDropdownVisible = !_isWordCountDropdownVisible),
-            minimumSize: const Size(0, 0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Transform.translate(
-                  offset: const Offset(0, -2),
-                  child: Text(
-                    t.wallet_home_screen.hot_wallet_create.word_count(count: viewModel.wordCount),
-                    style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+          if (widget.mnemonicOnly == null)
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              onPressed: () => setState(() => _isWordCountDropdownVisible = !_isWordCountDropdownVisible),
+              minimumSize: const Size(0, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.translate(
+                    offset: const Offset(0, -2),
+                    child: Text(
+                      t.wallet_home_screen.hot_wallet_create.word_count(count: viewModel.wordCount),
+                      style: CoconutTypography.body2_14.setColor(context.coconutColors.primaryText),
+                    ),
                   ),
-                ),
-                CoconutLayout.spacing_200w,
-                SvgPicture.asset(
-                  CommonNavigationIconPath.arrowDown,
-                  width: 12,
-                  colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                ),
-              ],
+                  CoconutLayout.spacing_200w,
+                  SvgPicture.asset(
+                    CommonNavigationIconPath.arrowDown,
+                    width: 12,
+                    colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -864,8 +887,8 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
     return MnemonicInputSection(
       scrollController: _scrollController,
       mnemonicInput: _buildMnemonicGrid(viewModel),
-      passphraseOptions: _buildPassphraseSection(viewModel),
-      walletNameField: _buildWalletNameField(),
+      passphraseOptions: widget.mnemonicOnly == null ? _buildPassphraseSection(viewModel) : const SizedBox.shrink(),
+      walletNameField: widget.mnemonicOnly == null ? _buildWalletNameField() : const SizedBox.shrink(),
       overlay: _isWordCountDropdownVisible ? _buildWordCountDropdown() : null,
     );
   }
@@ -1247,6 +1270,12 @@ class _HotWalletRestoreViewState extends State<_HotWalletRestoreView> with Widge
     if (_isSubmitting || _isLeavingScreen || _isWalletNameDuplicated) return;
     setState(() => _isSubmitting = true);
     try {
+      final mnemonicOnly = widget.mnemonicOnly;
+      if (mnemonicOnly != null) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        await mnemonicOnly.onSubmit(context.read<HotWalletRestoreViewModel>().copyMnemonic());
+        return;
+      }
       await _performRestore();
     } finally {
       if (mounted) {

@@ -9,7 +9,9 @@ import 'package:coconut_wallet/services/wallet/hot_wallet_crypto_service.dart';
 import 'package:flutter/services.dart';
 
 class HotWalletSecretRepository {
+  /// [namespace]마다 비밀값 키·기기 키·목록이 따로라 서로의 정리에 걸리지 않음
   HotWalletSecretRepository({
+    String namespace = 'hot_wallet',
     SecureStorageRepository? secureStorage,
     HotWalletCryptoService? cryptoService,
     DeviceDekKeystore? deviceKeystore,
@@ -17,12 +19,15 @@ class HotWalletSecretRepository {
   }) : _secureStorage = secureStorage ?? SecureStorageRepository(),
        _cryptoService = cryptoService ?? HotWalletCryptoService(),
        _deviceKeystore = deviceKeystore ?? DeviceDekKeystore(),
-       _random = random ?? Random.secure();
+       _random = random ?? Random.secure(),
+       _secretPrefix = '${namespace}_secret_',
+       _hardwareKeyPrefix = '${namespace}_device_key_',
+       _secretIndexKey = '${namespace}_secret_index_v1';
 
-  static const String _secretPrefix = 'hot_wallet_secret_';
-  static const String _hardwareKeyPrefix = 'hot_wallet_device_key_';
+  final String _secretPrefix;
+  final String _hardwareKeyPrefix;
   static const String _fallbackKeySuffix = '_fallback_kek';
-  static const String _secretIndexKey = 'hot_wallet_secret_index_v1';
+  final String _secretIndexKey;
   static Future<void> _indexMutationTail = Future<void>.value();
 
   final SecureStorageRepository _secureStorage;

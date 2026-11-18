@@ -13,6 +13,9 @@ class AnalyticsScreenNames {
   static const String ccosOpenStoreFirstPowFeatureDetail = 'ccos-open-store-first-pow-feature-detail';
   static const String ccosOpenStoreFirstPowDeliveryDetail = 'ccos-open-store-first-pow-delivery-detail';
   static const String ccosArkWalletHome = 'ccos-ark-wallet-home';
+  static const String ccosArkWalletSettings = 'ccos-ark-wallet-settings';
+  static const String ccosArkWalletConsent = 'ccos-ark-wallet-consent';
+  static const String ccosArkWalletRestore = 'ccos-ark-wallet-restore';
 
   static const String glossary = 'glossary';
 

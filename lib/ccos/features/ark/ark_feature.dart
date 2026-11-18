@@ -1,9 +1,14 @@
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
+import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
+import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/ccos/ccos_home_entry.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature_copy.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_home_widget.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -43,17 +48,26 @@ class ArkFeature {
         id: 'ark_wallet',
         label: () => ArkFeatureCopySource.current.title,
         iconPath: FeatureArkIconPath.boat,
-        launch: _openWallet,
+        launch: openWallet,
         addToHomeOnActivate: true,
       ),
+      homeWidget: CcosHomeWidget(definition: ArkWalletHomeWidget.new),
     );
   }
 
-  static void _openWallet(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        settings: const RouteSettings(name: AnalyticsScreenNames.ccosArkWalletHome),
-        builder: (_) => const ArkWalletHomeScreen(),
+  static CcosFeatureStatus status(ArkWalletProvider wallet, {required bool isActivated}) =>
+      wallet.hasWallet
+          ? CcosFeatureStatus(inUse: true, removeBlockedReason: t.ark_wallet.remove_blocked)
+          : const CcosFeatureStatus();
+
+  static void openWallet(BuildContext context) {
+    final navigator = Navigator.of(context);
+    FeatureEntryRoutes.instance.launching(
+      () => navigator.push(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: AnalyticsScreenNames.ccosArkWalletHome),
+          builder: (_) => const ArkWalletHomeScreen(),
+        ),
       ),
     );
   }

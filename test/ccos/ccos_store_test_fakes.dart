@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_runtime.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
@@ -11,6 +12,9 @@ class FakeStorePreferences extends ChangeNotifier implements PreferenceProvider 
 
   @override
   CoconutThemeVariant get themeVariant => variant;
+
+  @override
+  BitcoinUnit get currentUnit => BitcoinUnit.sats;
 
   @override
   String get language => 'ko';

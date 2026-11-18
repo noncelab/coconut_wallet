@@ -63,4 +63,27 @@ void main() {
     expect(other.inUse, isFalse);
     expect(other.beforeRemove, isNull);
   });
+
+  test('app lifecycle hooks run on entry and reset', () async {
+    final registry = CcosFeatureStatusRegistry();
+    final calls = <String>[];
+    registry.onAppLifecycle(entered: () async => calls.add('entered'), reset: () async => calls.add('reset'));
+    registry.onAppLifecycle(reset: () async => calls.add('reset2'));
+
+    await registry.appEntered();
+    await registry.appReset();
+
+    expect(calls, ['entered', 'reset', 'reset2']);
+  });
+
+  test('a failing lifecycle hook does not stop the others', () async {
+    final registry = CcosFeatureStatusRegistry();
+    final calls = <String>[];
+    registry.onAppLifecycle(reset: () async => throw StateError('broken'));
+    registry.onAppLifecycle(reset: () async => calls.add('second'));
+
+    await registry.appReset();
+
+    expect(calls, ['second']);
+  });
 }

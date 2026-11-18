@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -169,7 +170,9 @@ class _PinCheckScreenState extends State<PinCheckScreen> with WidgetsBindingObse
           title: t.alert.forgot_password.title,
           description: t.alert.forgot_password.description,
           onTapRight: () async {
+            final ccosFeatures = context.read<CcosFeatureStatusRegistry>();
             await _authProvider.resetPassword();
+            await ccosFeatures.appReset();
             if (!context.mounted) return;
             // FIXME: 여기 await 안 넣어줘도 되는지??
             Provider.of<RealmManager>(context, listen: false).reset();

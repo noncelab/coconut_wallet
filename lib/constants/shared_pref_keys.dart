@@ -140,10 +140,14 @@ class SharedPrefKeys {
     kBalanceHistoryGestureGuideDismissed,
     kAllFeaturesHintDismissed,
     kWalletIdsWithUnacknowledgedOlderToAfterBackupUpdate,
+    kArkWallet,
   ];
 
   /// 코코넛 오픈 스토어 소개 카드 숨김 만료일
   static const String kOpenStoreIntroCardHiddenUntil = 'OPEN_STORE_INTRO_CARD_HIDDEN_UNTIL';
+
+  /// 아크 지갑 정보(시드는 보안 저장소)
+  static const String kArkWallet = 'ark_wallet_v1';
 
   /// CCOS feature runtime
   static const String kCcosActivatedFeatureIds = 'CCOS_ACTIVATED_FEATURE_IDS';

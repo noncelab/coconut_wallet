@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
@@ -135,8 +137,8 @@ void main() {
           });
           final data = node.getSemanticsData();
           expect(data.hasAction(SemanticsAction.tap), isTrue);
-          expect(data.flagsCollection.hasSelectedState, isTrue);
-          expect(data.flagsCollection.isSelected, option.value == selected);
+          expect(data.flagsCollection.isSelected, isNot(Tristate.none));
+          expect(data.flagsCollection.isSelected == Tristate.isTrue, option.value == selected);
         }
         final store = nodes.singleWhere(
           (node) => node.getSemanticsData().label == CcosOpenStoreContentSource.intro.ctaLabel,

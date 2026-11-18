@@ -1,3 +1,5 @@
+import 'dart:ui' show Tristate;
+
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutCheckbox;
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/hot_wallet/hot_wallet_app_lock_guide_screen.dart';
@@ -108,7 +110,7 @@ void main() {
       );
       final data = tester.getSemantics(find.byType(CoconutUnderlinedButton)).getSemanticsData();
       expect(data.flagsCollection.isButton, isTrue);
-      expect(data.flagsCollection.isEnabled, active);
+      expect(data.flagsCollection.isEnabled == Tristate.isTrue, active);
       expect(data.hasAction(SemanticsAction.tap), active);
       await tester.tap(find.text('Action'));
       await tester.pump();

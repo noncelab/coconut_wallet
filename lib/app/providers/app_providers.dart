@@ -1,4 +1,8 @@
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_service.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_store.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/analytics/hot_wallet_usage_tracker.dart';
@@ -24,6 +28,8 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_preferences_repository.dart';
 import 'package:coconut_wallet/repository/realm/wallet_repository.dart';
+import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
+import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/repository/shared_preference/wallet_appearance_repository.dart';
 import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:coconut_wallet/services/wallet/wallet_background_photo_store.dart';
@@ -74,14 +80,29 @@ List<SingleChildWidget> buildAppProviders({
             iosRegionCode: iosRegionCode,
           ),
     ),
+    ChangeNotifierProvider<ArkWalletProvider>(
+      create:
+          (_) => ArkWalletProvider(
+            store: ArkWalletStore(SharedPrefsRepository(), HotWalletSecretRepository(namespace: 'ark_wallet')),
+            backend: ArkWalletService(),
+          ),
+    ),
     ChangeNotifierProvider<CcosFeatureStatusRegistry>(
       create: (context) {
         final preferences = context.read<PreferenceProvider>();
-        return CcosFeatureStatusRegistry()..register(
-          CoconutThemeFeature.id,
-          ({required isActivated}) => CoconutThemeFeature.status(preferences, isActivated: isActivated),
-          changes: preferences,
-        );
+        final arkWallet = context.read<ArkWalletProvider>();
+        return CcosFeatureStatusRegistry()
+          ..register(
+            CoconutThemeFeature.id,
+            ({required isActivated}) => CoconutThemeFeature.status(preferences, isActivated: isActivated),
+            changes: preferences,
+          )
+          ..register(
+            ArkFeature.id,
+            ({required isActivated}) => ArkFeature.status(arkWallet, isActivated: isActivated),
+            changes: arkWallet,
+          )
+          ..onAppLifecycle(entered: arkWallet.openAfterAppEntrance, reset: arkWallet.wipe);
       },
     ),
     ChangeNotifierProvider<PriceProvider>(

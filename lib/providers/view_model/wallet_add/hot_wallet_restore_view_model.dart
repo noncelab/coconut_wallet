@@ -92,6 +92,9 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
   }
 
   int get wordCount => _wordCount;
+
+  /// SeedQR을 스캔했으면 그 단어 수
+  int get mnemonicWordCount => _scannedMnemonicWordCount ?? _wordCount;
   List<String> get words => List.unmodifiable(_words);
   int? get activeWordIndex => _activeWordIndex;
   bool get usePassphrase => _usePassphrase;
@@ -198,6 +201,9 @@ class HotWalletRestoreViewModel extends ChangeNotifier {
     _scannedMnemonicWordCount = null;
     if (notify) _notifySafely();
   }
+
+  /// 받는 쪽이 지워야 함
+  Uint8List copyMnemonic() => _copyMnemonic();
 
   Uint8List _copyMnemonic() {
     final scannedMnemonic = _scannedMnemonic;

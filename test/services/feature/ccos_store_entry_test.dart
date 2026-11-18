@@ -4,6 +4,7 @@ import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/ccos/store/coconut_open_store_feature_detail_screen.dart';
@@ -14,14 +15,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import '../../ccos/ccos_store_test_fakes.dart';
+import '../../ccos/features/ark/ark_test_fakes.dart';
 
 Future<BuildContext> _pump(WidgetTester tester, FakeStorePreferences preferences) async {
   late BuildContext captured;
+  final wallet = await fakeArkWalletProvider();
   await tester.pumpWidget(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<PreferenceProvider>.value(value: preferences),
         ChangeNotifierProvider<CcosFeatureStatusRegistry>.value(value: storeStatusRegistry(preferences)),
+        ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
       ],
       child: MaterialApp(
         theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
