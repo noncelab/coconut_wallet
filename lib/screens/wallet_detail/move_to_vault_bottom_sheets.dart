@@ -46,7 +46,6 @@ class ShowVaultNoBalanceBottomSheet extends StatelessWidget {
     return _VaultGuide(
       nextStep: IconTitleDescription(
         svgIconPath: CommonStateIconPath.circleWarning,
-        iconColor: context.coconutColors.iconSecondary,
         title: t.wallet_detail_screen.vault_no_balance_title,
         description: t.wallet_detail_screen.vault_no_balance_description,
       ),
@@ -74,7 +73,6 @@ class ShowVaultNoWatchOnlyWalletBottomSheet extends StatelessWidget {
     return _VaultGuide(
       nextStep: IconTitleDescription(
         svgIconPath: FeatureWalletIconPath.walletEyes,
-        iconColor: context.coconutColors.iconSecondary,
         title: t.wallet_detail_screen.vault_watch_only_title,
         description: t.wallet_detail_screen.vault_watch_only_description,
       ),

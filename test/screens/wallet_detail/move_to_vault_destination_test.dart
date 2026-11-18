@@ -1,8 +1,10 @@
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/wallet_detail/move_to_vault_bottom_sheets.dart';
+import 'package:coconut_wallet/widgets/common/text/icon_title_description.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -22,6 +24,25 @@ void main() {
   test('positive balance with exactly one watch-only wallet shows the selection sheet', () {
     expect(resolveMoveToVaultDestination(1, 1), MoveToVaultDestination.selectWatchOnlyWallet);
   });
+
+  for (final variant in CoconutThemeVariant.values) {
+    testWidgets('vault guide icons use the primary icon color in ${variant.name}', (tester) async {
+      final expected = ColorFilter.mode(
+        resolveCoconutThemeExtension(variant: variant).colors.iconPrimary,
+        BlendMode.srcIn,
+      );
+      for (final sheet in const [
+        ShowVaultNoBalanceBottomSheet(walletId: 1),
+        ShowVaultNoWatchOnlyWalletBottomSheet(walletId: 1),
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(theme: buildCoconutThemeData(variant: variant), home: Scaffold(body: sheet)),
+        );
+        final icons = find.descendant(of: find.byType(IconTitleDescription), matching: find.byType(SvgPicture));
+        expect(tester.widgetList<SvgPicture>(icons).map((icon) => icon.colorFilter), [expected, expected]);
+      }
+    });
+  }
 
   for (final hasBalance in [false, true]) {
     testWidgets('vault instructions align and scroll above the action with balance: $hasBalance', (tester) async {
