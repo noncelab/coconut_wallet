@@ -1,17 +1,20 @@
 import 'dart:async';
 
-import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutPopup;
+import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar, CoconutPopup;
 import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/ark/ark_board.dart';
 import 'package:coconut_wallet/model/ark/ark_movement.dart';
 import 'package:coconut_wallet/providers/ark_provider.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/utils/vibration_util.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/widgets/features/send/send_amount_header.dart';
 import 'package:coconut_wallet/widgets/features/transaction/icon/pending_transaction_lottie_icon.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:flutter/material.dart';
@@ -30,11 +33,39 @@ class ArkPaymentStart {
   final bool isDone;
 }
 
+/// What a payment from Ark is about to send, shown for a final check before it goes out.
+class ArkPaymentReview {
+  const ArkPaymentReview({
+    required this.headline,
+    this.recipient,
+    required this.amountSats,
+    required this.feeSats,
+    required this.unit,
+    required this.sourceDescription,
+    this.submitText,
+  });
+
+  final String headline;
+  final String? recipient;
+  final int amountSats;
+  final int? feeSats;
+  final BitcoinUnit unit;
+  final String sourceDescription;
+  final String? submitText;
+}
+
 /// Pays from Ark with the send screen's broadcast animation: "Sending request" while it runs, then
 /// "Transaction Sent" as on-chain sends end. A payment that isn't done within five seconds shows as
 /// pending (it finishes in the background) instead. Confirm goes back to where Send started.
 class ArkPaymentScreen extends StatefulWidget {
-  const ArkPaymentScreen({super.key, required this.walletId, required this.pay, required this.isSendStart});
+  const ArkPaymentScreen({
+    super.key,
+    required this.walletId,
+    required this.pay,
+    required this.isSendStart,
+    this.review,
+    this.authenticate,
+  });
 
   final int walletId;
 
@@ -45,6 +76,12 @@ class ArkPaymentScreen extends StatefulWidget {
   /// The route Confirm returns to.
   final RoutePredicate isSendStart;
 
+  /// Shown first; the payment starts once Send is tapped.
+  final ArkPaymentReview? review;
+
+  /// Asked when Send is tapped on the review.
+  final Future<bool> Function()? authenticate;
+
   @override
   State<ArkPaymentScreen> createState() => _ArkPaymentScreenState();
 }
@@ -54,21 +91,41 @@ enum _Outcome { sending, sent, pending, stalled, notSent }
 class _ArkPaymentScreenState extends State<ArkPaymentScreen> with SingleTickerProviderStateMixin {
   static const _pendingAfter = Duration(seconds: 5);
 
-  late final AnimationController _lottie = AnimationController(vsync: this);
+  late final AnimationController _lottie;
   final Completer<void> _lottieLoaded = Completer<void>();
   late final ArkProvider _arkProvider;
   _Outcome _outcome = _Outcome.sending;
   bool _isFinished = false;
   Timer? _pendingTimer;
   int? _watchedMovementId;
-  final DateTime _startedAt = DateTime.now();
+  late DateTime _startedAt = DateTime.now();
+  late bool _isReviewing = widget.review != null;
+  late BitcoinUnit _unit = widget.review?.unit ?? BitcoinUnit.btc;
+  bool _isAuthenticating = false;
 
   @override
   void initState() {
     super.initState();
+    _lottie = AnimationController(vsync: this);
     _arkProvider = context.read<ArkProvider>();
     _arkProvider.setFastSync(widget.walletId, true);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+    if (!_isReviewing) WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+  }
+
+  Future<void> _confirm() async {
+    if (_isAuthenticating) return;
+    final authenticate = widget.authenticate;
+    if (authenticate != null) {
+      _isAuthenticating = true;
+      final authenticated = await authenticate();
+      _isAuthenticating = false;
+      if (!authenticated || !mounted) return;
+    }
+    setState(() {
+      _isReviewing = false;
+      _startedAt = DateTime.now();
+    });
+    unawaited(_run());
   }
 
   @override
@@ -200,8 +257,114 @@ class _ArkPaymentScreenState extends State<ArkPaymentScreen> with SingleTickerPr
     if (mounted) setState(() => _isFinished = true);
   }
 
+  Widget _buildReviewRow(String label, String value) {
+    final colors = context.coconutColors;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(label, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+        ),
+        CoconutLayout.spacing_1000w,
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: CoconutTypography.body3_12_NumberBold.setColor(colors.primaryText),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReview(ArkPaymentReview review) {
+    final colors = context.coconutColors;
+    final fee = review.feeSats;
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: CoconutAppBar.build(title: t.broadcasting_screen.title, context: context),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: CoconutLayout.defaultPadding),
+              child: Column(
+                children: [
+                  CoconutLayout.spacing_1000h,
+                  Text(
+                    review.headline,
+                    style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText),
+                    textAlign: TextAlign.center,
+                  ),
+                  CoconutLayout.spacing_400h,
+                  SendAmountHeader(
+                    amountText: _unit.displayBitcoinAmount(review.amountSats),
+                    unit: _unit,
+                    satoshiAmount: review.amountSats,
+                    totalCostAmountText: fee == null ? '-' : _unit.displayBitcoinAmount(review.amountSats + fee),
+                    detailText: fee == 0 ? review.sourceDescription : null,
+                    onTap: () => setState(() => _unit = _unit.next),
+                    topMargin: 0,
+                    fiatTextStyle: CoconutTypography.body2_14_Number.setColor(colors.secondaryText),
+                  ),
+                  if (review.recipient != null || (fee != null && fee > 0)) ...[
+                    CoconutLayout.spacing_800h,
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: colors.surface),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (review.recipient case final recipient?) _buildReviewRow(t.receiver, recipient),
+                          if (review.recipient != null && fee != null && fee > 0) ...[
+                            CoconutLayout.spacing_400h,
+                            Divider(color: colors.divider, height: 1),
+                            CoconutLayout.spacing_400h,
+                          ],
+                          if (fee != null && fee > 0)
+                            _buildReviewRow(
+                              t.estimated_fee,
+                              _unit.isPrefixSymbol
+                                  ? '${_unit.symbol} ${_unit.displayBitcoinAmount(fee)}'
+                                  : '${_unit.displayBitcoinAmount(fee)} ${_unit.symbol}',
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  if (fee != 0) ...[
+                    CoconutLayout.spacing_300h,
+                    Text(
+                      review.sourceDescription,
+                      textAlign: TextAlign.center,
+                      style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                    ),
+                  ],
+                  CoconutLayout.spacing_2500h,
+                ],
+              ),
+            ),
+            FixedBottomButton(
+              showSurroundings: false,
+              isVisibleAboveKeyboard: false,
+              onButtonClicked: _confirm,
+              text: review.submitText ?? t.broadcasting_screen.btn_submit,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final review = widget.review;
+    if (_isReviewing && review != null) return _buildReview(review);
     final colors = context.coconutColors;
     final height = MediaQuery.sizeOf(context).height;
     final title = switch (_outcome) {

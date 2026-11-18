@@ -1347,7 +1347,24 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
     final amount = _viewModel.arkPaymentAmountSats;
     final offboardsAll = _viewModel.isArkMaxMode && route.rail == ArkPaymentRail.onchain;
     if (amount == null) return;
-    if (!await FlutterHotWalletAuthenticator(context).authenticate() || !mounted) return;
+    final fee = _viewModel.arkFee;
+    final review = ArkPaymentReview(
+      headline: switch (route.rail) {
+        ArkPaymentRail.ark => t.ark.send.review_ark,
+        ArkPaymentRail.lightningInvoice || ArkPaymentRail.lightningAddress => t.ark.send.review_lightning,
+        ArkPaymentRail.onchain => t.ark.send.review_onchain,
+      },
+      recipient: route.destination,
+      amountSats: amount,
+      feeSats: fee,
+      unit: _viewModel.currentUnit,
+      sourceDescription:
+          route.rail == ArkPaymentRail.onchain
+              ? (offboardsAll ? t.ark.send.offboard_all : t.ark.send.offboard)
+              : fee == 0
+              ? t.ark.send.fee_free_description
+              : t.ark.send.from_ark,
+    );
     final arkProvider = context.read<ArkProvider>();
     Future<ArkPaymentStart> pay() async {
       if (offboardsAll) {
@@ -1369,7 +1386,14 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       PageRouteBuilder<void>(
         settings: const RouteSettings(name: '/ark-payment'),
         transitionDuration: const Duration(milliseconds: 280),
-        pageBuilder: (_, __, ___) => ArkPaymentScreen(walletId: walletId, pay: pay, isSendStart: _isSendStart),
+        pageBuilder:
+            (_, __, ___) => ArkPaymentScreen(
+              walletId: walletId,
+              pay: pay,
+              isSendStart: _isSendStart,
+              review: review,
+              authenticate: () => FlutterHotWalletAuthenticator(context).authenticate(),
+            ),
         transitionsBuilder:
             (_, animation, __, child) =>
                 FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeOutCubic), child: child),

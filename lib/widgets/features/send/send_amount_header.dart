@@ -19,6 +19,7 @@ class SendAmountHeader extends StatelessWidget {
   final double amountFontSize;
   final double unitFontSize;
   final double detailsOpacity;
+  final String? detailText;
 
   const SendAmountHeader({
     super.key,
@@ -34,6 +35,7 @@ class SendAmountHeader extends StatelessWidget {
     this.amountFontSize = 36,
     this.unitFontSize = 18,
     this.detailsOpacity = 1,
+    this.detailText,
   });
 
   @override
@@ -82,9 +84,10 @@ class SendAmountHeader extends StatelessWidget {
         Opacity(
           opacity: detailsOpacity,
           child: Text(
-            t.send_confirm_screen.total_required_amount(
-              n: '${unit.isPrefixSymbol ? unit.symbol : ''} $totalCostAmountText ${unit.isPrefixSymbol ? '' : unit.symbol}',
-            ),
+            detailText ??
+                t.send_confirm_screen.total_required_amount(
+                  n: '${unit.isPrefixSymbol ? unit.symbol : ''} $totalCostAmountText ${unit.isPrefixSymbol ? '' : unit.symbol}',
+                ),
             style: CoconutTypography.body3_12_Number.setColor(context.coconutColors.secondaryText),
             textScaler: const TextScaler.linear(1.0),
           ),

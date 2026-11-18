@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -77,14 +79,11 @@ class _ArkMoveScreenState extends State<ArkMoveScreen> {
   Future<void> _move() async {
     if (!_viewModel.canMove) return;
     FocusScope.of(context).unfocus();
-    final unlocked = await unlockHotWalletForSigning(
-      context,
-      needsPassphrase: _viewModel.needsPassphrase,
-      validatePassphrase: _viewModel.validatePassphrase,
-      screenName: AnalyticsScreenNames.arkMovePassphraseSheet,
-    );
-    if (!mounted || unlocked == null) return;
-    final passphrase = unlocked.passphrase;
+    final arrival = _viewModel.arrivalSats;
+    final spend = _viewModel.spendSats;
+    if (arrival == null || spend == null) return;
+    final toArk = _viewModel.direction == ArkMoveDirection.toArk;
+    Uint8List? passphrase;
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
         settings: const RouteSettings(name: '/ark-payment'),
@@ -92,12 +91,34 @@ class _ArkMoveScreenState extends State<ArkMoveScreen> {
         pageBuilder:
             (_, __, ___) => ArkPaymentScreen(
               walletId: widget.walletId,
+              review: ArkPaymentReview(
+                headline: toArk ? t.ark.move.review_to_ark : t.ark.move.review_to_onchain,
+                amountSats: arrival,
+                feeSats: spend - arrival,
+                unit: _unit,
+                sourceDescription:
+                    toArk
+                        ? t.ark.move.board_note(blocks: _viewModel.boardTerms?.requiredConfirmations ?? 0)
+                        : t.ark.send.from_ark,
+                submitText: t.ark.move.action,
+              ),
+              authenticate: () async {
+                final unlocked = await unlockHotWalletForSigning(
+                  context,
+                  needsPassphrase: _viewModel.needsPassphrase,
+                  validatePassphrase: _viewModel.validatePassphrase,
+                  screenName: AnalyticsScreenNames.arkMovePassphraseSheet,
+                );
+                if (unlocked == null) return false;
+                passphrase = unlocked.passphrase;
+                return true;
+              },
               pay: () async {
                 try {
                   await _viewModel.move(passphrase: passphrase);
                   return const ArkPaymentStart(isDone: true);
                 } finally {
-                  passphrase?.fillRange(0, passphrase.length, 0);
+                  passphrase?.fillRange(0, passphrase!.length, 0);
                 }
               },
               isSendStart:
