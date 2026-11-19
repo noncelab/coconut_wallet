@@ -31,10 +31,10 @@ class _Auth extends Fake implements AuthProvider {
   bool get isAuthEnabled => false;
 }
 
-ArkMovement _pending(int id) => ArkMovement.fromBark(
+ArkMovement _pending(int id, {String status = 'pending'}) => ArkMovement.fromBark(
   bark.Movement(
     id: id,
-    status: 'pending',
+    status: status,
     subsystemName: 'bark.arkoor',
     subsystemKind: 'send',
     metadataJson: '{}',
@@ -158,6 +158,21 @@ void main() {
     final start = ring.turns.value;
     await tester.pump(const Duration(milliseconds: 500));
     expect(ring.turns.value - start, closeTo(0.25, 0.01));
+  });
+
+  testWidgets('a Lightning payment that settles later turns into sent on the same screen', (tester) async {
+    final backend = await pump(tester, input: _invoice);
+    backend.movements = [_pending(99)];
+    await send(tester);
+    expect(find.text(t.ark_wallet.result_pending), findsOneWidget);
+
+    backend.movements = [_pending(99, status: 'successful')];
+    await Provider.of<ArkWalletProvider>(tester.element(find.byType(ArkSendConfirmScreen)), listen: false).syncNow();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text(t.ark_wallet.result_sent), findsOneWidget);
+    expect(find.byKey(ValueKey(t.ark_wallet.result_pending_desc)), findsNothing);
   });
 
   testWidgets('a sent payment shows the sent icon', (tester) async {

@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAppBar;
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app_guard.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -52,6 +53,16 @@ class _ArkSendConfirmScreenState extends State<ArkSendConfirmScreen> {
     });
   }
 
+  /// 보낸 직후 아직 보내는 중이었으면 이후 내역 상태를 따라감
+  static ArkSendOutcome? _settled(ArkSendOutcome? outcome, ArkMovementStatus? status) {
+    if (outcome != ArkSendOutcome.pending || status == null) return outcome;
+    return switch (status) {
+      ArkMovementStatus.pending => ArkSendOutcome.pending,
+      ArkMovementStatus.failed || ArkMovementStatus.canceled => ArkSendOutcome.failed,
+      _ => ArkSendOutcome.sent,
+    };
+  }
+
   void _done() => Navigator.of(
     context,
   ).popUntil((route) => route.settings.name == AnalyticsScreenNames.ccosArkWalletHome || route.isFirst);
@@ -65,7 +76,11 @@ class _ArkSendConfirmScreenState extends State<ArkSendConfirmScreen> {
     final amount = viewModel.amountSats ?? 0;
     final fee = viewModel.fee ?? 0;
     String sats(int value) => unit.displayBitcoinAmount(value, withUnit: true);
-    final outcome = _sending ? ArkSendOutcome.pending : _result?.outcome;
+    final movementId = _result?.movementId;
+    final status = context.select<ArkWalletProvider, ArkMovementStatus?>(
+      (wallet) => wallet.movements.where((movement) => movement.id == movementId).firstOrNull?.status,
+    );
+    final outcome = _sending ? ArkSendOutcome.pending : _settled(_result?.outcome, status);
     final failed = outcome == ArkSendOutcome.failed;
     final (title, description) = switch (outcome) {
       null => (isArk ? t.ark_wallet.confirm_ark : t.ark_wallet.confirm_lightning, null),
@@ -146,11 +161,7 @@ class _ArkSendConfirmScreenState extends State<ArkSendConfirmScreen> {
                     children: [
                       Opacity(
                         opacity: 0,
-                        child: Text(
-                          longestDescription,
-                          textAlign: TextAlign.center,
-                          style: descriptionStyle,
-                        ),
+                        child: Text(longestDescription, textAlign: TextAlign.center, style: descriptionStyle),
                       ),
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 250),
