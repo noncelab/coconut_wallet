@@ -174,7 +174,7 @@ class SatoshiAmountInputFormatter extends TextInputFormatter {
     if (text.isEmpty) return newValue;
 
     final sats = int.tryParse(text);
-    if (sats != null && sats > kMaxSupplySats) return oldValue;
+    if (sats == null || sats > kMaxSupplySats) return oldValue;
 
     final formattedText = formatIntWithGroupingSeparator(text, NumberFormatConfig.instance.groupingSeparator);
     final offset = _calculateSelectionOffset(

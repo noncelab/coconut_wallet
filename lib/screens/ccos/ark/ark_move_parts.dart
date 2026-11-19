@@ -26,8 +26,10 @@ class ArkMoveAmountBox extends StatefulWidget {
     this.label,
     required this.amountSats,
     required this.onAmount,
-    required this.onMax,
+    this.onMax,
     this.isError = false,
+    this.autofocus = false,
+    this.backgroundColor,
   });
 
   /// 없으면 금액 칸만, 채우기·내보내기 카드 안에서
@@ -37,7 +39,11 @@ class ArkMoveAmountBox extends StatefulWidget {
   /// 보내기 화면처럼 금액과 테두리를 경고 색으로
   final bool isError;
   final void Function(int? amountSats) onAmount;
-  final VoidCallback onMax;
+
+  /// 없으면 [최대] 버튼 없이, 받기 금액 시트
+  final VoidCallback? onMax;
+  final bool autofocus;
+  final Color? backgroundColor;
 
   @override
   State<ArkMoveAmountBox> createState() => _ArkMoveAmountBoxState();
@@ -46,6 +52,16 @@ class ArkMoveAmountBox extends StatefulWidget {
 class _ArkMoveAmountBoxState extends State<ArkMoveAmountBox> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.autofocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focusNode.requestFocus();
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -92,7 +108,7 @@ class _ArkMoveAmountBoxState extends State<ArkMoveAmountBox> {
           maxLines: 1,
           isLengthVisible: false,
           padding: EdgeInsets.only(left: unit.isPrefixSymbol ? 0 : 16, right: 8),
-          backgroundColor: colors.inputSurface,
+          backgroundColor: widget.backgroundColor ?? colors.inputSurface,
           isError: widget.isError,
           textColor: widget.isError ? colors.dangerText : null,
           clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
@@ -109,15 +125,18 @@ class _ArkMoveAmountBoxState extends State<ArkMoveAmountBox> {
                     ),
                   )
                   : null,
-          suffix: CoconutButton(
-            key: const Key('ark-move-max'),
-            text: t.max,
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            onPressed: widget.onMax,
-            backgroundColor: colors.surfaceButton,
-            foregroundColor: colors.surfaceButtonText,
-          ),
+          suffix:
+              widget.onMax == null
+                  ? null
+                  : CoconutButton(
+                    key: const Key('ark-move-max'),
+                    text: t.max,
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    onPressed: widget.onMax!,
+                    backgroundColor: colors.surfaceButton,
+                    foregroundColor: colors.surfaceButtonText,
+                  ),
         ),
       ],
     );

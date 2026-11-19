@@ -62,7 +62,6 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
   Future<void> _enterAmount(ArkReceiveViewModel viewModel) async {
     final result = await ArkReceiveAmountSheet.show(
       context: context,
-      currentUnit: context.read<ArkWalletProvider>().unit,
       initialAmountSats: viewModel.amountSats,
       initialMemo: viewModel.invoiceMemo,
       screenName: AnalyticsScreenNames.ccosArkWalletReceiveAmount,
@@ -105,6 +104,7 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
                       key: ValueKey('ark-receive-way-${format.name}'),
                       title: _title(format),
                       value: viewModel.valueOf(format),
+                      displayValue: viewModel.displayOf(format),
                       emptyText: t.ark_wallet.format_lightning_needs_amount,
                       selected: viewModel.format == format,
                       onTap: () {
@@ -179,7 +179,7 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
                     key: ValueKey('ark-receive-qr-${viewModel.format.name}'),
                     qrData: qrData,
                     isAddress: viewModel.format == ArkReceiveFormat.arkAddress,
-                    displayText: viewModel.format == ArkReceiveFormat.arkAddress ? qrData : null,
+                    displayText: viewModel.displayOf(viewModel.format),
                     qrcodeTopWidget: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -216,6 +216,7 @@ class _WayRow extends StatelessWidget {
     super.key,
     required this.title,
     required this.value,
+    required this.displayValue,
     required this.emptyText,
     required this.selected,
     required this.onTap,
@@ -223,6 +224,7 @@ class _WayRow extends StatelessWidget {
 
   final String title;
   final String? value;
+  final String? displayValue;
   final String emptyText;
   final bool selected;
   final VoidCallback onTap;
@@ -257,7 +259,8 @@ class _WayRow extends StatelessWidget {
                       DefaultTextHeightBehavior(
                         textHeightBehavior: arkBoxTextHeight,
                         child: CopyTextContainer(
-                          text: value,
+                          text: displayValue ?? value,
+                          copyText: value,
                           padding: const EdgeInsets.all(20),
                           textStyle: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
                         ),

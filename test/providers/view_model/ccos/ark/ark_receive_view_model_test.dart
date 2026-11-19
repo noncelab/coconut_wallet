@@ -49,6 +49,21 @@ void main() {
     expect(viewModel.availableFormats, [ArkReceiveFormat.arkAddress]);
   });
 
+  test('long invoices are shortened on screen but kept whole for the QR and copy', () async {
+    backend.invoiceBody = 'q' * 300;
+    await viewModel.setAmount(2100);
+
+    for (final format in [ArkReceiveFormat.paymentRequest, ArkReceiveFormat.lightningInvoice]) {
+      final full = viewModel.valueOf(format)!;
+      final shown = viewModel.displayOf(format)!;
+      final [head, tail] = shown.split('…');
+      expect(shown.length, lessThan(80));
+      expect(full, startsWith(head));
+      expect(full, endsWith(tail));
+    }
+    expect(viewModel.displayOf(ArkReceiveFormat.arkAddress), backend.address);
+  });
+
   test('an amount makes an invoice and shows the payment request', () async {
     await viewModel.setAmount(2100);
 

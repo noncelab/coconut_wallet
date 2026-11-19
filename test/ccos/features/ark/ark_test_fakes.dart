@@ -237,13 +237,14 @@ class FakeArkBackend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements Ark
   Future<String> newArkAddress(String fingerprint) async => address;
 
   final List<String?> invoiceDescriptions = [];
+  String invoiceBody = 'fake';
 
   @override
   Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description}) async {
     invoiceAmounts.add(amountSats);
     invoiceDescriptions.add(description);
     return ArkLightningInvoice(
-      invoice: 'lnbcrt${amountSats}n1fake',
+      invoice: 'lnbcrt${amountSats}n1$invoiceBody',
       paymentHash: 'hash-$amountSats',
       amountSats: amountSats,
       feeSats: 0,

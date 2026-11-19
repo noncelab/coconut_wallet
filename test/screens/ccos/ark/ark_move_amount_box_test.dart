@@ -86,4 +86,17 @@ void main() {
     expect(field.textEditingValue.text, '5,000');
     expect(field.buildTextSpan().toPlainText(), '5,000 sats');
   });
+
+  testWidgets('it stops at 21 million bitcoin', (tester) async {
+    final amounts = await pump(tester, null);
+    final field = find.byType(EditableText);
+
+    await tester.enterText(field, '2100000000000000');
+    await tester.pump();
+    await tester.enterText(field, '21000000000000001');
+    await tester.pump();
+
+    expect(tester.state<EditableTextState>(field).textEditingValue.text, '2,100,000,000,000,000');
+    expect(amounts.last, 2100000000000000);
+  });
 }

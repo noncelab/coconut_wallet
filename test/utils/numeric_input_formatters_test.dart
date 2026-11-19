@@ -453,6 +453,18 @@ void main() {
       NumberFormatConfig.instance.applyPreset(NumberFormatPreset.frenchSpace);
       expect(formatter.formatEditUpdate(oldValue, newValue).text, '1 234');
     });
+    test('rejects amounts above 21 million bitcoin, even when too long to parse', () {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.dotDecimal);
+      const formatter = SatoshiAmountInputFormatter();
+      const oldValue = TextEditingValue(text: '2,000', selection: TextSelection.collapsed(offset: 5));
+
+      for (final pasted in ['2100000000000001', '20009999999999999999']) {
+        final newValue = TextEditingValue(text: pasted, selection: TextSelection.collapsed(offset: pasted.length));
+        expect(formatter.formatEditUpdate(oldValue, newValue), oldValue);
+      }
+      const max = TextEditingValue(text: '2100000000000000', selection: TextSelection.collapsed(offset: 16));
+      expect(formatter.formatEditUpdate(oldValue, max).text, '2,100,000,000,000,000');
+    });
   });
 
   group('resolveAmountKeyInput', () {

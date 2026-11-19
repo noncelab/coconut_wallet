@@ -44,6 +44,13 @@ class ArkReceiveViewModel extends ChangeNotifier {
 
   String? get qrData => valueOf(_format);
 
+  /// 화면에 보이는 값. 인보이스는 앞뒤만 남김
+  String? displayOf(ArkReceiveFormat format) {
+    final value = valueOf(format);
+    if (value == null || format == ArkReceiveFormat.arkAddress || value.length <= 60) return value;
+    return '${value.substring(0, 40)}…${value.substring(value.length - 20)}';
+  }
+
   void select(ArkReceiveFormat format) {
     if (!availableFormats.contains(format)) return;
     _format = format;
