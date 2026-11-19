@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:coconut_wallet/ccos/features/ark/ark_exit.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/repository/secure_storage/hot_wallet_secret_repository.dart';
@@ -99,6 +100,28 @@ class ArkWalletStore {
 
   Future<void> setUnit(BitcoinUnit unit) => _prefs.setStringAndConfirm(SharedPrefKeys.kArkWalletUnit, unit.name);
 
+  ArkExitSession? readExit() {
+    final encoded = _prefs.getStringOrNull(SharedPrefKeys.kArkWalletExit);
+    if (encoded == null || encoded.isEmpty) return null;
+    return ArkExitSession.fromJson(jsonDecode(encoded) as Map<String, dynamic>);
+  }
+
+  Future<void> saveExit(ArkExitSession? session) =>
+      session == null
+          ? _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kArkWalletExit)
+          : _prefs.setStringAndConfirm(SharedPrefKeys.kArkWalletExit, jsonEncode(session.toJson()));
+
+  List<ArkExitSession> readExitHistory() {
+    final encoded = _prefs.getStringOrNull(SharedPrefKeys.kArkWalletExitHistory);
+    if (encoded == null || encoded.isEmpty) return const [];
+    return [for (final json in jsonDecode(encoded) as List) ArkExitSession.fromJson(json as Map<String, dynamic>)];
+  }
+
+  Future<void> saveExitHistory(List<ArkExitSession> exits) => _prefs.setStringAndConfirm(
+    SharedPrefKeys.kArkWalletExitHistory,
+    jsonEncode([for (final exit in exits) exit.toJson()]),
+  );
+
   Map<int, String> readMemos() {
     final encoded = _prefs.getStringOrNull(SharedPrefKeys.kArkWalletMemos);
     if (encoded == null || encoded.isEmpty) return {};
@@ -127,6 +150,8 @@ class ArkWalletStore {
     }
     await _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kArkWallet);
     await _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kArkWalletMemos);
+    await _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kArkWalletExit);
+    await _prefs.deleteSharedPrefsWithKey(SharedPrefKeys.kArkWalletExitHistory);
   }
 
   Future<void> _write(ArkWalletInfo info) => _prefs.setStringAndConfirm(SharedPrefKeys.kArkWallet, jsonEncode(info));

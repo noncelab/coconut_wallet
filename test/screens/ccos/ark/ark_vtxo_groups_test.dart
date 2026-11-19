@@ -10,13 +10,36 @@ void main() {
     final locked = fakeVtxo('locked', locked: true);
     final renewing = fakeVtxo('renewing', expiry: 1050);
 
-    final groups = groupArkVtxos([due, fine, locked, renewing], toRenew: [due], isRenewing: (id) => id == 'renewing');
+    final groups = groupArkVtxos(
+      [due, fine, locked, renewing],
+      toRenew: [due],
+      isRenewing: (id) => id == 'renewing',
+      tipHeight: 1000,
+    );
 
-    expect(groups.map((group) => group.kind), ArkVtxoGroupKind.values);
+    expect(groups.map((group) => group.kind), [
+      ArkVtxoGroupKind.expiring,
+      ArkVtxoGroupKind.spendable,
+      ArkVtxoGroupKind.locked,
+    ]);
     expect(groups[0].vtxos, [due]);
     expect(groups[1].vtxos, [fine]);
     expect(groups[2].vtxos, [locked, renewing]);
-    expect(groupArkVtxos([fine], toRenew: const [], isRenewing: (_) => false).single.kind, ArkVtxoGroupKind.spendable);
+    expect(
+      groupArkVtxos([fine], toRenew: const [], isRenewing: (_) => false, tipHeight: 1000).single.kind,
+      ArkVtxoGroupKind.spendable,
+    );
+  });
+
+  test('already expired VTXOs get their own group first, apart from the ones about to expire', () {
+    final expired = fakeVtxo('expired', expiry: 1000);
+    final due = fakeVtxo('due', expiry: 1100);
+
+    final groups = groupArkVtxos([due, expired], toRenew: [expired, due], isRenewing: (_) => false, tipHeight: 1000);
+
+    expect(groups.map((group) => group.kind), [ArkVtxoGroupKind.expired, ArkVtxoGroupKind.expiring]);
+    expect(groups[0].vtxos, [expired]);
+    expect(groups[1].vtxos, [due]);
   });
 
   test('locked and renewing VTXOs cannot be picked for renewal, expired ones can', () {

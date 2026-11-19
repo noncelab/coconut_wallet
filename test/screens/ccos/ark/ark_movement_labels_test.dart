@@ -56,4 +56,32 @@ void main() {
     expect(arkMovementRouteLabel(lightning), t.ark_wallet.route_lightning);
     expect(arkMovementRouteLabel(failed), '${t.ark_wallet.route_ark} · ${t.ark_wallet.failed}');
   });
+
+  test('adding funds and withdrawing go on-chain', () {
+    expect(arkMovementRouteLabel(_movement(7, subsystem: 'bark.board', sats: 1000)), t.ark_wallet.route_onchain);
+    expect(arkMovementRouteLabel(_movement(8, subsystem: 'bark.offboard', sats: -1000)), t.ark_wallet.route_onchain);
+    expect(arkMovementRouteLabel(_movement(9, subsystem: 'bark.exit', sats: -1000)), t.ark_wallet.route_onchain);
+  });
+
+  test('exits, adding funds and withdrawing read as what the person did, other rows keep the usual status', () {
+    expect(arkMovementStatusText(_movement(1, subsystem: 'bark.exit', sats: -100)), t.ark_wallet.activity_exit_done);
+    expect(
+      arkMovementStatusText(_movement(2, subsystem: 'bark.exit', sats: -100, status: 'pending')),
+      t.ark_wallet.activity_exit_pending,
+    );
+    expect(
+      arkMovementStatusText(_movement(3, subsystem: 'bark.exit', sats: -100, status: 'failed')),
+      t.ark_wallet.activity_exit_failed,
+    );
+    expect(arkMovementStatusText(_movement(4, subsystem: 'bark.board', sats: 100)), t.ark_wallet.activity_fill_done);
+    expect(
+      arkMovementStatusText(_movement(5, subsystem: 'bark.board', sats: 100, status: 'pending')),
+      t.ark_wallet.activity_fill_pending,
+    );
+    expect(
+      arkMovementStatusText(_movement(6, subsystem: 'bark.offboard', sats: -100)),
+      t.ark_wallet.activity_export_done,
+    );
+    expect(arkMovementStatusText(_movement(7, subsystem: 'bark.arkoor', sats: -100)), isNull);
+  });
 }

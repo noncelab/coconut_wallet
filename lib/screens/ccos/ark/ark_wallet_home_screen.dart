@@ -9,6 +9,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_flow.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_nudge.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_expiry_text.dart';
@@ -156,6 +157,9 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
     final balance = wallet.balance.total;
     final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
     final recent = wallet.movements;
+    final canFill = context.select<WalletProvider, bool>(
+      (wallets) => ArkWalletNavigation.fillWalletIds(wallets).isNotEmpty,
+    );
     _measureTop();
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -210,14 +214,14 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                                 icon: CommonActionIconPath.plus,
                                 scale: 14 / 24,
                                 label: t.ark_wallet.fill,
-                                onPressed: null,
+                                onPressed: canFill ? navigation.openFill : null,
                               ),
                               (
                                 id: 'ark-wallet-export',
                                 icon: CommonActionIconPath.removeMinus,
                                 scale: 1.0,
                                 label: t.ark_wallet.export,
-                                onPressed: null,
+                                onPressed: balance > 0 ? navigation.openExport : null,
                               ),
                               (
                                 id: 'ark-wallet-receive',
@@ -269,7 +273,7 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                         ],
                       ],
                     ),
-                    if (wallet.vtxosToRenew.isNotEmpty) ...[
+                    if (wallet.canRenewDue) ...[
                       CoconutLayout.spacing_500h,
                       ArkNudgeCard(
                         key: const Key('ark-renew-nudge'),
@@ -320,6 +324,7 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                         monochrome: true,
                         iconPathOf: (tx) => arkMovementIconPath(recent, tx),
                         timeDetailOf: (tx) => arkMovementTimeDetail(recent, tx),
+                        statusTextOf: (tx) => arkMovementStatusTextOf(recent, tx),
                         onTransactionSelected: (tx) {
                           final movement = recent.where((movement) => '${movement.id}' == tx.txHash).firstOrNull;
                           if (movement != null) navigation.openMovement(movement);

@@ -88,24 +88,27 @@ class _ArkRenewSheetState extends State<_ArkRenewSheet> {
         children: [
           Text(t.ark_wallet.renew_sheet_line, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
           CoconutLayout.spacing_300h,
-          ArkInfoRow(
-            label: t.ark_wallet.renew_amount,
-            value: unit.displayBitcoinAmount(amount, withUnit: true),
-            isNumber: true,
-          ),
-          Divider(height: 1, color: colors.divider),
-          ArkInfoRow(
-            label: t.fee,
-            value:
-                _feeFailed
-                    ? t.ark_wallet.problem_fee
-                    : fee == null
-                    ? '…'
-                    : fee == 0
-                    ? t.ark_wallet.fee_free
-                    : unit.displayBitcoinAmount(fee, withUnit: true),
-            isNumber: fee != null && fee != 0,
-            valueColor: _feeFailed ? colors.danger : null,
+          ArkInfoBox(
+            children: [
+              ArkInfoRow(
+                label: t.ark_wallet.renew_amount,
+                value: unit.displayBitcoinAmount(amount, withUnit: true),
+                isNumber: true,
+              ),
+              ArkInfoRow(
+                label: t.fee,
+                value:
+                    _feeFailed
+                        ? t.ark_wallet.problem_fee
+                        : fee == null
+                        ? '…'
+                        : fee == 0
+                        ? t.ark_wallet.fee_free
+                        : unit.displayBitcoinAmount(fee, withUnit: true),
+                isNumber: fee != null && fee != 0,
+                valueColor: _feeFailed ? colors.danger : null,
+              ),
+            ],
           ),
           CoconutLayout.spacing_1000h,
           CoconutButton(

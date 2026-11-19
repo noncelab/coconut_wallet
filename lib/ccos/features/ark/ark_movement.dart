@@ -146,3 +146,36 @@ class ArkMovement {
     return !(kind == ArkMovementKind.lightningSend && isPending);
   }
 }
+
+/// 함께 시작한 서버 없이 출금은 VTXO마다 따로 기록되므로, 바로 이어진 출금(1분 안)을 한 거래로 합침. [movements]는 최신순
+List<ArkMovement> mergeArkExits(List<ArkMovement> movements) {
+  final merged = <ArkMovement>[];
+  for (final movement in movements) {
+    final last = merged.isEmpty ? null : merged.last;
+    if (last != null &&
+        last.kind == ArkMovementKind.exit &&
+        movement.kind == ArkMovementKind.exit &&
+        last.createdAt.difference(movement.createdAt).abs() < const Duration(minutes: 1)) {
+      merged[merged.length - 1] = ArkMovement(
+        id: last.id,
+        status: last.isPending || movement.isPending ? ArkMovementStatus.pending : last.status,
+        subsystemName: last.subsystemName,
+        subsystemKind: last.subsystemKind,
+        metadataJson: last.metadataJson,
+        effectiveBalanceSats: last.effectiveBalanceSats + movement.effectiveBalanceSats,
+        offchainFeeSats: last.offchainFeeSats + movement.offchainFeeSats,
+        sentTo: [...last.sentTo, ...movement.sentTo],
+        receivedOn: [...last.receivedOn, ...movement.receivedOn],
+        inputVtxoIds: [...last.inputVtxoIds, ...movement.inputVtxoIds],
+        outputVtxoIds: [...last.outputVtxoIds, ...movement.outputVtxoIds],
+        createdAt: last.createdAt,
+        completedAt: last.completedAt,
+        paymentHash: last.paymentHash,
+        lightningInvoice: last.lightningInvoice,
+      );
+    } else {
+      merged.add(movement);
+    }
+  }
+  return merged;
+}

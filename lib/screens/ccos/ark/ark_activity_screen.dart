@@ -76,6 +76,7 @@ class ArkActivityScreen extends StatelessWidget {
                 monochrome: true,
                 iconPathOf: (tx) => arkMovementIconPath(group.movements, tx),
                 timeDetailOf: (tx) => arkMovementTimeDetail(group.movements, tx),
+                statusTextOf: (tx) => arkMovementStatusTextOf(group.movements, tx),
                 onTransactionSelected: (tx) {
                   final movement = group.movements.where((movement) => '${movement.id}' == tx.txHash).firstOrNull;
                   if (movement != null) ArkMovementDetailScreen.open(context, movement);

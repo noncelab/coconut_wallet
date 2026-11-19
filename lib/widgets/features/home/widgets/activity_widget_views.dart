@@ -31,6 +31,9 @@ class RecentTransactionsView extends StatelessWidget {
   /// 줄마다 시각 옆에 붙일 말(예: 경로), null이면 시각만
   final String? Function(HomeRecentTransaction tx)? timeDetailOf;
 
+  /// 줄마다 상태 이름 대신 쓸 말, null이면 받기 완료·보내기 완료 같은 기본 이름
+  final String? Function(HomeRecentTransaction tx)? statusTextOf;
+
   final List<HomeRecentTransaction> transactions;
   final String Function(int sats) amountText;
   final DateTime now;
@@ -60,6 +63,7 @@ class RecentTransactionsView extends StatelessWidget {
     this.monochrome = false,
     this.iconPathOf,
     this.timeDetailOf,
+    this.statusTextOf,
   });
 
   /// [rows]줄을 줄 높이 [rowHeight]로 그릴 때의 전체 높이
@@ -124,6 +128,7 @@ class RecentTransactionsView extends StatelessWidget {
                     monochrome: monochrome,
                     iconPath: iconPathOf?.call(tx),
                     timeDetail: timeDetailOf?.call(tx),
+                    statusText: statusTextOf?.call(tx),
                     height: 64,
                     onTap:
                         onTransactionSelected != null
@@ -164,6 +169,7 @@ class RecentTransactionsView extends StatelessWidget {
                     monochrome: monochrome,
                     iconPath: iconPathOf?.call(tx),
                     timeDetail: timeDetailOf?.call(tx),
+                    statusText: statusTextOf?.call(tx),
                     height: rowHeight,
                     onTap:
                         onTransactionSelected != null
@@ -205,6 +211,7 @@ class _TransactionRow extends StatelessWidget {
   final bool monochrome;
   final String? iconPath;
   final String? timeDetail;
+  final String? statusText;
   final VoidCallback? onTap;
 
   const _TransactionRow({
@@ -217,6 +224,7 @@ class _TransactionRow extends StatelessWidget {
     this.monochrome = false,
     this.iconPath,
     this.timeDetail,
+    this.statusText,
     this.onTap,
   });
 
@@ -231,12 +239,14 @@ class _TransactionRow extends StatelessWidget {
           TransactionType.sent => TransactionStatus.sent,
           _ => TransactionStatus.self,
         };
-    final statusText = switch (status) {
-      TransactionStatus.received => t.status_received,
-      TransactionStatus.receiving => t.status_receiving,
-      TransactionStatus.sent || TransactionStatus.self => t.status_sent,
-      TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
-    };
+    final statusText =
+        this.statusText ??
+        switch (status) {
+          TransactionStatus.received => t.status_received,
+          TransactionStatus.receiving => t.status_receiving,
+          TransactionStatus.sent || TransactionStatus.self => t.status_sent,
+          TransactionStatus.sending || TransactionStatus.selfsending => t.status_sending,
+        };
     final statusLabel = Text(
       statusText,
       maxLines: 1,

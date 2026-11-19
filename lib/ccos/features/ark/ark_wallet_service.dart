@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
+import 'package:crypto/crypto.dart';
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_board.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_exit.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
@@ -32,6 +36,17 @@ String _masterFingerprint(({Uint8List mnemonic, String networkType}) input) {
   }
 }
 
+/// 출금 수수료 지갑의 12단어. 아크 12단어에서 HMAC으로 따로 뽑아 아크 키와 섞이지 않게
+String deriveExitFeeMnemonic(Uint8List mnemonic) {
+  final digest = Hmac(sha256, utf8.encode('coconut-ark-exit-fee-wallet')).convert(mnemonic).bytes;
+  final seed = Seed.fromEntropy(Uint8List.fromList(digest.sublist(0, 16)));
+  try {
+    return utf8.decode(seed.mnemonic);
+  } finally {
+    seed.wipe();
+  }
+}
+
 /// 결제 호출 전후 내역을 비교해 그 호출이 만든 거래 id. bark 결제 호출은 거래 id를 돌려주지 않음
 int? newestCreatedMovementId(Set<int> before, Iterable<int> after) {
   final created = after.where((id) => !before.contains(id));
@@ -54,6 +69,9 @@ class ArkWalletService implements ArkWalletBackend {
   ArkWalletService._();
 
   final Map<String, bark.Wallet> _openWallets = {};
+
+  /// 서버 없이 출금할 때 출금 거래 수수료(CPFP)를 내는 bark 온체인 지갑, 아크 지갑과 함께 열림
+  final Map<String, bark.OnchainWallet> _exitFeeWallets = {};
   final Map<String, HotWalletLifecycleLock> _locks = {};
   Directory? _baseDir;
 
@@ -110,9 +128,20 @@ class ArkWalletService implements ArkWalletBackend {
 
   @override
   Future<void> sync(String fingerprint) => withWallet(fingerprint, (wallet) async {
-    await wallet.maintenanceDelegated();
-    await wallet.syncExits();
+    try {
+      await wallet.maintenanceDelegated();
+    } finally {
+      await wallet.syncExits();
+      await _closeClaimedExits(wallet);
+    }
   });
+
+  /// 모두 받은 출금의 bark 거래 내역 완료 처리
+  Future<void> _closeClaimedExits(bark.Wallet wallet) async {
+    final exits = await wallet.getExitVtxos();
+    if (exits.isEmpty || !exits.every((exit) => exit.state is bark.ClaimedExitState)) return;
+    await wallet.progressExits(feeRateSatPerVb: 1);
+  }
 
   @override
   Future<List<ArkVtxo>> vtxos(String fingerprint) =>
@@ -140,6 +169,119 @@ class ArkWalletService implements ArkWalletBackend {
   @override
   Future<int> estimateRenewFee(String fingerprint, List<String> vtxoIds) =>
       withWallet(fingerprint, (wallet) async => (await wallet.estimateRefreshFee(vtxoIds: vtxoIds)).feeSats);
+
+  @override
+  Future<ArkBoardTerms> boardTerms(String fingerprint) => withWallet(fingerprint, (wallet) async {
+    final info = await wallet.arkInfo();
+    if (info == null) throw StateError('The Ark server is not reachable');
+    return ArkBoardTerms(
+      minAmountSats: info.minBoardAmountSats,
+      maxAmountSats: info.maxVtxoAmountSats,
+      requiredConfirmations: info.requiredBoardConfirmations,
+    );
+  });
+
+  @override
+  Future<ArkBoardFunding> boardFunding(String fingerprint) => withWallet(fingerprint, (wallet) async {
+    final info = await wallet.boardFundingAddress();
+    return ArkBoardFunding(address: info.address, expiryHeight: info.expiryHeight, keypairIndex: info.keypairIndex);
+  });
+
+  @override
+  Future<int> estimateBoardFee(String fingerprint, int amountSats) =>
+      withWallet(fingerprint, (wallet) async => (await wallet.estimateBoardFee(amountSats: amountSats)).feeSats);
+
+  @override
+  Future<void> board(String fingerprint, {required String unsignedPsbtBase64, required ArkBoardFunding funding}) =>
+      withWallet(
+        fingerprint,
+        (wallet) => wallet.boardPsbt(
+          psbtBase64: unsignedPsbtBase64,
+          keypairIndex: funding.keypairIndex,
+          expiryHeight: funding.expiryHeight,
+        ),
+      );
+
+  @override
+  Future<String> broadcastTx(String fingerprint, String txHex) =>
+      withWallet(fingerprint, (wallet) => wallet.broadcastTx(txHex: txHex));
+
+  @override
+  Future<int> estimateExportFee(String fingerprint, String address, {int? amountSats}) =>
+      withWallet(fingerprint, (wallet) async {
+        final estimate =
+            amountSats == null
+                ? await wallet.estimateOffboardAllFee(address: address)
+                : await wallet.estimateSendOnchainFee(address: address, amountSats: amountSats);
+        return estimate.feeSats;
+      });
+
+  @override
+  Future<String> export(String fingerprint, String address, {int? amountSats}) => withWallet(
+    fingerprint,
+    (wallet) async =>
+        amountSats == null
+            ? (await wallet.offboardAll(bitcoinAddress: address)).txid
+            : await wallet.sendOnchain(address: address, amountSats: amountSats),
+  );
+
+  bark.OnchainWallet _exitFeeWallet(String fingerprint) =>
+      _exitFeeWallets[_key(fingerprint)] ?? (throw StateError('No exit fee wallet for $fingerprint'));
+
+  /// 지금 권장 온체인 수수료율(sat/vB), 수수료 지갑이 체인에서 읽음
+  Future<int> _exitFeeRate(String fingerprint) async {
+    final rates = await _exitFeeWallet(fingerprint).feeRates();
+    return max(1, (rates.regularSatPerKwu * 4 / 1000).ceil());
+  }
+
+  @override
+  Future<ArkExitQuote> estimateExit(String fingerprint) => withWallet(fingerprint, (wallet) async {
+    final feeWallet = _exitFeeWallet(fingerprint);
+    final tip = await feeWallet.tipHeight();
+    final vtxos = [
+      for (final vtxo in await wallet.vtxos())
+        if (vtxo.state is! bark.LockedVtxoState && vtxo.expiryHeight > tip) vtxo,
+    ];
+    final feeRate = await _exitFeeRate(fingerprint);
+    // 더스트 한도보다 작은 VTXO처럼 체인에 올릴 수 없는 것은 하나씩 걸러 냄
+    final exitable = <bark.Vtxo>[];
+    for (final vtxo in vtxos) {
+      try {
+        await wallet.estimateEmergencyExitFee(vtxoIds: [vtxo.id], feeRateSatPerVb: feeRate, destination: null);
+        exitable.add(vtxo);
+      } catch (error) {
+        Logger.error('ArkWalletService: VTXO ${vtxo.id} cannot exit on its own: $error');
+      }
+    }
+    final leftOut = vtxos.where((vtxo) => !exitable.contains(vtxo)).fold(0, (sum, vtxo) => sum + vtxo.amountSats);
+    vtxos
+      ..clear()
+      ..addAll(exitable);
+    final ids = [for (final vtxo in vtxos) vtxo.id];
+    final estimate =
+        ids.isEmpty
+            ? null
+            : await wallet.estimateEmergencyExitFee(vtxoIds: ids, feeRateSatPerVb: feeRate, destination: null);
+    return ArkExitQuote(
+      vtxoIds: ids,
+      amountSats: vtxos.fold(0, (sum, vtxo) => sum + vtxo.amountSats),
+      feeSats: estimate?.totalFeeSats ?? 0,
+      txCount: estimate?.txsToBroadcast ?? 0,
+      feeRateSatPerVb: feeRate,
+      firstExpiryHeight: vtxos.isEmpty ? null : vtxos.map((vtxo) => vtxo.expiryHeight).reduce(min),
+      broadcastFeeSats: estimate?.exitBroadcastFeeSats ?? 0,
+      claimFeeSats: estimate?.claimFeeSats ?? 0,
+      exitDelta: (await wallet.arkInfo())?.vtxoExitDelta ?? 0,
+      leftOutSats: leftOut,
+    );
+  });
+
+  @override
+  Future<String> exitFeeAddress(String fingerprint) =>
+      withWallet(fingerprint, (_) => _exitFeeWallet(fingerprint).newAddress());
+
+  @override
+  ArkExitSteps exitSteps(String fingerprint) => _BarkExitSteps(this, fingerprint);
 
   @override
   Future<int?> vtxoLifetime(String fingerprint) =>
@@ -237,6 +379,7 @@ class ArkWalletService implements ArkWalletBackend {
       await _lock(fingerprint).synchronized(() async {
         final wallet = _openWallets.remove(fingerprint);
         if (wallet != null) await _close(wallet);
+        _exitFeeWallets.remove(fingerprint)?.dispose();
       });
     }
     final base = await _base();
@@ -268,28 +411,38 @@ class ArkWalletService implements ArkWalletBackend {
   Future<void> _open(String fingerprint, Uint8List mnemonic, {required bool create, required bool runRecovery}) async {
     final datadir = await _datadir(fingerprint);
     await datadir.create(recursive: true);
+    final config = bark.Config(
+      serverAddress: ArkServerConfig.serverUrl,
+      esploraAddress: ArkServerConfig.esploraUrl,
+      daemonManualSync: true,
+    );
+    final exitFeeWallet = await bark.OnchainWallet.default_(
+      network: _network(),
+      mnemonic: deriveExitFeeMnemonic(mnemonic),
+      config: config,
+      datadir: datadir.path,
+    );
     final wallet = await bark.Wallet.open(
       network: _network(),
       mnemonicOrSeed: utf8.decode(mnemonic),
-      config: bark.Config(
-        serverAddress: ArkServerConfig.serverUrl,
-        esploraAddress: ArkServerConfig.esploraUrl,
-        daemonManualSync: true,
-      ),
+      config: config,
       args: bark.WalletOpenArgs(
         datadir: datadir.path,
+        onchain: exitFeeWallet,
         createIfNotExists: create,
         createWithoutServer: create,
         skipRecovery: !runRecovery,
       ),
     );
     _openWallets[_key(fingerprint)] = wallet;
+    _exitFeeWallets[_key(fingerprint)] = exitFeeWallet;
     Logger.log('ArkWalletService: ${create ? 'created' : 'opened'} Ark wallet $fingerprint');
   }
 
   Future<void> _deleteLocked(String fingerprint) async {
     final wallet = _openWallets.remove(_key(fingerprint));
     if (wallet != null) await _close(wallet);
+    _exitFeeWallets.remove(_key(fingerprint))?.dispose();
     final datadir = await _datadir(fingerprint);
     if (await datadir.exists()) await datadir.delete(recursive: true);
   }
@@ -319,4 +472,94 @@ class ArkWalletService implements ArkWalletBackend {
   Future<Directory> _base() async => _baseDir ??= Directory('${(await getApplicationSupportDirectory()).path}/bark');
 
   Future<Directory> _datadir(String fingerprint) async => Directory('${(await _base()).path}/${_key(fingerprint)}');
+}
+
+/// bark로 출금 단계를 넘김
+class _BarkExitSteps implements ArkExitSteps {
+  _BarkExitSteps(this._service, this._fingerprint);
+
+  final ArkWalletService _service;
+  final String _fingerprint;
+
+  Future<T> _withFeeWallet<T>(Future<T> Function(bark.Wallet wallet, bark.OnchainWallet feeWallet) action) =>
+      _service.withWallet(_fingerprint, (wallet) => action(wallet, _service._exitFeeWallet(_fingerprint)));
+
+  @override
+  Future<int> exitFeeConfirmedSats() => _withFeeWallet((_, feeWallet) async {
+    await feeWallet.sync_();
+    return (await feeWallet.balance()).confirmedSats;
+  });
+
+  @override
+  Future<int> exitFeePendingSats() => _withFeeWallet((_, feeWallet) async {
+    await feeWallet.sync_();
+    return (await feeWallet.balance()).pendingSats;
+  });
+
+  @override
+  Future<void> startExit(List<String> vtxoIds) =>
+      _withFeeWallet((wallet, _) => wallet.startExitForVtxos(vtxoIds: vtxoIds));
+
+  @override
+  Future<ArkExitProgress> progressExit(List<String> vtxoIds, int feeRateSatPerVb) => _withFeeWallet((
+    wallet,
+    feeWallet,
+  ) async {
+    await feeWallet.sync_();
+    await wallet.syncExits();
+    for (final status in await wallet.progressExits(feeRateSatPerVb: feeRateSatPerVb)) {
+      if (status.error != null) Logger.error('ArkWalletService: exit of ${status.vtxoId}: ${status.error}');
+    }
+    final exits = {for (final exit in await wallet.getExitVtxos()) exit.vtxoId: exit};
+    final mine = [for (final id in vtxoIds) exits[id]];
+    final txs = [
+      for (final exit in mine)
+        if (exit?.state case final bark.ProcessingExitState processing) ...processing.transactions,
+    ];
+    return ArkExitProgress(
+      spent: mine.any((exit) => exit?.state is bark.VtxoAlreadySpentExitState || exit?.state is bark.CanceledExitState),
+      onChain: mine.every(
+        (exit) =>
+            exit != null &&
+            (exit.state is bark.AwaitingDeltaExitState ||
+                exit.state is bark.ClaimableExitState ||
+                exit.state is bark.ClaimInProgressExitState ||
+                exit.state is bark.ClaimedExitState),
+      ),
+      allClaimable: mine.every((exit) => exit?.isClaimable ?? false),
+      claimableHeight: await wallet.allExitsClaimableAtHeight(),
+      txDone: txs.where((tx) => tx.status is bark.ConfirmedExitTxStatus).length,
+      txTotal: txs.length,
+    );
+  });
+
+  @override
+  Future<({String txid, int feeSats})> claimExit(String address, int feeRateSatPerVb) =>
+      _withFeeWallet((wallet, _) async {
+        final claim = await wallet.drainExits(
+          vtxoIds: const [],
+          drainAll: true,
+          address: address,
+          feeRateSatPerVb: feeRateSatPerVb,
+        );
+        final signed = await wallet.signExitClaimInputs(psbtBase64: claim.psbtBase64);
+        final txid = await wallet.broadcastTx(txHex: bark.extractTxFromPsbt(psbtBase64: signed));
+        return (txid: txid, feeSats: claim.feeSats);
+      });
+
+  /// 확정된 남은 수수료를 모두 [address]로. 1,000 sats보다 적게 남으면 보내지 않음
+  @override
+  Future<int> returnExitFee(String address, int feeRateSatPerVb) => _withFeeWallet((_, feeWallet) async {
+    await feeWallet.sync_();
+    final confirmed = [
+      for (final utxo in await feeWallet.utxos())
+        if (utxo is bark.LocalOnchainUtxo && utxo.confirmationHeight != null) utxo,
+    ];
+    final total = confirmed.fold<int>(0, (sum, utxo) => sum + utxo.amountSats);
+    // 입력 하나 약 68vB, 출력과 기본 약 54vB로 넉넉히 잡음
+    final amount = total - feeRateSatPerVb * (68 * confirmed.length + 54);
+    if (amount < 1000) return 0;
+    await feeWallet.send(address: address, amountSats: amount, feeRateSatPerVb: feeRateSatPerVb);
+    return amount;
+  });
 }

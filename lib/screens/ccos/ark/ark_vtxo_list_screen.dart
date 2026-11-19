@@ -5,6 +5,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_move_parts.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_expiry_text.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_renew_sheet.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_detail_screen.dart';
@@ -71,10 +72,18 @@ class _ArkVtxoListScreenState extends State<ArkVtxoListScreen> {
     final vtxos = wallet.vtxos;
     final selected = _selected;
     final total = vtxos.fold(0, (sum, vtxo) => sum + vtxo.amountSats);
-    final groups = groupArkVtxos(vtxos, toRenew: wallet.vtxosToRenew, isRenewing: wallet.isRenewing);
+    final groups = groupArkVtxos(
+      vtxos,
+      toRenew: wallet.vtxosToRenew,
+      isRenewing: wallet.isRenewing,
+      tipHeight: wallet.tipHeight,
+    );
     final first = vtxos.isEmpty ? null : vtxos.first.blocksLeft(wallet.tipHeight);
     bool canPick(ArkVtxo vtxo) => canRenewArkVtxo(vtxo, tipHeight: wallet.tipHeight, isRenewing: wallet.isRenewing);
-    final toRenew = wallet.vtxosToRenew;
+    final toRenew = wallet.canRenewDue ? wallet.vtxosToRenew : const <ArkVtxo>[];
+    final picked = selected == null ? const <ArkVtxo>[] : vtxos.where((vtxo) => selected.contains(vtxo.id)).toList();
+    final pickedSats = picked.fold(0, (sum, vtxo) => sum + vtxo.amountSats);
+    final pickedTooSmall = picked.isNotEmpty && pickedSats < ArkVtxo.minRenewSats;
     return Scaffold(
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(
@@ -167,6 +176,7 @@ class _ArkVtxoListScreenState extends State<ArkVtxoListScreen> {
                         padding: const EdgeInsets.fromLTRB(4, 24, 0, 8),
                         child: Text(
                           '${switch (group.kind) {
+                            ArkVtxoGroupKind.expired => t.ark_wallet.expiry_expired,
                             ArkVtxoGroupKind.expiring => t.ark_wallet.group_expiring,
                             ArkVtxoGroupKind.spendable => t.ark_wallet.group_spendable,
                             ArkVtxoGroupKind.locked => t.ark_wallet.group_locked,
@@ -194,10 +204,13 @@ class _ArkVtxoListScreenState extends State<ArkVtxoListScreen> {
                                   line:
                                       wallet.isRenewing(vtxo.id)
                                           ? t.ark_wallet.vtxo_renewing
+                                          : group.kind == ArkVtxoGroupKind.expired
+                                          ? t.ark_wallet.expiry_expired
                                           : t.ark_wallet.expires(
                                             time: arkExpiryText(vtxo.blocksLeft(wallet.tipHeight)),
                                           ),
-                                  urgent: group.kind == ArkVtxoGroupKind.expiring,
+                                  urgent:
+                                      group.kind == ArkVtxoGroupKind.expired || group.kind == ArkVtxoGroupKind.expiring,
                                   selected: selected == null ? null : selected.contains(vtxo.id),
                                   onTap: () {
                                     if (selected == null) {
@@ -241,9 +254,17 @@ class _ArkVtxoListScreenState extends State<ArkVtxoListScreen> {
                       ? FixedBottomButton(
                         key: const ValueKey('ark-vtxo-renew-picked'),
                         text: t.ark_wallet.renew_selected(n: selected.length),
-                        isActive: selected.isNotEmpty,
-                        onButtonClicked:
-                            () => _renew(wallet, vtxos.where((vtxo) => selected.contains(vtxo.id)).toList()),
+                        isActive: picked.isNotEmpty && !pickedTooSmall,
+                        subWidget:
+                            pickedTooSmall
+                                ? arkMoveProblemText(
+                                  context,
+                                  t.ark_wallet.renew_min_total(
+                                    amount: unit.displayBitcoinAmount(ArkVtxo.minRenewSats, withUnit: true),
+                                  ),
+                                )
+                                : null,
+                        onButtonClicked: () => _renew(wallet, picked),
                       )
                       : toRenew.isNotEmpty
                       ? FixedBottomButton(

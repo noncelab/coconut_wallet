@@ -10,6 +10,10 @@ String arkMovementRouteLabel(ArkMovement movement) {
   final route = switch (movement.kind) {
     ArkMovementKind.lightningSend || ArkMovementKind.lightningReceive => t.ark_wallet.route_lightning,
     ArkMovementKind.refresh => t.ark_wallet.route_refresh,
+    ArkMovementKind.board ||
+    ArkMovementKind.offboard ||
+    ArkMovementKind.sendOnchain ||
+    ArkMovementKind.exit => t.ark_wallet.route_onchain,
     _ => t.ark_wallet.route_ark,
   };
   return movement.isFailed ? '$route · ${t.ark_wallet.failed}' : route;
@@ -43,4 +47,24 @@ String? arkMovementIconPath(List<ArkMovement> movements, HomeRecentTransaction t
 String? arkMovementTimeDetail(List<ArkMovement> movements, HomeRecentTransaction tx) {
   final movement = movements.where((movement) => '${movement.id}' == tx.txHash).firstOrNull;
   return movement == null ? null : arkMovementRouteLabel(movement);
+}
+
+/// 거래 줄·상세의 상태 이름. 출금·채우기·내보내기는 한 일을 이름으로(feat/ark의 arkActivityText), 나머지는 null로 기본 상태 이름
+String? arkMovementStatusText(ArkMovement movement) => switch (movement.kind) {
+  ArkMovementKind.exit =>
+    movement.isFailed
+        ? t.ark_wallet.activity_exit_failed
+        : movement.isPending
+        ? t.ark_wallet.activity_exit_pending
+        : t.ark_wallet.activity_exit_done,
+  ArkMovementKind.board => movement.isPending ? t.ark_wallet.activity_fill_pending : t.ark_wallet.activity_fill_done,
+  ArkMovementKind.offboard || ArkMovementKind.sendOnchain =>
+    movement.isPending ? t.ark_wallet.activity_export_pending : t.ark_wallet.activity_export_done,
+  _ => null,
+};
+
+/// 거래 줄의 상태 이름, 목록의 거래를 찾아 [arkMovementStatusText]
+String? arkMovementStatusTextOf(List<ArkMovement> movements, HomeRecentTransaction tx) {
+  final movement = movements.where((movement) => '${movement.id}' == tx.txHash).firstOrNull;
+  return movement == null ? null : arkMovementStatusText(movement);
 }

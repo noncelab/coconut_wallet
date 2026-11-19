@@ -5,13 +5,12 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_move_parts.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_expiry_text.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_renew_sheet.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_groups.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
-import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
-import 'package:coconut_wallet/widgets/features/ccos/ark/ark_box_text.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/ccos/ark/ark_info_row.dart';
 import 'package:flutter/material.dart';
@@ -43,6 +42,8 @@ class ArkVtxoDetailScreen extends StatelessWidget {
             ? t.ark_wallet.vtxo_renewing
             : current.isLocked
             ? t.ark_wallet.group_locked
+            : (blocksLeft ?? 1) <= 0
+            ? t.ark_wallet.expiry_expired
             : wallet.vtxosToRenew.any((due) => due.id == current.id)
             ? t.ark_wallet.group_expiring
             : t.ark_wallet.group_spendable;
@@ -105,42 +106,39 @@ class ArkVtxoDetailScreen extends StatelessWidget {
                 ),
               ],
               CoconutLayout.spacing_500h,
-              ArkInfoRow(label: t.ark_wallet.vtxo_status, value: status),
-              ArkInfoRow(label: t.ark_wallet.vtxo_expires, value: arkExpiryText(blocksLeft)),
-              ArkInfoRow(
-                label: t.ark_wallet.vtxo_expiry_height,
-                value: arkBlockText(current.expiryHeight),
-                isNumber: true,
-              ),
-              if (blocksLeft != null)
-                ArkInfoRow(
-                  label: t.ark_wallet.vtxo_blocks_left,
-                  value: '${blocksLeft < 0 ? 0 : blocksLeft}',
-                  isNumber: true,
-                ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t.ark_wallet.vtxo_id, style: CoconutTypography.body3_12.setColor(colors.secondaryText)),
-                    CoconutLayout.spacing_200h,
-                    DefaultTextHeightBehavior(
-                      textHeightBehavior: arkBoxTextHeight,
-                      child: CopyTextContainer(
-                        text: current.id,
-                        padding: const EdgeInsets.all(16),
-                        textStyle: CoconutTypography.body2_14_Number.setColor(colors.primaryText),
-                      ),
+              ArkInfoBox(
+                children: [
+                  ArkInfoRow(label: t.ark_wallet.vtxo_status, value: status),
+                  ArkInfoRow(label: t.ark_wallet.vtxo_expires, value: arkExpiryText(blocksLeft)),
+                  ArkInfoRow(
+                    label: t.ark_wallet.vtxo_expiry_height,
+                    value: arkBlockText(current.expiryHeight),
+                    isNumber: true,
+                  ),
+                  if (blocksLeft != null)
+                    ArkInfoRow(
+                      label: t.ark_wallet.vtxo_blocks_left,
+                      value: '${blocksLeft < 0 ? 0 : blocksLeft}',
+                      isNumber: true,
                     ),
-                  ],
-                ),
+                  ArkCopyRow(key: const Key('ark-vtxo-id'), label: t.ark_wallet.vtxo_id, value: current.id),
+                ],
               ),
             ],
           ),
           if (canRenew)
             FixedBottomButton(
               text: t.ark_wallet.renew_button,
+              isActive: current.amountSats >= ArkVtxo.minRenewSats,
+              subWidget:
+                  current.amountSats >= ArkVtxo.minRenewSats
+                      ? null
+                      : arkMoveProblemText(
+                        context,
+                        t.ark_wallet.renew_alone_too_small(
+                          amount: unit.displayBitcoinAmount(ArkVtxo.minRenewSats, withUnit: true),
+                        ),
+                      ),
               onButtonClicked: () => showArkRenewSheet(context, [current]),
             ),
         ],

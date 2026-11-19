@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_exit.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
@@ -42,17 +43,21 @@ class _Secrets extends Fake implements HotWalletSecretRepository {
   Future<List<String>> getSecretStorageKeys() async => stored.keys.toList();
 }
 
-class _Backend with FakeArkVtxos implements ArkWalletBackend {
+class _Backend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements ArkWalletBackend {
   List<ArkMovement> movements = [];
   String address = 'tark1fakeaddress';
   int sendFee = 0;
   Object? sendError;
   int syncCount = 0;
+  Object? syncError;
   final List<(ArkPaymentRail, String, int)> sent = [];
   final List<int> invoiceAmounts = [];
 
   @override
-  Future<void> sync(String fingerprint) async => syncCount++;
+  Future<void> sync(String fingerprint) async {
+    syncCount++;
+    if (syncError case final error?) throw error;
+  }
 
   @override
   Future<List<ArkMovement>> history(String fingerprint) async => movements;
@@ -386,6 +391,33 @@ void main() {
     });
   });
 
+  test('a failed server sync still reloads the history, as a dust VTXO fails every refresh', () async {
+    final provider = create();
+    await provider.createNew();
+    await provider.syncNow();
+    backend.syncError = StateError('vtxo amount must be at least 0.00000330 BTC to participate in a round');
+    backend.movements = [
+      ArkMovement(
+        id: 17,
+        status: ArkMovementStatus.successful,
+        subsystemName: 'bark.exit',
+        subsystemKind: 'start',
+        metadataJson: '{}',
+        effectiveBalanceSats: -20000,
+        offchainFeeSats: 0,
+        sentTo: const [],
+        receivedOn: const [],
+        inputVtxoIds: const ['a'],
+        outputVtxoIds: const [],
+        createdAt: DateTime(2026, 11, 19),
+      ),
+    ];
+
+    await provider.syncNow();
+
+    expect(provider.movements.single.status, ArkMovementStatus.successful);
+  });
+
   test('the receive address is taken only after the first sync with the server', () async {
     final provider = create();
     await provider.createNew();
@@ -569,5 +601,134 @@ void main() {
 
     await provider.toggleUnit();
     expect(provider.unit, BitcoinUnit.sats);
+  });
+
+  group('fill and export', () {
+    test('the board funding address is reused until a board is registered', () async {
+      final provider = create();
+      await provider.createNew();
+
+      final first = await provider.boardFunding();
+      expect((await provider.boardFunding()).address, first.address);
+
+      await provider.board(unsignedPsbtBase64: 'psbt', funding: first);
+      expect(backend.boarded.single.$1, 'psbt');
+      expect((await provider.boardFunding()).address, isNot(first.address));
+    });
+
+    test('board terms are read once', () async {
+      final provider = create();
+      await provider.createNew();
+
+      expect((await provider.boardTerms()).minimumSats, 1000);
+      expect((await provider.boardTerms()).requiredConfirmations, 2);
+    });
+
+    test('exporting sends the chosen amount, or everything when none is given', () async {
+      final provider = create();
+      await provider.createNew();
+
+      expect(await provider.estimateExportFee('bcrt1qmine', amountSats: 5000), 50);
+      await provider.export('bcrt1qmine', amountSats: 5000);
+      await provider.export('bcrt1qmine');
+
+      expect(backend.exported, [('bcrt1qmine', 5000), ('bcrt1qmine', null)]);
+    });
+  });
+
+  group('exit without the server', () {
+    ArkExitSession session() => ArkExitSession(
+      vtxoIds: const ['a'],
+      amountSats: 30000,
+      destination: 'bcrt1qmine',
+      fundingSats: 3000,
+      feeRateSatPerVb: 2,
+      firstExpiryHeight: 5000,
+      startedAt: DateTime(2026, 11, 18),
+    );
+
+    test('a started exit is kept across restarts and moves on with each sync', () async {
+      final provider = create();
+      await provider.createNew();
+
+      await provider.beginExit(session());
+      expect(create().exit?.phase, ArkExitPhase.funding);
+
+      backend.steps.confirmed = 3000;
+      await provider.syncNow();
+      expect(provider.exit?.phase, ArkExitPhase.exiting);
+      expect(backend.steps.calls, containsAllInOrder(['start', 'progress']));
+    });
+
+    test('a finished exit can be cleared, an active one cannot, and the wallet cannot be deleted meanwhile', () async {
+      final provider = create();
+      await provider.createNew();
+      await provider.beginExit(session());
+
+      expect(provider.hasActiveExit, isTrue);
+      await provider.dismissExit();
+      expect(provider.exit, isNotNull);
+
+      await provider.beginExit(session().copyWith(phase: ArkExitPhase.done, feeReturned: true));
+      await provider.dismissExit();
+      expect(provider.exit, isNull);
+      expect(create().exit, isNull);
+    });
+
+    test('a finished exit stays findable by its VTXOs after it is cleared', () async {
+      final provider = create();
+      await provider.createNew();
+      ArkMovement exitOf(List<String> vtxoIds) => ArkMovement(
+        id: 15,
+        status: ArkMovementStatus.successful,
+        subsystemName: 'bark.exit',
+        subsystemKind: 'start',
+        metadataJson: '{}',
+        effectiveBalanceSats: -30000,
+        offchainFeeSats: 0,
+        sentTo: const [],
+        receivedOn: const [],
+        inputVtxoIds: vtxoIds,
+        outputVtxoIds: const [],
+        createdAt: DateTime(2026, 11, 18),
+      );
+      await provider.beginExit(
+        session().copyWith(phase: ArkExitPhase.done, feeReturned: true, claimTxid: 'claimtx', receivedSats: 29700),
+      );
+      await provider.dismissExit();
+
+      expect(provider.exitOf(exitOf(const ['a']))?.claimTxid, 'claimtx');
+      expect(create().exitOf(exitOf(const ['a']))?.receivedSats, 29700);
+      expect(provider.exitOf(exitOf(const ['z'])), isNull);
+    });
+
+    test('wiping forgets the exit', () async {
+      final provider = create();
+      await provider.createNew();
+      await provider.beginExit(session().copyWith(phase: ArkExitPhase.done, feeReturned: true));
+
+      await provider.wipe();
+
+      expect(create().exit, isNull);
+      expect(
+        create().exitOf(
+          ArkMovement(
+            id: 1,
+            status: ArkMovementStatus.successful,
+            subsystemName: 'bark.exit',
+            subsystemKind: 'start',
+            metadataJson: '{}',
+            effectiveBalanceSats: -30000,
+            offchainFeeSats: 0,
+            sentTo: const [],
+            receivedOn: const [],
+            inputVtxoIds: const ['a'],
+            outputVtxoIds: const [],
+            createdAt: DateTime(2026, 11, 18),
+          ),
+        ),
+        isNull,
+      );
+    });
   });
 }

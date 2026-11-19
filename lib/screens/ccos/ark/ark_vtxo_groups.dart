@@ -1,6 +1,6 @@
 import 'package:coconut_wallet/ccos/features/ark/ark_vtxo.dart';
 
-enum ArkVtxoGroupKind { expiring, spendable, locked }
+enum ArkVtxoGroupKind { expired, expiring, spendable, locked }
 
 class ArkVtxoGroup {
   const ArkVtxoGroup(this.kind, this.vtxos);
@@ -9,15 +9,17 @@ class ArkVtxoGroup {
   final List<ArkVtxo> vtxos;
 }
 
-/// 곧 만료 → 사용 가능 → 사용 중(갱신 중 포함). 빈 묶음은 뺌
+/// 만료됨 → 곧 만료 → 사용 가능 → 사용 중(갱신 중 포함). 빈 묶음은 뺌
 List<ArkVtxoGroup> groupArkVtxos(
   List<ArkVtxo> vtxos, {
   required List<ArkVtxo> toRenew,
   required bool Function(String id) isRenewing,
+  required int? tipHeight,
 }) {
   final expiringIds = {for (final vtxo in toRenew) vtxo.id};
   ArkVtxoGroupKind kindOf(ArkVtxo vtxo) {
     if (vtxo.isLocked || isRenewing(vtxo.id)) return ArkVtxoGroupKind.locked;
+    if ((vtxo.blocksLeft(tipHeight) ?? 1) <= 0) return ArkVtxoGroupKind.expired;
     if (expiringIds.contains(vtxo.id)) return ArkVtxoGroupKind.expiring;
     return ArkVtxoGroupKind.spendable;
   }

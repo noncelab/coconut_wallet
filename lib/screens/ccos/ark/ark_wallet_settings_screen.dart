@@ -3,6 +3,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_backup_flow.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_exit_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_list_screen.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/info/info_section.dart';
@@ -64,6 +65,18 @@ class ArkWalletSettingsScreen extends StatelessWidget {
                             : CoconutTypography.body2_14_Number.setColor(colors.tertiaryText),
                   ),
                 ),
+                InfoMenuRow(
+                  key: const Key('ark-settings-exit'),
+                  title: t.ark_wallet.exit_title,
+                  onPressed: () => ArkExitScreen.open(context),
+                  subWidget:
+                      wallet.hasActiveExit
+                          ? Text(
+                            t.ark_wallet.exit_running,
+                            style: CoconutTypography.body2_14_Bold.setColor(colors.appLockWarningBackground),
+                          )
+                          : null,
+                ),
               ],
             ),
             InfoSection(
@@ -96,6 +109,10 @@ class ArkWalletSettingsScreen extends StatelessWidget {
     final language = context.read<PreferenceProvider>().language;
     if (!wallet.isBalanceKnown) {
       await showInfoDialog(context, language, t.ark_wallet.delete_not_ready, t.ark_wallet.delete_not_ready_body);
+      return;
+    }
+    if (wallet.hasActiveExit) {
+      await showInfoDialog(context, language, t.ark_wallet.delete_blocked_title, t.ark_wallet.delete_exit_running);
       return;
     }
     if (wallet.balance.total > 0) {

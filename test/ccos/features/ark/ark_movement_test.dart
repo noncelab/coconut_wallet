@@ -11,6 +11,7 @@ bark.Movement _movement({
   int fee = 0,
   List<String> sentTo = const [],
   List<String> receivedOn = const [],
+  String createdAt = '2026-11-18T10:00:00Z',
 }) => bark.Movement(
   id: id,
   status: status,
@@ -25,7 +26,7 @@ bark.Movement _movement({
   inputVtxoIds: const [],
   outputVtxoIds: const [],
   exitedVtxoIds: const [],
-  createdAt: '2026-11-18T10:00:00Z',
+  createdAt: createdAt,
   updatedAt: '2026-11-18T10:00:00Z',
   completedAt: '2026-11-18T10:00:05Z',
 );
@@ -55,5 +56,24 @@ void main() {
     expect(ArkMovement.fromBark(_movement(status: 'failed', effective: 0)).isVisibleInHistory, isFalse);
     expect(ArkMovement.fromBark(_movement(status: 'failed', effective: -10)).isVisibleInHistory, isTrue);
     expect(ArkMovement.fromBark(_movement(status: 'pending')).isPending, isTrue);
+  });
+
+  test('exits started together read as one movement', () {
+    ArkMovement exit(int id, int sats, String at) =>
+        ArkMovement.fromBark(_movement(id: id, subsystem: 'bark.exit', kind: 'start', effective: sats, createdAt: at));
+    final board = ArkMovement.fromBark(_movement(id: 7, subsystem: 'bark.board', kind: 'board', effective: 50000));
+
+    final merged = mergeArkExits([
+      exit(11, -50000, '2026-11-18T12:35:12.255Z'),
+      exit(10, -6255, '2026-11-18T12:35:12.248Z'),
+      exit(9, -6255, '2026-11-18T12:35:12.244Z'),
+      exit(8, -24680, '2026-11-18T12:35:12.235Z'),
+      board,
+      exit(3, -1000, '2026-11-18T09:00:00Z'),
+    ]);
+
+    expect(merged.map((movement) => movement.id), [11, 7, 3]);
+    expect(merged.first.effectiveBalanceSats, -87190);
+    expect(merged.first.kind, ArkMovementKind.exit);
   });
 }

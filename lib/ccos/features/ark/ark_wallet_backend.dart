@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_board.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_exit.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_vtxo.dart';
@@ -78,4 +80,29 @@ abstract interface class ArkWalletBackend {
 
   /// 갱신을 서버에 맡김(위임 라운드), 앱이 켜져 있지 않아도 됨
   Future<void> renew(String fingerprint, List<String> vtxoIds);
+
+  Future<ArkBoardTerms> boardTerms(String fingerprint);
+
+  /// 보딩할 새 주소. 부를 때마다 키를 하나 쓰므로 보딩이 끝날 때까지 다시 씀
+  Future<ArkBoardFunding> boardFunding(String fingerprint);
+  Future<int> estimateBoardFee(String fingerprint, int amountSats);
+
+  /// 서명 전 펀딩 PSBT로 보딩을 등록. 이후 거래 ID가 고정되므로 RBF로 바꾸면 안 됨
+  Future<void> board(String fingerprint, {required String unsignedPsbtBase64, required ArkBoardFunding funding});
+
+  /// bark 체인 소스로 거래를 전송, 코코넛 노드 전송이 실패했을 때
+  Future<String> broadcastTx(String fingerprint, String txHex);
+
+  /// [amountSats]가 없으면 아크 잔액 전부(수수료는 금액에서 빠짐), 있으면 그 금액(수수료는 더해짐)
+  Future<int> estimateExportFee(String fingerprint, String address, {int? amountSats});
+
+  /// 아크 잔액을 [address]로 온체인 전송, 거래 ID
+  Future<String> export(String fingerprint, String address, {int? amountSats});
+
+  /// 서버 없이 출금할 수 있는 VTXO(잠기지 않고 만료되지 않은 것)와 예상 수수료
+  Future<ArkExitQuote> estimateExit(String fingerprint);
+
+  /// 출금 수수료 지갑으로 수수료를 보낼 주소
+  Future<String> exitFeeAddress(String fingerprint);
+  ArkExitSteps exitSteps(String fingerprint);
 }

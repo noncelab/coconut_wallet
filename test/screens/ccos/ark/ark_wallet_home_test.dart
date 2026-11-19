@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutButton, CoconutSwitch;
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_exit.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
@@ -17,6 +18,8 @@ import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_settings_screen.dart'
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_list_screen.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/common/info/info_section.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -126,12 +129,28 @@ void main() {
     expect(labels.map((label) => tester.getTopLeft(find.text(label)).dy).toSet(), hasLength(1));
     expect(isActive(tester, 'ark-wallet-receive'), isTrue);
     expect(isActive(tester, 'ark-wallet-send'), isFalse);
+    expect(isActive(tester, 'ark-wallet-fill'), isFalse, reason: 'no hot wallet to add from');
+    expect(isActive(tester, 'ark-wallet-export'), isFalse, reason: 'no balance and no wallet to withdraw to');
   });
 
   testWidgets('with a balance send is active', (tester) async {
     await pump(tester, await walletWith(restored: true, sats: 1000));
 
     expect(isActive(tester, 'ark-wallet-send'), isTrue);
+  });
+
+  testWidgets('with a balance but no Coconut wallet, withdraw opens with an address to type in', (tester) async {
+    await pump(tester, await walletWith(restored: true, sats: 20000));
+
+    expect(isActive(tester, 'ark-wallet-export'), isTrue);
+    await tester.tap(find.byKey(const Key('ark-wallet-export')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('ark-export-address')), findsOneWidget);
+    expect(find.byKey(const Key('ark-export-switch')), findsNothing);
+    await tester.enterText(find.byType(EditableText).last, 'not-an-address-at-all-xxxxxxx');
+    await tester.pumpAndSettle();
+    expect(find.text(t.errors.address_error.invalid), findsOneWidget);
   });
 
   testWidgets('recent activity fills a tall screen with five rows', (tester) async {
@@ -404,6 +423,60 @@ void main() {
 
       expect(fake.renewed.single, ['due', 'fine']);
     });
+    group('a due VTXO under the round minimum', () {
+      void dustDue(FakeArkBackend backend) {
+        dueSoon(backend);
+        backend.vtxoList = [fakeVtxo('due', sats: 310, expiry: 1060), fakeVtxo('fine', expiry: 5000)];
+      }
+
+      Future<void> openList(WidgetTester tester) async {
+        await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('ark-settings-vtxos')));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('gets no home nudge and the list asks to pick at least the minimum together', (tester) async {
+        late FakeArkBackend fake;
+        await pump(tester, await walletWith(restored: true, setup: (backend) => dustDue(fake = backend)));
+        expect(find.byKey(const Key('ark-renew-nudge')), findsNothing);
+
+        await openList(tester);
+        expect(find.byKey(const ValueKey('ark-vtxo-renew-due')), findsNothing);
+
+        await tester.tap(find.byKey(const Key('ark-vtxo-select')));
+        await tester.pumpAndSettle();
+        final minimum = TextUtils.preventLineBreakInsideWords(t.ark_wallet.renew_min_total(amount: '330 sats'));
+        expect(find.text(minimum), findsOneWidget);
+        await tester.tap(find.text(t.ark_wallet.renew_selected(n: 1)));
+        await tester.pumpAndSettle();
+        expect(find.text(t.ark_wallet.renew_sheet_title), findsNothing);
+
+        await tester.tap(find.byKey(const ValueKey('ark-vtxo-fine')));
+        await tester.pumpAndSettle();
+        expect(find.text(minimum), findsNothing);
+        await tester.tap(find.text(t.ark_wallet.renew_selected(n: 2)));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('ark-renew-confirm')));
+        await tester.pumpAndSettle();
+        expect(fake.renewed.single, ['due', 'fine']);
+      });
+
+      testWidgets('its detail says it cannot be renewed alone', (tester) async {
+        await pump(tester, await walletWith(restored: true, setup: dustDue));
+        await openList(tester);
+        await tester.tap(find.byKey(const ValueKey('ark-vtxo-due')));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(TextUtils.preventLineBreakInsideWords(t.ark_wallet.renew_alone_too_small(amount: '330 sats'))),
+          findsOneWidget,
+        );
+        await tester.tap(find.text(t.ark_wallet.renew_button));
+        await tester.pumpAndSettle();
+        expect(find.text(t.ark_wallet.renew_sheet_title), findsNothing);
+      });
+    });
   });
 
   testWidgets('a payment that arrives while the wallet is open shows a toast', (tester) async {
@@ -417,5 +490,182 @@ void main() {
 
     expect(find.text(t.ark_wallet.received(amount: '3,000 sats')), findsOneWidget);
     await tester.pumpAndSettle(const Duration(seconds: 5));
+  });
+
+  group('exit without the server', () {
+    Future<void> openExit(WidgetTester tester, ArkWalletProvider wallet) async {
+      await pump(tester, wallet);
+      await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ark-settings-exit')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'starts with what it is and the four facts, then reads from the Ark wallet down to the receiving one, asking for a hot wallet to pay fees',
+      (tester) async {
+        await openExit(tester, await walletWith(restored: true));
+
+        expect(find.text(t.ark_wallet.exit_fact_time), findsOneWidget);
+        expect(find.text(t.ark_wallet.exit_fact_ark), findsOneWidget);
+        await tester.tap(find.byKey(const Key('ark-exit-next')));
+        await tester.pumpAndSettle();
+
+        final from = tester.getTopLeft(find.text(t.ark_wallet.wallet_name)).dy;
+        final arrival = tester.getTopLeft(find.byKey(const Key('ark-move-arrival'))).dy;
+        expect(find.byKey(const Key('ark-exit-route')), findsOneWidget);
+        expect(from, lessThan(arrival));
+        expect(find.byKey(const Key('ark-exit-fee-wallet')), findsOneWidget);
+        await tester.tap(find.byKey(const Key('ark-exit-claim-tooltip')));
+        await tester.pumpAndSettle();
+        expect(
+          find.text(TextUtils.preventLineBreakInsideWords(t.ark_wallet.exit_claim_fee_tooltip), findRichText: true),
+          findsOneWidget,
+        );
+        await tester.tapAt(const Offset(20, 700));
+        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('ark-move-to-change')), findsNothing);
+        expect(find.byType(InfoRowArrow), findsNothing);
+        expect(find.text(TextUtils.preventLineBreakInsideWords(t.ark_wallet.exit_no_fee_wallet)), findsOneWidget);
+      },
+    );
+
+    testWidgets('says what was left out because it is too small to exit', (tester) async {
+      await openExit(
+        tester,
+        await walletWith(
+          restored: true,
+          setup:
+              (backend) =>
+                  backend.quote = const ArkExitQuote(
+                    vtxoIds: ['a'],
+                    amountSats: 20000,
+                    feeSats: 400,
+                    txCount: 1,
+                    feeRateSatPerVb: 1,
+                    firstExpiryHeight: 5000,
+                    leftOutSats: 310,
+                  ),
+        ),
+      );
+      await tester.tap(find.byKey(const Key('ark-exit-next')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('ark-exit-left-out')), findsOneWidget);
+    });
+
+    testWidgets('a running exit shows its stage in settings and on the exit screen, and blocks deleting', (
+      tester,
+    ) async {
+      final wallet = await walletWith(restored: true);
+      await wallet.beginExit(
+        ArkExitSession(
+          vtxoIds: const ['a'],
+          amountSats: 30000,
+          destination: 'bcrt1qmine',
+          fundingSats: 3000,
+          feeRateSatPerVb: 2,
+          firstExpiryHeight: 5000,
+          startedAt: DateTime(2026, 11, 18),
+        ),
+      );
+      await pump(tester, wallet);
+      await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(t.ark_wallet.exit_running), findsOneWidget);
+      await tester.tap(find.byKey(const Key('ark-settings-exit')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text(t.ark_wallet.exit_step_fund), findsOneWidget);
+      expect(find.byKey(const Key('ark-exit-dismiss')), findsNothing);
+      expect(find.text(t.ark_wallet.from), findsNothing);
+      expect(find.text('bcrt1qmine'), findsOneWidget);
+      expect(find.byKey(const Key('ark-exit-progress-address')), findsOneWidget);
+      expect(find.byType(CopyTextContainer), findsNothing);
+      expect(find.text('3,000 sats'), findsOneWidget);
+      expect(find.byKey(const Key('ark-exit-wait-tooltip')), findsOneWidget);
+    });
+
+    testWidgets('while sending, the send step shows one cell per transaction and explains why there are several', (
+      tester,
+    ) async {
+      final wallet = await walletWith(
+        restored: true,
+        setup:
+            (backend) =>
+                backend.steps.progress = const ArkExitProgress(
+                  spent: false,
+                  onChain: false,
+                  allClaimable: false,
+                  claimableHeight: null,
+                  txDone: 1,
+                  txTotal: 4,
+                ),
+      );
+      await wallet.beginExit(
+        ArkExitSession(
+          vtxoIds: const ['a'],
+          amountSats: 30000,
+          destination: 'bcrt1qmine',
+          fundingSats: 3000,
+          feeRateSatPerVb: 2,
+          firstExpiryHeight: 5000,
+          startedAt: DateTime(2026, 11, 18),
+          phase: ArkExitPhase.exiting,
+          txDone: 1,
+          txTotal: 4,
+        ),
+      );
+      await pump(tester, wallet);
+      await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('ark-settings-exit')));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(tester.widget<Wrap>(find.byKey(const Key('ark-exit-tx-cells'))).children, hasLength(4));
+      expect(find.text(t.ark_wallet.exit_step_send_detail(done: 1, total: 4)), findsOneWidget);
+      await tester.tap(find.byKey(const Key('ark-exit-send-tooltip')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.text(TextUtils.preventLineBreakInsideWords(t.ark_wallet.exit_step_send_tooltip), findRichText: true),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a finished exit shows what arrived like the on-chain send done screen, and OK clears it', (
+      tester,
+    ) async {
+      final wallet = await walletWith(restored: true);
+      await wallet.beginExit(
+        ArkExitSession(
+          vtxoIds: const ['a'],
+          amountSats: 30000,
+          destination: 'bcrt1qmine',
+          fundingSats: 3000,
+          feeRateSatPerVb: 2,
+          firstExpiryHeight: 5000,
+          startedAt: DateTime(2026, 11, 18, 10),
+          phase: ArkExitPhase.done,
+          receivedSats: 29700,
+          feeReturned: true,
+          finishedAt: DateTime(2026, 11, 18, 10, 30),
+        ),
+      );
+      await openExit(tester, wallet);
+
+      expect(find.text(t.ark_wallet.exit_phase_done), findsOneWidget);
+      expect(find.text(t.ark_wallet.duration_minutes(n: 30)), findsOneWidget);
+      expect(find.text(t.ark_wallet.from), findsOneWidget);
+      expect(
+        find.descendant(of: find.byKey(const Key('ark-exit-done-address')), matching: find.text('bcrt1qmine')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('ark-exit-dismiss')));
+      await tester.pumpAndSettle();
+      expect(wallet.exit, isNull);
+    });
   });
 }

@@ -20,6 +20,16 @@ class AnalyticsScreenNames {
   static const String ccosArkWalletMovement = 'ccos-ark-wallet-movement';
   static const String ccosArkWalletMemo = 'ccos-ark-wallet-memo';
   static const String ccosArkWalletRenew = 'ccos-ark-wallet-renew';
+  static const String ccosArkWalletExit = 'ccos-ark-wallet-exit';
+  static const String ccosArkWalletExitReview = 'ccos-ark-wallet-exit-review';
+  static const String ccosArkWalletExitWallet = 'ccos-ark-wallet-exit-wallet';
+  static const String ccosArkWalletFill = 'ccos-ark-wallet-fill';
+  static const String ccosArkWalletFillWallet = 'ccos-ark-wallet-fill-wallet';
+  static const String ccosArkWalletFillAmount = 'ccos-ark-wallet-fill-amount';
+  static const String ccosArkWalletFillPassphrase = 'ccos-ark-wallet-fill-passphrase';
+  static const String ccosArkWalletExport = 'ccos-ark-wallet-export';
+  static const String ccosArkWalletExportWallet = 'ccos-ark-wallet-export-wallet';
+  static const String ccosArkWalletExportAmount = 'ccos-ark-wallet-export-amount';
   static const String ccosArkWalletVtxos = 'ccos-ark-wallet-vtxos';
   static const String ccosArkWalletVtxo = 'ccos-ark-wallet-vtxo';
   static const String ccosArkWalletSendAmount = 'ccos-ark-wallet-send-amount';

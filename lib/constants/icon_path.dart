@@ -99,6 +99,7 @@ abstract final class CommonStateIconPath {
   static const String circleHelp = 'assets/svg/common/state/circle-help.svg';
   static const String circleInfo = 'assets/svg/common/state/circle-info.svg';
   static const String circleWarning = 'assets/svg/common/state/circle-warning.svg';
+  static const String clock = 'assets/svg/common/state/clock.svg';
   static const String completionCheck = 'assets/svg/common/state/completion-check.svg';
   static const String leafFall = 'assets/svg/common/state/leaf-fall.svg';
   static const String questionMark = 'assets/svg/common/state/question-mark.svg';

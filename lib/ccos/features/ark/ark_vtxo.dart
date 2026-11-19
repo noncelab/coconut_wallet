@@ -18,6 +18,9 @@ class ArkVtxo {
     isLocked: vtxo.state is bark.LockedVtxoState,
   );
 
+  /// 함께 갱신하는 VTXO 합계의 최소값. bark가 라운드 전에 막는 VTXO_DUST(P2TR dust)와 같음
+  static const int minRenewSats = 330;
+
   final String id;
   final int amountSats;
 

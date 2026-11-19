@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_board.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_exit.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_expiry_reminder.dart';
@@ -16,6 +18,8 @@ import 'package:coconut_wallet/repository/shared_preference/shared_prefs_reposit
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
+import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -86,10 +90,120 @@ class FakeArkReminder implements ArkExpiryReminder {
   Future<void> remindAt(DateTime? at) async => calls.add(at);
 }
 
+/// 채우기·내보내기 쪽 가짜 bark
+mixin FakeArkMoves implements ArkWalletBackend {
+  ArkBoardTerms terms = const ArkBoardTerms(minAmountSats: 1000, maxAmountSats: null, requiredConfirmations: 2);
+  int fundingCalls = 0;
+  int boardFee = 100;
+  int exportFee = 50;
+  Object? exportError;
+  final List<(String, ArkBoardFunding)> boarded = [];
+  final List<String> broadcasted = [];
+  final List<(String, int?)> exported = [];
+
+  @override
+  Future<ArkBoardTerms> boardTerms(String fingerprint) async => terms;
+
+  @override
+  Future<ArkBoardFunding> boardFunding(String fingerprint) async {
+    fundingCalls++;
+    return ArkBoardFunding(address: 'bcrt1pboard$fundingCalls', expiryHeight: 5000, keypairIndex: fundingCalls);
+  }
+
+  @override
+  Future<int> estimateBoardFee(String fingerprint, int amountSats) async => boardFee;
+
+  @override
+  Future<void> board(
+    String fingerprint, {
+    required String unsignedPsbtBase64,
+    required ArkBoardFunding funding,
+  }) async => boarded.add((unsignedPsbtBase64, funding));
+
+  @override
+  Future<String> broadcastTx(String fingerprint, String txHex) async {
+    broadcasted.add(txHex);
+    return 'txid-bark';
+  }
+
+  @override
+  Future<int> estimateExportFee(String fingerprint, String address, {int? amountSats}) async => exportFee;
+
+  @override
+  Future<String> export(String fingerprint, String address, {int? amountSats}) async {
+    if (exportError != null) throw exportError!;
+    exported.add((address, amountSats));
+    return 'txid-export';
+  }
+}
+
+/// 서버 없이 출금 쪽 가짜 bark
+class FakeArkExitSteps implements ArkExitSteps {
+  int confirmed = 0;
+  int pending = 0;
+  ArkExitProgress progress = const ArkExitProgress(
+    spent: false,
+    onChain: false,
+    allClaimable: false,
+    claimableHeight: null,
+    txDone: 0,
+    txTotal: 2,
+  );
+  final List<String> calls = [];
+
+  @override
+  Future<int> exitFeeConfirmedSats() async => confirmed;
+
+  @override
+  Future<int> exitFeePendingSats() async => pending;
+
+  @override
+  Future<void> startExit(List<String> vtxoIds) async => calls.add('start');
+
+  @override
+  Future<ArkExitProgress> progressExit(List<String> vtxoIds, int feeRateSatPerVb) async {
+    calls.add('progress');
+    return progress;
+  }
+
+  @override
+  Future<({String txid, int feeSats})> claimExit(String address, int feeRateSatPerVb) async {
+    calls.add('claim');
+    return (txid: 'claimtx', feeSats: 300);
+  }
+
+  @override
+  Future<int> returnExitFee(String address, int feeRateSatPerVb) async {
+    calls.add('return');
+    return 0;
+  }
+}
+
+mixin FakeArkExit implements ArkWalletBackend {
+  final FakeArkExitSteps steps = FakeArkExitSteps();
+  ArkExitQuote quote = const ArkExitQuote(
+    vtxoIds: ['a'],
+    amountSats: 30000,
+    feeSats: 2000,
+    txCount: 2,
+    feeRateSatPerVb: 2,
+    firstExpiryHeight: 5000,
+  );
+
+  @override
+  Future<ArkExitQuote> estimateExit(String fingerprint) async => quote;
+
+  @override
+  Future<String> exitFeeAddress(String fingerprint) async => 'bcrt1qexitfee';
+
+  @override
+  ArkExitSteps exitSteps(String fingerprint) => steps;
+}
+
 ArkVtxo fakeVtxo(String id, {int sats = 1000, int expiry = 2000, bool locked = false}) =>
     ArkVtxo(id: id, amountSats: sats, expiryHeight: expiry, kind: 'Pubkey', isLocked: locked);
 
-class FakeArkBackend with FakeArkVtxos implements ArkWalletBackend {
+class FakeArkBackend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements ArkWalletBackend {
   List<ArkMovement> movements = [];
   String address = 'tark1fakeaddress';
   int sendFee = 0;
@@ -203,8 +317,17 @@ class FakeArkConnectivity extends Fake with ChangeNotifier implements Connectivi
   bool get isInternetOn => true;
 }
 
-/// 아크 지갑 홈의 법정화폐 환산에 필요한 provider
-List<SingleChildWidget> fakeArkPriceProviders() => [
+/// 코코넛 지갑 목록, 채우기·내보내기 칸이 봄
+class FakeArkWallets extends Fake with ChangeNotifier implements WalletProvider {
+  List<WalletItemBase> wallets = [];
+
+  @override
+  List<WalletItemBase> get walletItemList => wallets;
+}
+
+/// 아크 지갑 홈에 필요한 코코넛 provider(법정화폐 환산, 지갑 목록)
+List<SingleChildWidget> fakeArkPriceProviders({FakeArkWallets? wallets}) => [
   ChangeNotifierProvider<PriceProvider>.value(value: FakeArkPrice()),
   ChangeNotifierProvider<ConnectivityProvider>.value(value: FakeArkConnectivity()),
+  ChangeNotifierProvider<WalletProvider>.value(value: wallets ?? FakeArkWallets()),
 ];
