@@ -51,6 +51,8 @@ class RealmManager {
       realm.deleteAll<RealmRbfHistory>();
       realm.deleteAll<RealmCpfpHistory>();
       realm.deleteAll<RealmTransactionMemo>();
+      realm.deleteAll<RealmPayjoinSession>();
+      realm.deleteAll<RealmPayjoinSeenInput>();
       realm.deleteAll<RealmWalletPreferences>();
       realm.deleteAll<RealmTransactionDraft>();
     });

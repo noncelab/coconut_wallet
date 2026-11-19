@@ -6,6 +6,8 @@ import 'package:coconut_wallet/model/wallet/transaction_address.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
+import 'package:coconut_wallet/providers/node_provider/transaction/transaction_record_service.dart'
+    show spendsCounterpartyInputs, transactionTypeOf;
 import 'package:coconut_wallet/providers/node_provider/transaction/mempool_api_service.dart';
 import 'package:coconut_wallet/providers/node_provider/wallet_sync_watcher.dart';
 import 'package:coconut_wallet/providers/preferences/block_explorer_provider.dart';
@@ -122,6 +124,15 @@ class TransactionDetailViewModel extends ChangeNotifier {
   }
 
   List<TransactionRecord>? get transactionList => _transactionList;
+
+  /// Whether [tx] spends inputs of another wallet next to ours, as a payjoin
+  /// does. Replacing or fee bumping such a transaction would need the other
+  /// party, so neither is offered.
+  bool hasCounterpartyInputs(TransactionRecord tx) => spendsCounterpartyInputs(
+    tx.inputAddressList.map((input) => input.address),
+    isOurs: (address) => _addressRepository.containsAddress(_walletId, address),
+  );
+
   List<FeeHistory>? get feeBumpingHistoryList => _feeBumpingHistoryList;
 
   TransactionStatus? get transactionStatus => _transactionStatus;
@@ -464,11 +475,12 @@ class TransactionDetailViewModel extends ChangeNotifier {
         }
       }
 
-      final txType = _determineTransactionType(
-        selfInputCount,
-        selfOutputCount,
-        inputAddressList.length,
-        outputAddressList.length,
+      final txType = transactionTypeOf(
+        selfInputCount: selfInputCount,
+        selfOutputCount: selfOutputCount,
+        inputCount: inputAddressList.length,
+        outputCount: outputAddressList.length,
+        netAmount: amount,
       );
 
       return TransactionRecord(
@@ -490,13 +502,6 @@ class TransactionDetailViewModel extends ChangeNotifier {
       Logger.error('[_transactionRecordFromMempoolResponse] Failed to parse: $e');
       return null;
     }
-  }
-
-  TransactionType _determineTransactionType(int selfInputCount, int selfOutputCount, int inputCount, int outputCount) {
-    if (selfInputCount == 0) return TransactionType.received;
-    if (selfOutputCount < outputCount) return TransactionType.sent;
-    if (selfOutputCount == outputCount && selfInputCount == inputCount) return TransactionType.self;
-    return TransactionType.received;
   }
 
   Future<void> onRefresh() async {

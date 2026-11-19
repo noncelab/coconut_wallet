@@ -24,6 +24,7 @@ import 'package:coconut_design_system/coconut_design_system.dart'
         CoconutToastLevel,
         CoconutPopup,
         CoconutUnderlinedButton;
+import 'package:coconut_wallet/services/payjoin/payjoin_sender.dart' show isPayjoinUri;
 import 'package:coconut_wallet/ui/coconut/coconut_underlined_button.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_pulldown_menu.dart';
@@ -2732,6 +2733,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _applyIncomingBitcoinUri(String scannedData, int index) {
+    _viewModel.setPayjoinUri(isPayjoinUri(scannedData) ? scannedData : null, index);
     if (scannedData.toLowerCase().startsWith('bitcoin:')) {
       final bip21Data = parseBip21Uri(scannedData);
       _addressControllerList[index].text = bip21Data.address;
