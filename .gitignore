@@ -217,4 +217,7 @@ rust/trezor-connect-rs/target/
 /docs/growth/
 /.qa/
 /pubspec_overrides.yaml
+
+# Local regtest stack (contrib/regtest/regtest.sh)
+contrib/regtest/.faucet-secrets/
 regtest.local.json
