@@ -32,6 +32,13 @@ class UtxoSyncService {
     return _utxoRepository.restorePendingUtxoLocks(walletId);
   }
 
+  Set<String> getUnrecordedOutgoingAddresses(int walletId) => {
+    for (final utxo in _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.outgoing))
+      if (utxo.spentByTransactionHash != null &&
+          _transactionRepository.getTransactionRecord(walletId, utxo.spentByTransactionHash!) == null)
+        utxo.to,
+  };
+
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   /// TransactionRecord 데이터를 사용하므로 트랜잭션 fetch 이후 호출되어야 합니다.
   Future<void> fetchScriptUtxo(
@@ -105,7 +112,7 @@ class UtxoSyncService {
     } catch (e, stackTrace) {
       Logger.error('Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
       Logger.error('Stack trace: $stackTrace');
-      return [];
+      rethrow;
     }
   }
 
@@ -204,14 +211,19 @@ class UtxoSyncService {
   }
 
   /// orphaned UTXO를 정리합니다.
-  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem) async {
-    final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
+  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem, {required Set<String> syncedAddresses}) async {
+    final pendingUtxos =
+        _utxoRepository
+            .getUtxoStateList(walletItem.id)
+            .where((utxo) => utxo.isPending && syncedAddresses.contains(utxo.to))
+            .toList();
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
       if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
         final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
-        if (tx == null || tx.blockHeight > 0) {
+        // 거래 기록이 늦게 도착할 수 있으므로 부재만으로 입력을 삭제하지 않는다.
+        if (tx != null && tx.blockHeight > 0) {
           orphanUtxoSet.add(utxo);
         }
       } else if (utxo.status == UtxoStatus.incoming) {

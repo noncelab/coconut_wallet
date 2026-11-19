@@ -1006,7 +1006,7 @@ broadcasting_screen:
     tag_apply_failed: "Die Transaktion wurde gesendet, aber die Tags konnten nicht angewendet werden. Prüfe die Tags in deiner UTXO-Liste."
     not_sent_no_connection: "Verbindung zum Node fehlgeschlagen. Bitte versuche es gleich noch einmal."
     result_unknown_title: "Sendestatus prüfen"
-    result_unknown: "Wir konnten nicht bestätigen, ob die Transaktion gesendet wurde. Es ist dieselbe Transaktion, ein erneutes Senden sendet sie nicht doppelt."
+    result_unknown: "Wir konnten nicht bestätigen, ob die Transaktion gesendet wurde. Sie könnte bereits gesendet worden sein. Ziehe daher den Bildschirm deiner Wallet nach unten und prüfe zuerst, ob diese Transaktion im Transaktionsverlauf erscheint."
 send_address_screen:
   text1: "QR scannen oder\nkopierte Adresse einfügen"
   text2: "Bitte scannen Sie den Adress-QR-Code"

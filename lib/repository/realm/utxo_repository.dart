@@ -357,6 +357,9 @@ class UtxoRepository extends BaseRepository {
             existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
             existingUtxo.timestamp = toUpdateUtxo.timestamp;
             existingUtxo.status = toUpdateUtxo.status;
+            if (toUpdateUtxo.status == utxoStatusToString(UtxoStatus.unspent)) {
+              existingUtxo.spentByTransactionHash = null;
+            }
           }
         }
         realm.addAll<RealmUtxo>(newUtxos);
