@@ -18,6 +18,7 @@ class SendInfoProvider {
   WalletImportSource? _walletImportSource;
   int? _unsignedDraftId;
   double? _feeRate;
+  String? _payjoinUri;
 
   int? get walletId => _walletId;
   int? get estimatedFee => _estimatedFee;
@@ -31,6 +32,13 @@ class SendInfoProvider {
   WalletImportSource? get walletImportSource => _walletImportSource;
   int? get unsignedDraftId => _unsignedDraftId;
   double? get feeRate => _feeRate;
+
+  /// Set when this send attempts a payjoin (BIP 77) with the URI's receiver.
+  String? get payjoinUri => _payjoinUri;
+
+  void setPayjoinUri(String? bip21) {
+    _payjoinUri = bip21;
+  }
 
   void setFeeRate(double feeRate) {
     _feeRate = feeRate;
@@ -89,7 +97,8 @@ class SendInfoProvider {
                         _txWaitingForSign =
                             _signedResult =
                                 _sendEntryPoint =
-                                    _feeBumpingType = _walletImportSource = _unsignedDraftId = _feeRate = null;
+                                    _feeBumpingType =
+                                        _walletImportSource = _unsignedDraftId = _feeRate = _payjoinUri = null;
   }
 
   Map<String, int>? getRecipientMap() {

@@ -100,6 +100,7 @@ dependencies:
   image_picker: ^1.2.2
   image_picker_android: 0.8.13+8
   coconut_design_system: 0.11.5
+  payjoin: 0.25.1
 
 dev_dependencies:
   shared_preferences_platform_interface: 2.4.2
@@ -126,6 +127,11 @@ dev_dependencies:
 dependency_overrides:
   # Keep the URL launcher compatible with the app's AGP 8.6.0.
   url_launcher_android: 6.3.20
+  # Signing and finalizing PSBTs that carry a payjoin counterparty's inputs.
+  coconut_lib:
+    git:
+      url: https://github.com/DanGould/coconut_lib.git
+      ref: 95d2cc7c97d6a15364633675340c85b5bf34c81b # branch payjoin
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
