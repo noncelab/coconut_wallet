@@ -23,7 +23,8 @@ class ArkWalletProgressView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    return Center(
+    return Align(
+      alignment: const Alignment(0, -0.45),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

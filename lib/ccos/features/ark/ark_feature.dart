@@ -15,7 +15,7 @@ import 'package:flutter/material.dart';
 class ArkFeature {
   static const String id = 'ccos-feature-ark';
 
-  static const _screenshotNames = ['1_toggle', '2_receive', '3_swap', '4_vtxo', '5_wallet_info'];
+  static const _screenshotNames = ['1_splash', '2_home', '3_receive', '4_fill', '5_send', '6_vtxo'];
 
   static CcosFeatureListing get listing {
     final copy = ArkFeatureCopySource.current;

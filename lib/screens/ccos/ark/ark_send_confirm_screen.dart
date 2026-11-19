@@ -147,7 +147,7 @@ class _ArkSendConfirmScreenState extends State<ArkSendConfirmScreen> {
                       Opacity(
                         opacity: 0,
                         child: Text(
-                          isArk ? t.ark_wallet.result_failed_desc : longestDescription,
+                          longestDescription,
                           textAlign: TextAlign.center,
                           style: descriptionStyle,
                         ),

@@ -116,6 +116,14 @@ void main() {
     expect(feeRow.value, unit.displayBitcoinAmount(0, withUnit: true));
   });
 
+  testWidgets('the box starts at the same height for Ark and Lightning', (tester) async {
+    await pump(tester);
+    final arkTop = tester.getTopLeft(find.byType(ArkInfoBox)).dy;
+    await pump(tester, input: _invoice);
+
+    expect(tester.getTopLeft(find.byType(ArkInfoBox)).dy, arkTop);
+  });
+
   testWidgets('sending stays on the same screen: the top keeps its place and only the state changes', (tester) async {
     final backend = await pump(tester);
     backend.movements = [_pending(99)];

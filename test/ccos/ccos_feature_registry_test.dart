@@ -124,7 +124,7 @@ void main() {
       expect(listing.iconPath, FeatureArkIconPath.boat);
       expect(listing.creatorStory.quote, isNull);
       expect(listing.creatorStory.quoteAttribution, isNull);
-      expect(listing.screenshots, hasLength(5));
+      expect(listing.screenshots, hasLength(6));
     });
 
     test('theme tells its own store creator story without the feedback quote', () {

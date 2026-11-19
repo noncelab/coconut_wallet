@@ -47,36 +47,34 @@ class _MnemonicBackupCompleteScreenState extends State<MnemonicBackupCompleteScr
           top: false,
           child: Stack(
             children: [
-              Center(
-                child: Transform.translate(
-                  offset: const Offset(0, -28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SvgPicture.asset(
-                        CommonFormIconPath.circleCheck,
-                        width: 72,
-                        height: 72,
-                        colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
-                      ),
-                      CoconutLayout.spacing_600h,
-                      Text(
-                        strings.backup_complete_title,
-                        style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+              Align(
+                alignment: const Alignment(0, -0.45),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      CommonFormIconPath.circleCheck,
+                      width: 72,
+                      height: 72,
+                      colorFilter: ColorFilter.mode(context.coconutColors.iconPrimary, BlendMode.srcIn),
+                    ),
+                    CoconutLayout.spacing_600h,
+                    Text(
+                      strings.backup_complete_title,
+                      style: CoconutTypography.heading3_21_Bold.setColor(context.coconutColors.primaryText),
+                      textAlign: TextAlign.center,
+                      textScaler: const TextScaler.linear(1),
+                    ),
+                    CoconutLayout.spacing_400h,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        strings.backup_complete_description,
+                        style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
                         textAlign: TextAlign.center,
-                        textScaler: const TextScaler.linear(1),
                       ),
-                      CoconutLayout.spacing_400h,
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: Text(
-                          strings.backup_complete_description,
-                          style: CoconutTypography.body2_14.setColor(context.coconutColors.secondaryText),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               FixedBottomButton(
