@@ -139,6 +139,27 @@ void main() {
     expect(isActive(tester, 'ark-wallet-send'), isTrue);
   });
 
+  testWidgets('with VTXOs but notifications off, home says renew reminders are off and asks to turn them on', (
+    tester,
+  ) async {
+    final reminder = FakeArkReminder()..allowed = false;
+    final backend = FakeArkBackend()..vtxoList = [fakeVtxo('a', expiry: 5000)];
+    final wallet = await fakeArkWalletProvider(backend: backend, reminder: reminder);
+    await wallet.restore(Uint8List.fromList(utf8.encode('${'abandon ' * 11}about')));
+    await wallet.syncNow();
+    await pump(tester, wallet);
+
+    expect(find.byKey(const Key('ark-reminder-nudge')), findsOneWidget);
+    reminder.grantOnAsk = true;
+    await tester.tap(
+      find.descendant(of: find.byKey(const Key('ark-reminder-nudge')), matching: find.byType(CoconutButton)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(reminder.asked, 1);
+    expect(find.byKey(const Key('ark-reminder-nudge')), findsNothing);
+  });
+
   testWidgets('with a balance but no Coconut wallet, withdraw opens with an address to type in', (tester) async {
     await pump(tester, await walletWith(restored: true, sats: 20000));
 
@@ -232,10 +253,7 @@ void main() {
     await pump(tester, wallet);
     await openSettings(tester);
 
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.alert.wallet_delete.confirm_delete_description)),
-      findsOneWidget,
-    );
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.ark_wallet.delete_description)), findsOneWidget);
     await tester.tap(find.text(t.delete));
     await tester.pumpAndSettle();
 
@@ -244,16 +262,50 @@ void main() {
     expect(find.text(t.ark_wallet.create_new), findsOneWidget);
   });
 
+  testWidgets('settings show notifications and the Ark server under the Ark wallet section, without the chain server', (
+    tester,
+  ) async {
+    final wallet = await fakeArkWalletProvider(backend: FakeArkBackend(), reminder: FakeArkReminder());
+    await wallet.restore(Uint8List.fromList(utf8.encode('${'abandon ' * 11}about')));
+    await pump(tester, wallet);
+    await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+    await tester.pumpAndSettle();
+
+    final section = find.ancestor(of: find.byKey(const Key('ark-settings-server')), matching: find.byType(InfoSection));
+    expect(find.descendant(of: section, matching: find.text(t.ark_wallet.wallet_name)), findsOneWidget);
+    expect(find.descendant(of: section, matching: find.byKey(const Key('ark-settings-reminder'))), findsOneWidget);
+    expect(find.byKey(const Key('ark-settings-chain')), findsNothing);
+  });
+
+  testWidgets('settings show whether renew reminders are on, and a tap turns them on when off', (tester) async {
+    final reminder = FakeArkReminder()..allowed = false;
+    final wallet = await fakeArkWalletProvider(backend: FakeArkBackend(), reminder: reminder);
+    await wallet.restore(Uint8List.fromList(utf8.encode('${'abandon ' * 11}about')));
+    await wallet.syncNow();
+    await pump(tester, wallet);
+    await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+    await tester.pumpAndSettle();
+
+    final row = find.byKey(const Key('ark-settings-reminder'));
+    expect(find.descendant(of: row, matching: find.text(t.ark_wallet.reminder_off)), findsOneWidget);
+    reminder.grantOnAsk = true;
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    expect(reminder.asked, 1);
+    expect(find.descendant(of: row, matching: find.text(t.ark_wallet.reminder_on)), findsOneWidget);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(reminder.asked, 1);
+  });
+
   testWidgets('a wallet with balance cannot be deleted', (tester) async {
     final wallet = await walletWith(restored: true, sats: 1000);
     await pump(tester, wallet);
     await openSettings(tester);
 
     expect(find.text(TextUtils.preventLineBreakInsideWords(t.ark_wallet.delete_blocked_title)), findsOneWidget);
-    expect(
-      find.text(TextUtils.preventLineBreakInsideWords(t.alert.wallet_delete.confirm_delete_description)),
-      findsNothing,
-    );
+    expect(find.text(TextUtils.preventLineBreakInsideWords(t.ark_wallet.delete_description)), findsNothing);
     expect(wallet.hasWallet, isTrue);
   });
 

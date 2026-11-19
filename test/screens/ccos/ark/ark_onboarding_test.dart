@@ -6,6 +6,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_consent_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -51,6 +52,7 @@ void main() {
     await tester.tap(find.text(t.ark_wallet.create_new));
     await tester.pumpAndSettle();
     expect(text(t.ark_wallet.consent_same_words), findsOneWidget);
+    expect(text(t.ark_wallet.consent_restore_history), findsNothing);
 
     await tester.tap(find.text(t.ark_wallet.consent_confirm));
     await tester.pump();
@@ -61,6 +63,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(wallet.hasWallet, isTrue);
     expect(find.text(t.ark_wallet.create_new), findsNothing);
+  });
+
+  testWidgets('restoring also says the balance comes back but past activity and memos do not', (tester) async {
+    await pump(
+      tester,
+      Builder(
+        builder:
+            (context) =>
+                TextButton(onPressed: () => showArkConsentSheet(context, restoring: true), child: const Text('open')),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(text(t.ark_wallet.consent_restore_history), findsOneWidget);
   });
 
   testWidgets('closing the consent sheet creates nothing', (tester) async {

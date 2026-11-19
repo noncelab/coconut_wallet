@@ -52,7 +52,7 @@ class ArkVtxoDetailScreen extends StatelessWidget {
     final dueSoon = blocksLeft != null && blocksLeft <= ArkWalletProvider.renewWindowBlocks;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(context: context, title: ''),
+      appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background, title: ''),
       body: Stack(
         children: [
           ListView(

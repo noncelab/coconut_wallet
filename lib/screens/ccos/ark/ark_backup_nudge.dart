@@ -24,7 +24,7 @@ class ArkNudgeCard extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(color: colors.homeSurface, borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             Expanded(

@@ -160,12 +160,13 @@ void main() {
     reminder = FakeArkReminder();
   });
 
-  ArkWalletProvider create() {
+  ArkWalletProvider create({DateTime Function()? now}) {
     final provider = ArkWalletProvider(
       store: ArkWalletStore(prefs, secrets),
       backend: backend,
       reminder: reminder,
       generateMnemonic: () async => Uint8List.fromList(utf8.encode(created)),
+      now: now,
     );
     addTearDown(provider.dispose);
     return provider;
@@ -347,7 +348,7 @@ void main() {
       expect(provider.arkAddress, backend.address);
     });
 
-    test('showing an invoice syncs fast until it is paid or closed', () async {
+    test('an invoice keeps syncing fast until it is paid, even with the receive screen closed', () async {
       final provider = create();
       await provider.createNew();
       expect(provider.syncInterval, const Duration(seconds: 30));
@@ -355,12 +356,42 @@ void main() {
       final invoice = await provider.createInvoice(1000);
       expect(provider.syncInterval, const Duration(seconds: 3));
       expect(provider.isInvoicePaid(invoice.paymentHash), isFalse);
+      await provider.syncNow();
+      expect(provider.syncInterval, const Duration(seconds: 3));
 
       backend.movements = [movement(5, subsystem: 'bark.lightning_receive', hash: invoice.paymentHash)];
       await provider.syncNow();
       expect(provider.isInvoicePaid(invoice.paymentHash), isTrue);
+      expect(provider.syncInterval, const Duration(seconds: 30));
+    });
 
-      provider.stopAwaitingInvoice();
+    test('a failed invoice stops the fast sync, though failed receives are hidden from history', () async {
+      final provider = create();
+      await provider.createNew();
+      final invoice = await provider.createInvoice(1000);
+
+      backend.movements = [
+        movement(5, subsystem: 'bark.lightning_receive', hash: invoice.paymentHash, status: 'failed', sats: 0),
+      ];
+      await provider.syncNow();
+
+      expect(provider.syncInterval, const Duration(seconds: 30));
+    });
+
+    test('an unpaid invoice stops the fast sync after an hour, and every open invoice is waited for', () async {
+      var now = DateTime(2026, 11, 19, 12);
+      final provider = create(now: () => now);
+      await provider.createNew();
+      await provider.createInvoice(1000);
+      now = now.add(const Duration(minutes: 30));
+      await provider.createInvoice(2000);
+
+      now = now.add(const Duration(minutes: 31));
+      await provider.syncNow();
+      expect(provider.syncInterval, const Duration(seconds: 3));
+
+      now = now.add(const Duration(minutes: 30));
+      await provider.syncNow();
       expect(provider.syncInterval, const Duration(seconds: 30));
     });
 
@@ -571,6 +602,21 @@ void main() {
       expect(reminder.calls, hasLength(1));
       final expected = before.add(const Duration(minutes: 10) * (300 - ArkWalletProvider.renewWindowBlocks));
       expect(reminder.calls.single!.difference(expected).inSeconds.abs(), lessThan(5));
+    });
+
+    test('tells when reminders are off and turning them on asks for permission', () async {
+      reminder.allowed = false;
+      final provider = create();
+      await provider.createNew();
+      await provider.syncNow();
+
+      expect(provider.remindersOff, isTrue);
+
+      reminder.grantOnAsk = true;
+      await provider.allowReminders();
+
+      expect(reminder.asked, 1);
+      expect(provider.remindersOff, isFalse);
     });
 
     test('is cleared once nothing waits, inside the window and on wipe', () async {

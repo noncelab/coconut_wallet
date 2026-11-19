@@ -191,7 +191,6 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                               textStyle: CoconutTypography.heading2_28_NumberBold.setColor(colors.primaryText),
                             ),
                           ),
-                          CoconutLayout.spacing_100h,
                           FiatPrice(satoshiAmount: balance, textColor: colors.secondaryText),
                         ],
                       ),
@@ -295,6 +294,15 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
                     ] else if (wallet.needsBackup) ...[
                       CoconutLayout.spacing_500h,
                       ArkBackupNudge(onBackup: () => startArkWalletBackup(context, wallet)),
+                    ] else if (wallet.remindersOff && wallet.vtxos.isNotEmpty) ...[
+                      CoconutLayout.spacing_500h,
+                      ArkNudgeCard(
+                        key: const Key('ark-reminder-nudge'),
+                        title: t.ark_wallet.reminder_off_title,
+                        line: t.ark_wallet.reminder_off_line,
+                        buttonText: t.ark_wallet.reminder_off_button,
+                        onPressed: wallet.allowReminders,
+                      ),
                     ],
                   ],
                 ),

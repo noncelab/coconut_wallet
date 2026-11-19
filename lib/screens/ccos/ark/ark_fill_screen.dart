@@ -18,6 +18,7 @@ import 'package:coconut_wallet/screens/send/hot_wallet_passphrase_input_sheet.da
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
+import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -42,12 +43,26 @@ class _ArkFillScreenState extends State<ArkFillScreen> {
   late int walletId = widget.walletId;
 
   /// 고를 지갑이 둘 이상이면 카드 이름을 눌러 바꿈
+  /// 채우기 최소 금액보다 확정 잔액이 적은 지갑은 보이지만 고를 수 없음
   Future<void> _changeWallet() async {
+    final wallets = context.read<WalletProvider>();
+    final candidates = ArkWalletNavigation.fillWalletIds(wallets);
+    int minimum = 1;
+    try {
+      minimum = (await context.read<ArkWalletProvider>().boardTerms()).minAmountSats;
+    } catch (error) {
+      Logger.error('ArkFillScreen: board terms failed: $error');
+    }
+    if (!mounted) return;
     final picked = await pickCoconutWallet(
       context,
-      ArkWalletNavigation.fillWalletIds(context.read<WalletProvider>()),
+      candidates,
       AnalyticsScreenNames.ccosArkWalletFillWallet,
-      title: t.ark_wallet.fill_from,
+      title: t.ark_wallet.fill_wallet,
+      disabled: {
+        for (final id in candidates)
+          if (wallets.getWalletBalance(id).confirmed < minimum) id,
+      },
     );
     if (picked != null && mounted && picked != walletId) setState(() => walletId = picked);
   }
@@ -110,7 +125,7 @@ class _ArkFillViewState extends State<_ArkFillView> {
     final confirmations = viewModel.requiredConfirmations;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(context: context, title: t.ark_wallet.fill),
+      appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background, title: t.ark_wallet.fill),
       body: Stack(
         children: [
           ListView(
@@ -118,6 +133,7 @@ class _ArkFillViewState extends State<_ArkFillView> {
             children: [
               ArkMoveRoute(
                 key: const Key('ark-fill-route'),
+                fromLabel: t.ark_wallet.fill_wallet,
                 onFromTap: widget.onChangeWallet,
                 fromName: walletName,
                 fromBalance: sats(viewModel.source.confirmedSats),

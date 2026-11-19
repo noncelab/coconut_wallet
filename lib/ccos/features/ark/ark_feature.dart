@@ -1,4 +1,3 @@
-import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
@@ -10,6 +9,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_entrance.dart';
 import 'package:flutter/material.dart';
 
 class ArkFeature {
@@ -62,13 +62,6 @@ class ArkFeature {
 
   static void openWallet(BuildContext context) {
     final navigator = Navigator.of(context);
-    FeatureEntryRoutes.instance.launching(
-      () => navigator.push(
-        MaterialPageRoute<void>(
-          settings: const RouteSettings(name: AnalyticsScreenNames.ccosArkWalletHome),
-          builder: (_) => const ArkWalletHomeScreen(),
-        ),
-      ),
-    );
+    FeatureEntryRoutes.instance.launching(() => navigator.push(ArkWalletEntrance.route(const ArkWalletHomeScreen())));
   }
 }

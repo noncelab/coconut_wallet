@@ -20,6 +20,8 @@ import 'package:coconut_wallet/providers/connectivity_provider.dart';
 import 'package:coconut_wallet/providers/price_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -85,9 +87,22 @@ mixin FakeArkVtxos implements ArkWalletBackend {
 
 class FakeArkReminder implements ArkExpiryReminder {
   final List<DateTime?> calls = [];
+  bool allowed = true;
+  bool grantOnAsk = false;
+  int asked = 0;
 
   @override
   Future<void> remindAt(DateTime? at) async => calls.add(at);
+
+  @override
+  Future<bool> isAllowed() async => allowed;
+
+  @override
+  Future<bool> askToAllow() async {
+    asked++;
+    if (grantOnAsk) allowed = true;
+    return allowed;
+  }
 }
 
 /// 채우기·내보내기 쪽 가짜 bark
@@ -221,9 +236,12 @@ class FakeArkBackend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements Ark
   @override
   Future<String> newArkAddress(String fingerprint) async => address;
 
+  final List<String?> invoiceDescriptions = [];
+
   @override
   Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description}) async {
     invoiceAmounts.add(amountSats);
+    invoiceDescriptions.add(description);
     return ArkLightningInvoice(
       invoice: 'lnbcrt${amountSats}n1fake',
       paymentHash: 'hash-$amountSats',
@@ -294,6 +312,7 @@ class FakeArkBackend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements Ark
 Future<ArkWalletProvider> fakeArkWalletProvider({
   FakeArkBackend? backend,
   FakeArkSecrets? secrets,
+  FakeArkReminder? reminder,
   bool keepPrefs = false,
 }) async {
   if (!keepPrefs) SharedPreferences.setMockInitialValues({});
@@ -304,6 +323,7 @@ Future<ArkWalletProvider> fakeArkWalletProvider({
     backend: backend ?? FakeArkBackend(),
     generateMnemonic: () async => Uint8List.fromList(utf8.encode('${'zoo ' * 11}wrong')),
     autoSync: false,
+    reminder: reminder,
   );
 }
 
@@ -320,9 +340,25 @@ class FakeArkConnectivity extends Fake with ChangeNotifier implements Connectivi
 /// 코코넛 지갑 목록, 채우기·내보내기 칸이 봄
 class FakeArkWallets extends Fake with ChangeNotifier implements WalletProvider {
   List<WalletItemBase> wallets = [];
+  final Map<int, WalletAddress> receiveAddresses = {};
 
   @override
   List<WalletItemBase> get walletItemList => wallets;
+
+  @override
+  WalletAddress getReceiveAddress(int walletId) => receiveAddresses[walletId]!;
+}
+
+/// 내 지갑 하나, 내보내기 주소 고르기에서 봄
+class FakeArkWalletItem extends Fake implements WalletItemBase {
+  FakeArkWalletItem(this.id, this.name);
+
+  @override
+  final int id;
+  @override
+  final String name;
+  @override
+  WalletType get walletType => WalletType.singleSignature;
 }
 
 /// 아크 지갑 홈에 필요한 코코넛 provider(법정화폐 환산, 지갑 목록)

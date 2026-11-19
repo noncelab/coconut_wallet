@@ -8,8 +8,8 @@ import 'package:coconut_wallet/design_system/context/coconut_theme_context_exten
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_send_view_model.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_move_parts.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_send_confirm_screen.dart';
-import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_text_field.dart';
 import 'package:coconut_wallet/utils/address_scan_util.dart';
@@ -17,7 +17,7 @@ import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// 아크 지갑 보내기 첫 화면. 받는 곳과 금액
+/// 아크 지갑 보내기 첫 화면. 받는 주소, 금액(바로 입력, 잔액은 라벨 줄 끝), 메모
 class ArkSendScreen extends StatelessWidget {
   const ArkSendScreen({super.key, this.initialInput});
 
@@ -88,17 +88,6 @@ class _ArkSendViewState extends State<_ArkSendView> {
     if (scanned != null && mounted) _setInput(scanned.trim());
   }
 
-  Future<void> _enterAmount(ArkSendViewModel viewModel) async {
-    final result = await Bip21AmountBottomSheet.show(
-      context: context,
-      currentUnit: context.read<ArkWalletProvider>().unit,
-      initialAmountSats: viewModel.amountSats,
-      screenName: AnalyticsScreenNames.ccosArkWalletSendAmount,
-    );
-    if (!mounted || result == null || !result.didEdit) return;
-    await viewModel.setAmount(result.amountInSats);
-  }
-
   String? _problemText(ArkSendProblem? problem) => switch (problem) {
     null => null,
     ArkSendProblem.onchainNotYet => t.ark_wallet.problem_onchain,
@@ -118,9 +107,10 @@ class _ArkSendViewState extends State<_ArkSendView> {
     final problem = _problemText(viewModel.problem);
     final rail = viewModel.rail;
     final amount = viewModel.amountSats;
+    String sats(int value) => unit.displayBitcoinAmount(value, withUnit: true);
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(context: context, title: t.send),
+      appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background, title: t.send),
       body: Stack(
         children: [
           ListView(
@@ -145,62 +135,70 @@ class _ArkSendViewState extends State<_ArkSendView> {
                 suffixIconSize: 18,
               ),
               if (rail != null) ...[
-                CoconutLayout.spacing_400h,
+                CoconutLayout.spacing_200h,
                 Text(
                   rail == ArkPaymentRail.ark ? t.ark_wallet.parsed_ark : t.ark_wallet.parsed_lightning,
                   style: CoconutTypography.body3_12.setColor(colors.secondaryText),
                 ),
-              ],
-              if (rail != null) ...[
+                if (viewModel.lightningMemo case final lightningMemo?) ...[
+                  CoconutLayout.spacing_100h,
+                  Text(
+                    '${t.ark_wallet.lightning_memo}  $lightningMemo',
+                    key: const Key('ark-send-lightning-memo'),
+                    style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                  ),
+                ],
                 CoconutLayout.spacing_500h,
-                Text(t.ark_wallet.send_amount, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                Row(
+                  children: [
+                    Text(t.ark_wallet.send_amount, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+                    const Spacer(),
+                    Text(
+                      t.ark_wallet.wallet_balance(amount: sats(wallet.balance.spendable)),
+                      key: const Key('ark-send-balance'),
+                      style: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
+                    ),
+                  ],
+                ),
                 CoconutLayout.spacing_200h,
-                GestureDetector(
-                  key: const Key('ark-send-amount'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: viewModel.invoiceHasAmount ? null : () => _enterAmount(viewModel),
-                  child: Container(
+                if (viewModel.invoiceHasAmount)
+                  Container(
+                    key: const Key('ark-send-fixed-amount'),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(color: colors.inputSurface, borderRadius: BorderRadius.circular(12)),
-                    child: Text(
-                      amount == null ? t.ark_wallet.set_amount : unit.displayBitcoinAmount(amount, withUnit: true),
-                      style: (amount == null ? CoconutTypography.body1_16 : CoconutTypography.heading4_18_NumberBold)
-                          .setColor(amount == null ? colors.secondaryText : colors.primaryText),
-                    ),
+                    child: Text(sats(amount!), style: CoconutTypography.body2_14_Number.setColor(colors.primaryText)),
+                  )
+                else
+                  ArkMoveAmountBox(
+                    amountSats: viewModel.amountSats,
+                    onAmount: viewModel.setAmount,
+                    isError: viewModel.problem == ArkSendProblem.notEnoughBalance,
+                    onMax: () => viewModel.setAmount(wallet.balance.spendable),
                   ),
-                ),
-                CoconutLayout.spacing_200h,
-                Text(
-                  t.ark_wallet.available(amount: unit.displayBitcoinAmount(wallet.balance.spendable, withUnit: true)),
-                  style: CoconutTypography.body3_12.setColor(colors.secondaryText),
-                ),
-                CoconutLayout.spacing_500h,
-                Text(t.ark_wallet.memo, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
-                CoconutLayout.spacing_200h,
-                CoconutTextField(
-                  key: const Key('ark-send-memo'),
-                  controller: _memoController,
-                  focusNode: _memoFocusNode,
-                  onChanged: viewModel.setMemo,
-                  placeholderText: t.ark_wallet.memo_hint,
-                  maxLines: 1,
-                  maxLength: 50,
-                  padding: const EdgeInsets.only(left: 16, right: 0),
-                  backgroundColor: colors.inputSurface,
-                  clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
-                  onClear: () {
-                    _memoController.clear();
-                    viewModel.setMemo('');
-                  },
-                ),
               ],
-              if (problem != null) ...[
-                CoconutLayout.spacing_300h,
-                Text(problem, style: CoconutTypography.body2_14.setColor(colors.danger)),
-              ],
+              CoconutLayout.spacing_500h,
+              Text(t.ark_wallet.memo, style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText)),
+              CoconutLayout.spacing_200h,
+              CoconutTextField(
+                key: const Key('ark-send-memo'),
+                controller: _memoController,
+                focusNode: _memoFocusNode,
+                onChanged: viewModel.setMemo,
+                placeholderText: t.ark_wallet.memo_hint,
+                maxLines: 1,
+                maxLength: 50,
+                padding: const EdgeInsets.only(left: 16, right: 12),
+                backgroundColor: colors.inputSurface,
+                clearButtonVisibility: CoconutTextFieldClearButtonVisibility.whenNotEmpty,
+                onClear: () {
+                  _memoController.clear();
+                  viewModel.setMemo('');
+                },
+              ),
             ],
           ),
           FixedBottomButton(
+            subWidget: problem == null ? null : arkMoveProblemText(context, problem),
             text: t.next,
             isActive: viewModel.canContinue,
             onButtonClicked: () => ArkSendConfirmScreen.open(context, viewModel),

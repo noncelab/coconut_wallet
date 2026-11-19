@@ -49,7 +49,9 @@ class ArkWalletProvider extends ChangeNotifier {
     Future<Uint8List> Function()? generateMnemonic,
     ArkExpiryReminder? reminder,
     bool autoSync = true,
+    DateTime Function()? now,
   }) : _store = store,
+       _now = now ?? DateTime.now,
        _reminder = reminder,
        _autoSync = autoSync,
        _backend = backend,
@@ -79,7 +81,10 @@ class ArkWalletProvider extends ChangeNotifier {
   bool _isRecoveryPending = false;
   List<ArkMovement> _movements = const [];
   String? _arkAddress;
-  ArkLightningInvoice? _awaitedInvoice;
+  final DateTime Function() _now;
+
+  /// 받기 화면을 닫아도 수령·실패·1시간까지 기다리는 인보이스(결제 해시 → 기한)
+  final Map<String, DateTime> _awaitedInvoices = {};
   Timer? _syncTimer;
   AppLifecycleListener? _lifecycle;
   List<ArkVtxo> _vtxos = const [];
@@ -158,7 +163,7 @@ class ArkWalletProvider extends ChangeNotifier {
   bool get canRenewDue => vtxosToRenew.isNotEmpty && renewAmount >= ArkVtxo.minRenewSats;
 
   /// 인보이스를 보여 주는 동안은 받은 결제를 빨리 수령하도록 짧게
-  Duration get syncInterval => _awaitedInvoice == null ? _normalSync : _invoiceSync;
+  Duration get syncInterval => _awaitedInvoices.isEmpty ? _normalSync : _invoiceSync;
 
   /// 지갑이 열려 잔액을 읽은 상태
   bool get isBalanceKnown => _state == ArkWalletState.open;
@@ -194,6 +199,7 @@ class ArkWalletProvider extends ChangeNotifier {
       _state = ArkWalletState.open;
       _setStep(ArkCreateStep.ready);
       await _loadActivity(fingerprint);
+      await _readRemindersAllowed();
       _startSync();
       unawaited(syncNow());
     } catch (_) {
@@ -239,6 +245,7 @@ class ArkWalletProvider extends ChangeNotifier {
       _state = ArkWalletState.open;
       await refreshBalance();
       await _loadActivity(info.fingerprint);
+      await _readRemindersAllowed();
       _startSync();
       unawaited(syncNow());
     } catch (error) {
@@ -290,8 +297,29 @@ class ArkWalletProvider extends ChangeNotifier {
     await _updateReminder();
   }
 
+  /// 갱신 알림을 띄울 수 없음. 앱이 꺼져 있으면 만료 전에 알려 줄 수 없어 홈에서 안내
+  bool get remindersOff => _remindersAllowed == false;
+  bool get remindersOn => _remindersAllowed == true;
+  bool? _remindersAllowed;
+
+  /// 알림을 켜도록 물음(이미 거절했으면 앱 설정)
+  Future<void> allowReminders() async {
+    final reminder = _reminder;
+    if (reminder == null) return;
+    _remindersAllowed = await reminder.askToAllow();
+    notifyListeners();
+  }
+
+  Future<void> _readRemindersAllowed() async {
+    final allowed = await _reminder?.isAllowed();
+    if (allowed == _remindersAllowed) return;
+    _remindersAllowed = allowed;
+    notifyListeners();
+  }
+
   /// 갱신 구간에 들어설 때(블록 하나 10분으로 셈) 알림. 이미 구간 안이면 홈 안내가 대신함
   Future<void> _updateReminder() async {
+    await _readRemindersAllowed();
     final tip = _tipHeight;
     if (tip == null) return;
     final waiting = [
@@ -324,6 +352,7 @@ class ArkWalletProvider extends ChangeNotifier {
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp)),
     );
     _announceReceived();
+    _pruneAwaitedInvoices(history);
     if (afterSync) _arkAddress ??= await _backend.newArkAddress(fingerprint);
     notifyListeners();
   }
@@ -364,18 +393,25 @@ class ArkWalletProvider extends ChangeNotifier {
     _syncTimer = null;
   }
 
-  Future<ArkLightningInvoice> createInvoice(int amountSats) => _serial(() async {
-    final invoice = await _backend.createLightningInvoice(_info!.fingerprint, amountSats);
-    _awaitedInvoice = invoice;
+  Future<ArkLightningInvoice> createInvoice(int amountSats, {String? description}) => _serial(() async {
+    final invoice = await _backend.createLightningInvoice(_info!.fingerprint, amountSats, description: description);
+    _awaitedInvoices[invoice.paymentHash] = _now().add(_invoiceWait);
     if (_syncTimer != null) _startSync();
     notifyListeners();
     return invoice;
   });
 
-  void stopAwaitingInvoice() {
-    if (_awaitedInvoice == null) return;
-    _awaitedInvoice = null;
-    if (_syncTimer != null) _startSync();
+  static const _invoiceWait = Duration(hours: 1);
+
+  void _pruneAwaitedInvoices(List<ArkMovement> history) {
+    if (_awaitedInvoices.isEmpty) return;
+    final now = _now();
+    final finished = {
+      for (final movement in history)
+        if (movement.paymentHash != null && movement.status != ArkMovementStatus.pending) movement.paymentHash!,
+    };
+    _awaitedInvoices.removeWhere((hash, until) => now.isAfter(until) || finished.contains(hash));
+    if (_awaitedInvoices.isEmpty && _syncTimer != null) _startSync();
   }
 
   bool isInvoicePaid(String paymentHash) => _movements.any(
@@ -517,7 +553,7 @@ class ArkWalletProvider extends ChangeNotifier {
 
   Future<void> _wipe() async {
     _stopSync();
-    _awaitedInvoice = null;
+    _awaitedInvoices.clear();
     _movements = const [];
     _arkAddress = null;
     _vtxos = const [];

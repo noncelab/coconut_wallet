@@ -5,7 +5,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_receive_view_model.dart';
-import 'package:coconut_wallet/screens/common/bip21_amount_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_receive_amount_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/features/ccos/ark/ark_box_text.dart';
@@ -60,14 +60,15 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
   };
 
   Future<void> _enterAmount(ArkReceiveViewModel viewModel) async {
-    final result = await Bip21AmountBottomSheet.show(
+    final result = await ArkReceiveAmountSheet.show(
       context: context,
       currentUnit: context.read<ArkWalletProvider>().unit,
       initialAmountSats: viewModel.amountSats,
+      initialMemo: viewModel.invoiceMemo,
       screenName: AnalyticsScreenNames.ccosArkWalletReceiveAmount,
     );
     if (!mounted || result == null || !result.didEdit) return;
-    await viewModel.setAmount(result.amountInSats);
+    await viewModel.setAmount(result.amountInSats, memo: result.memo);
   }
 
   Future<void> _share(ArkReceiveViewModel viewModel) async {
@@ -134,6 +135,7 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(
         context: context,
+        backgroundColor: colors.background,
         title: t.receive,
         actionButtonList: [
           CupertinoButton(
@@ -256,7 +258,7 @@ class _WayRow extends StatelessWidget {
                         textHeightBehavior: arkBoxTextHeight,
                         child: CopyTextContainer(
                           text: value,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           textStyle: CoconutTypography.body3_12_Number.setColor(colors.secondaryText),
                         ),
                       ),

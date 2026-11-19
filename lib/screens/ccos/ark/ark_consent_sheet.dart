@@ -7,24 +7,31 @@ import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter/material.dart';
 
-/// 아크 지갑을 만들기 전 확인. 확인하면 true
-Future<bool> showArkConsentSheet(BuildContext context) async =>
+/// 아크 지갑을 만들거나 복원하기 전 확인. 확인하면 true
+Future<bool> showArkConsentSheet(BuildContext context, {bool restoring = false}) async =>
     await CommonBottomSheets.showBottomSheet<bool>(
       context: context,
       title: t.ark_wallet.consent_title,
       screenName: AnalyticsScreenNames.ccosArkWalletConsent,
       showDragHandle: true,
-      child: const _ArkConsentContent(),
+      child: _ArkConsentContent(restoring: restoring),
     ) ??
     false;
 
 class _ArkConsentContent extends StatelessWidget {
-  const _ArkConsentContent();
+  const _ArkConsentContent({required this.restoring});
+
+  final bool restoring;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
-    final items = [t.ark_wallet.consent_seed_memory, t.ark_wallet.consent_refresh, t.ark_wallet.consent_same_words];
+    final items = [
+      t.ark_wallet.consent_seed_memory,
+      t.ark_wallet.consent_refresh,
+      t.ark_wallet.consent_same_words,
+      if (restoring) t.ark_wallet.consent_restore_history,
+    ];
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         CoconutLayout.defaultPadding,

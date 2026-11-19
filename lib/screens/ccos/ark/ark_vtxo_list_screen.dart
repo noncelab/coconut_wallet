@@ -88,6 +88,7 @@ class _ArkVtxoListScreenState extends State<ArkVtxoListScreen> {
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(
         context: context,
+        backgroundColor: colors.background,
         title: t.ark_wallet.vtxos,
         actionButtonList: [
           WalletRefreshIndicator(isRefreshing: _refreshing),
@@ -194,7 +195,7 @@ class _ArkVtxoListScreenState extends State<ArkVtxoListScreen> {
                               for (final (index, vtxo) in group.vtxos.indexed) ...[
                                 if (index > 0)
                                   Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                                    margin: const EdgeInsets.symmetric(horizontal: 20),
                                     height: 1,
                                     color: colors.divider,
                                   ),
@@ -311,7 +312,7 @@ class _VtxoRow extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
             TweenAnimationBuilder<double>(

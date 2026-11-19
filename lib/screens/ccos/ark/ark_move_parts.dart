@@ -103,7 +103,10 @@ class _ArkMoveAmountBoxState extends State<ArkMoveAmountBox> {
               unit.isPrefixSymbol
                   ? Padding(
                     padding: const EdgeInsets.only(left: 16, right: 4),
-                    child: Transform.translate(offset: const Offset(0, -1), child: Text(unit.symbol, style: unitStyle)),
+                    child: Transform.translate(
+                      offset: Offset(0, amount == null ? 0 : -1),
+                      child: Text(unit.symbol, style: unitStyle),
+                    ),
                   )
                   : null,
           suffix: CoconutButton(
@@ -178,6 +181,7 @@ class ArkMoveRoute extends StatelessWidget {
     super.key,
     required this.fromName,
     required this.fromBalance,
+    this.fromLabel,
     this.onFromTap,
     required this.amount,
     this.total,
@@ -196,6 +200,9 @@ class ArkMoveRoute extends StatelessWidget {
 
   final String fromName;
   final String fromBalance;
+
+  /// 보내는 지갑 카드 제목, 없으면 보내는 지갑
+  final String? fromLabel;
 
   /// 있으면 보내는 지갑 이름 옆 화살표, 눌러서 지갑을 바꿈
   final VoidCallback? onFromTap;
@@ -239,7 +246,7 @@ class ArkMoveRoute extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ArkMoveCard(
-          label: t.ark_wallet.fill_from,
+          label: fromLabel ?? t.ark_wallet.fill_from,
           name: fromName,
           balance: fromBalance,
           onTap: onFromTap,
@@ -247,7 +254,7 @@ class ArkMoveRoute extends StatelessWidget {
           children: [CoconutLayout.spacing_300h, amount],
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
             children: [
               SvgPicture.asset(
@@ -357,7 +364,7 @@ class _ArkMoveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(CoconutStyles.radius_400), color: colors.surface),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

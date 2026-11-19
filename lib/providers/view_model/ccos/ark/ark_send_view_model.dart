@@ -29,8 +29,11 @@ class ArkSendViewModel extends ChangeNotifier {
 
   String get input => _input;
 
-  /// 직접 고치기 전에는 결제 요청에 담긴 메모
-  String get memo => _memo ?? _request?.memo ?? '';
+  /// 나만 보는 메모. 직접 고치기 전에는 결제 요청(BIP21)에 담긴 메모
+  String get memo => _memo ?? _request?.message ?? '';
+
+  /// 받는 쪽이 인보이스에 담은 라이트닝 메모
+  String? get lightningMemo => rail == ArkPaymentRail.lightningInvoice ? _request?.invoiceDescription : null;
 
   void setMemo(String memo) {
     _memo = memo;

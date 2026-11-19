@@ -84,4 +84,32 @@ void main() {
     );
     expect(arkMovementStatusText(_movement(7, subsystem: 'bark.arkoor', sats: -100)), isNull);
   });
+
+  test('a renewal reads as a renewal, with the fee taken or nothing, never as a send or receive', () {
+    final paid = _movement(10, subsystem: 'bark.round', sats: -2);
+    final free = _movement(11, subsystem: 'bark.round', sats: 0);
+    final pending = _movement(12, subsystem: 'bark.round', sats: 0, status: 'pending');
+
+    expect(arkMovementStatusText(paid), t.ark_wallet.activity_renew_done);
+    expect(arkMovementStatusText(pending), t.ark_wallet.activity_renew_pending);
+    expect(
+      arkMovementStatusText(_movement(13, subsystem: 'bark.round', sats: 0, status: 'failed')),
+      t.ark_wallet.activity_renew_failed,
+    );
+    expect(arkMovementAsRecent(paid).amount, -2);
+    expect(arkMovementAsRecent(free).amount, 0);
+    expect(iconOf(paid), FeatureArkIconPath.txRenewed);
+    expect(iconOf(pending), FeatureArkIconPath.txRenewing);
+  });
+
+  test('filling shows a plus, exporting and exits a minus, each with its pending form', () {
+    expect(iconOf(_movement(20, subsystem: 'bark.board', sats: 1000)), FeatureArkIconPath.txFilled);
+    expect(iconOf(_movement(21, subsystem: 'bark.board', sats: 1000, status: 'pending')), FeatureArkIconPath.txFilling);
+    expect(iconOf(_movement(22, subsystem: 'bark.offboard', sats: -1000)), FeatureArkIconPath.txExported);
+    expect(
+      iconOf(_movement(23, subsystem: 'bark.offboard', sats: -1000, status: 'pending')),
+      FeatureArkIconPath.txExporting,
+    );
+    expect(iconOf(_movement(24, subsystem: 'bark.exit', sats: -1000)), FeatureArkIconPath.txExported);
+  });
 }

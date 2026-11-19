@@ -10,6 +10,7 @@ import 'package:coconut_wallet/screens/ccos/store/widgets/ccos_store_feature_car
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart' show CoconutToast;
 import 'package:coconut_wallet/widgets/features/ccos/card/coconut_open_store_intro_card.dart';
+import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -43,14 +44,25 @@ class _CoconutOpenStoreViewState extends State<_CoconutOpenStoreView> {
     CoconutToast.showToast(context: context, text: toast, isVisibleIcon: true);
   }
 
+  static const double _appBarHeight = 60;
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<CcosStoreViewModel>();
+    final topInset = MediaQuery.paddingOf(context).top + _appBarHeight;
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: CoconutAppBar.build(context: context, title: t.ccos.store.title, isBottom: true),
+      extendBodyBehindAppBar: true,
+      appBar: CoconutAppBar.build(
+        context: context,
+        title: t.ccos.store.title,
+        isBottom: true,
+        hasBackDropFilter: true,
+        backgroundColor: context.coconutColors.background.withValues(alpha: 0.7),
+        height: _appBarHeight,
+      ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 40),
         children: [
           _buildHeader(context),
           for (final listing in viewModel.listings) ...[

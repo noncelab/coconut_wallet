@@ -11,6 +11,8 @@ import '../../../../ccos/features/ark/ark_test_fakes.dart';
 
 const _ark =
     'tark1pqma5v23zqqp5z47f6anpx0lp5vu757p3cnxzqx887t8zl3wacuvdgyeyee2puh3zqypf2680f7z8zau5ukptjaa7suxu0vadk0ncdyw4qdeazs9u29fddycffu4m9';
+const _described =
+    'lnbc1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq9qrsgq357wnc5r2ueh7ck6q93dj32dlqnls087fxdwk8qakdyafkq3yap9us6v52vjjsrvywa6rt52cm9r9zqt8r2t7mlcwspyetp5h2tztugp9lfyql';
 const _invoice =
     'lnbcrt300u1p4dtlwusp5nptqcasatxvy082yctgkamwtewxfdnuh3eemk48utk2cp6zz9umspp50rc6tq4889yrpqt5tlmssthes5qxrfzh3qh93fqm8h00j3sav27sdqqxqy9gcqcqzgq9qyysgqcjnlnm5mwfsf09uvnjraxzwj04c2l9gtduntevk95pec3vvkglv9wqu57rnw3mz8t37add2fsrs44llju7ncaty67ay3d2x9kayxxcsqertrwr';
 
@@ -102,6 +104,15 @@ void main() {
 
       viewModel.setInput(_ark);
       expect(viewModel.memo, '');
+    });
+
+    test('an invoice description is the Lightning memo, not my own memo', () {
+      final mainnet = ArkSendViewModel(wallet, network: NetworkType.mainnet, feeDelay: Duration.zero)
+        ..setInput(_described);
+      addTearDown(mainnet.dispose);
+
+      expect(mainnet.lightningMemo, 'Please consider supporting this project');
+      expect(mainnet.memo, '');
     });
 
     test('is saved on the movement the send made', () async {

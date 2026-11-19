@@ -31,7 +31,7 @@ class ArkOnboardingFlow {
                 title: t.ark_wallet.restore_title,
                 submitLabel: t.ark_wallet.restore_button,
                 onSubmit: (mnemonic) async {
-                  if (!await showArkConsentSheet(navigator.context)) {
+                  if (!await showArkConsentSheet(navigator.context, restoring: true)) {
                     mnemonic.fillRange(0, mnemonic.length, 0);
                     return;
                   }

@@ -77,12 +77,21 @@ void main() {
     expect(viewModel.format, ArkReceiveFormat.arkAddress);
   });
 
-  test('clearing the amount goes back to the Ark address', () async {
+  test('clearing the amount goes back to the Ark address, still waiting for the invoice already shown', () async {
     await viewModel.setAmount(2100);
     await viewModel.setAmount(null);
 
     expect(viewModel.invoice, isNull);
     expect(viewModel.format, ArkReceiveFormat.arkAddress);
-    expect(wallet.syncInterval, const Duration(seconds: 30));
+    expect(wallet.syncInterval, const Duration(seconds: 3));
+  });
+
+  test('a Lightning memo goes into the invoice for the payer to see', () async {
+    await viewModel.setAmount(2100, memo: ' Coffee ');
+    expect(backend.invoiceDescriptions.last, 'Coffee');
+    expect(viewModel.invoiceMemo, 'Coffee');
+
+    await viewModel.setAmount(2100, memo: '');
+    expect(backend.invoiceDescriptions.last, isNull);
   });
 }

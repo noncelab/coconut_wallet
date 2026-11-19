@@ -56,6 +56,23 @@ class LocalNotificationService {
     return details?.notificationResponse?.payload;
   }
 
+  /// 묻지 않고 지금 알림을 띄울 수 있는지만 봄
+  Future<bool> isAllowed() async {
+    await ensureInitialized();
+    if (Platform.isAndroid) {
+      return await _plugin
+              .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+              ?.areNotificationsEnabled() ??
+          false;
+    }
+    if (Platform.isIOS) {
+      final options =
+          await _plugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()?.checkPermissions();
+      return options?.isEnabled ?? false;
+    }
+    return false;
+  }
+
   Future<bool> requestPermission() async {
     await ensureInitialized();
     if (Platform.isAndroid) {

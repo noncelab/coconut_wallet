@@ -26,6 +26,8 @@ ArkMovement _movement(
   int amount = 100,
   List<String> inputs = const [],
   List<String> sentTo = const [],
+  List<String> receivedOn = const [],
+  String? invoice,
 }) => ArkMovement.fromBark(
   bark.Movement(
     id: id,
@@ -37,15 +39,19 @@ ArkMovement _movement(
     effectiveBalanceSats: amount,
     offchainFeeSats: 0,
     sentToAddresses: sentTo,
-    receivedOnAddresses: const [],
+    receivedOnAddresses: receivedOn,
     inputVtxoIds: inputs,
     outputVtxoIds: outputs,
     exitedVtxoIds: const [],
     createdAt: at.toUtc().toIso8601String(),
     updatedAt: at.toUtc().toIso8601String(),
     completedAt: status == 'pending' ? null : at.toUtc().toIso8601String(),
+    lightningInvoice: invoice,
   ),
 );
+
+const _describedInvoice =
+    'lnbc1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq9qrsgq357wnc5r2ueh7ck6q93dj32dlqnls087fxdwk8qakdyafkq3yap9us6v52vjjsrvywa6rt52cm9r9zqt8r2t7mlcwspyetp5h2tztugp9lfyql';
 
 void main() {
   test('pending comes first, then today, yesterday and older days, newest first', () {
@@ -66,6 +72,95 @@ void main() {
     ]);
     expect(groups[1].movements.map((m) => m.id), [5, 2]);
     expect(groups.last.day, DateTime(2026, 11, 16));
+  });
+
+  testWidgets('chips filter the list to on-chain, Ark or Lightning rows, with each count', (tester) async {
+    LocaleSettings.setLocaleSync(AppLocale.ko);
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final now = DateTime.now();
+    final backend =
+        FakeArkBackend()
+          ..movements = [
+            _movement(1, now),
+            _movement(2, now, subsystem: 'bark.lightning_receive', invoice: _describedInvoice),
+            _movement(3, now, subsystem: 'bark.board', amount: 1000),
+            _movement(4, now, subsystem: 'bark.round', amount: -2),
+          ];
+    final wallet = await fakeArkWalletProvider(backend: backend);
+    await wallet.createNew();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<PreferenceProvider>.value(value: FakeStorePreferences()),
+          ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
+          ...fakeArkPriceProviders(),
+        ],
+        child: MaterialApp(
+          theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+          home: const ArkActivityScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    int rows() =>
+        find
+            .byWidgetPredicate(
+              (w) => w.key is ValueKey && '${(w.key as ValueKey).value}'.startsWith('recent-transactions-row-'),
+            )
+            .evaluate()
+            .length;
+
+    expect(rows(), 4);
+    await tester.tap(find.byKey(const Key('ark-activity-filter-lightning')));
+    await tester.pumpAndSettle();
+    expect(rows(), 1);
+    await tester.tap(find.byKey(const Key('ark-activity-filter-onchain')));
+    await tester.pumpAndSettle();
+    expect(rows(), 1);
+    await tester.tap(find.byKey(const Key('ark-activity-filter-ark')));
+    await tester.pumpAndSettle();
+    expect(rows(), 2);
+    await tester.tap(find.byKey(const Key('ark-activity-filter-all')));
+    await tester.pumpAndSettle();
+    expect(rows(), 4);
+  });
+
+  testWidgets('the filter chips stick under the app bar while the list scrolls', (tester) async {
+    LocaleSettings.setLocaleSync(AppLocale.ko);
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final now = DateTime.now();
+    final backend = FakeArkBackend()..movements = [for (var i = 1; i <= 30; i++) _movement(i, now)];
+    final wallet = await fakeArkWalletProvider(backend: backend);
+    await wallet.createNew();
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<PreferenceProvider>.value(value: FakeStorePreferences()),
+          ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
+          ...fakeArkPriceProviders(),
+        ],
+        child: MaterialApp(
+          theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+          home: const ArkActivityScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final chip = find.byKey(const Key('ark-activity-filter-all'));
+    final top = tester.getTopLeft(chip).dy;
+
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -600));
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(chip).dy, top);
+    expect(find.byKey(const Key('ark-activity-filter-fade')), findsNothing);
+    expect(tester.getSize(find.byKey(const Key('ark-activity-filter-bar'))).width, 430);
+    final bar = tester.widget<DecoratedBox>(find.byKey(const Key('ark-activity-filter-bar')));
+    expect((bar.decoration as BoxDecoration).gradient, isA<LinearGradient>());
   });
 
   testWidgets('the activity list opens a movement with its details', (tester) async {
@@ -111,7 +206,25 @@ void main() {
     expect(find.text(t.ark_wallet.date), findsOneWidget);
     expect(find.text(t.ark_wallet.movement_id), findsNothing);
 
+    final box = find.byType(ArkInfoBox);
+    final collapsed = tester.getSize(box).height;
     await tester.tap(find.byKey(const Key('ark-movement-details')));
+    await tester.pumpAndSettle();
+    final expanded = tester.getSize(box).height;
+
+    await tester.tap(find.byKey(const Key('ark-movement-details')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.getSize(box).height, inExclusiveRange(collapsed, expanded));
+    expect(find.text(t.ark_wallet.movement_id), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(tester.getSize(box).height, collapsed);
+    expect(find.text(t.ark_wallet.movement_id), findsNothing);
+
+    await tester.tap(find.byKey(const Key('ark-movement-details')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.getSize(box).height, inExclusiveRange(collapsed, expanded));
     await tester.pumpAndSettle();
     expect(find.text(t.ark_wallet.movement_id), findsOneWidget);
     expect(find.text('VTXO'), findsOneWidget);
@@ -167,6 +280,27 @@ void main() {
     startedAt: DateTime(2026, 11, 18),
     fundingFeeSats: 141,
   );
+
+  testWidgets('a Lightning receive shows the invoice memo apart from my own memo, and names the invoice', (
+    tester,
+  ) async {
+    final movement = _movement(
+      7,
+      DateTime(2026, 11, 18, 10),
+      subsystem: 'bark.lightning_receive',
+      receivedOn: const [_describedInvoice],
+      invoice: _describedInvoice,
+    );
+    await showExit(tester, movement, null);
+
+    final box = find.byType(ArkInfoBox);
+    expect(find.descendant(of: box, matching: find.text(t.ark_wallet.lightning_memo)), findsOneWidget);
+    expect(find.descendant(of: box, matching: find.text('Please consider supporting this project')), findsOneWidget);
+    expect(find.text(t.ark_wallet.memo), findsOneWidget);
+    expect(find.text(t.ark_wallet.invoice), findsOneWidget);
+    expect(find.text(t.ark_wallet.from), findsNothing);
+    expect(find.text(t.ark_wallet.recipient), findsNothing);
+  });
 
   testWidgets('a finished exit shows what left, what arrived, the fee paid and the claim transaction', (tester) async {
     final movement = _movement(

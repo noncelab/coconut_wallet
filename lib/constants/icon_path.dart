@@ -189,6 +189,16 @@ abstract final class FeatureArkIconPath {
   static const String txLightningReceiving = 'assets/svg/features/ark/tx-lightning-receiving.svg';
   static const String txLightningSent = 'assets/svg/features/ark/tx-lightning-sent.svg';
   static const String txLightningSending = 'assets/svg/features/ark/tx-lightning-sending.svg';
+
+  /// 채우기(+)·내보내기와 서버 없이 출금(−). 진행 중은 라이트닝처럼 원 테두리만 없음
+  static const String txFilled = 'assets/svg/features/ark/tx-filled.svg';
+  static const String txFilling = 'assets/svg/features/ark/tx-filling.svg';
+  static const String txExported = 'assets/svg/features/ark/tx-exported.svg';
+  static const String txExporting = 'assets/svg/features/ark/tx-exporting.svg';
+
+  /// 갱신, 내 지갑 안 이동과 같은 모양
+  static const String txRenewed = 'assets/svg/features/ark/tx-renewed.svg';
+  static const String txRenewing = 'assets/svg/features/ark/tx-renewing.svg';
 }
 
 abstract final class FeatureUtxoIconPath {

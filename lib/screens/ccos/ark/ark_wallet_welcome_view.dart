@@ -3,6 +3,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_feature_copy.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_entrance.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -16,6 +17,7 @@ class ArkWalletWelcomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
+    final splash = ArkSplashScope.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -31,10 +33,19 @@ class ArkWalletWelcomeView extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SvgPicture.asset(
-                    'assets/images/ccos/ark_illustration.svg',
-                    width: 220,
-                    theme: SvgTheme(currentColor: colors.primaryText),
+                  Opacity(
+                    key: const Key('ark-welcome-image'),
+                    opacity: splash?.covering == true ? 0 : 1,
+                    child: SizedBox(
+                      key: splash?.target,
+                      width: arkIllustrationWidth,
+                      height: arkIllustrationWidth / arkIllustrationAspect,
+                      child: SvgPicture.asset(
+                        arkIllustrationAsset,
+                        fit: BoxFit.contain,
+                        theme: SvgTheme(currentColor: colors.primaryText),
+                      ),
+                    ),
                   ),
                   CoconutLayout.spacing_500h,
                   Text(

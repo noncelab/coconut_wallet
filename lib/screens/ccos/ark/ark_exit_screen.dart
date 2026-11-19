@@ -47,7 +47,11 @@ class ArkExitScreen extends StatelessWidget {
     }
     return Scaffold(
       backgroundColor: context.coconutColors.background,
-      appBar: CoconutAppBar.build(context: context, title: t.ark_wallet.exit_title),
+      appBar: CoconutAppBar.build(
+        context: context,
+        backgroundColor: context.coconutColors.background,
+        title: t.ark_wallet.exit_title,
+      ),
       body: session == null ? const _ArkExitIntro() : _ArkExitProgressView(session: session),
     );
   }
@@ -309,7 +313,7 @@ class _ArkExitReviewScreenState extends State<_ArkExitReviewScreen> {
     final canPickFeeWallet = _feeWalletIds(wallets).length > 1;
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: CoconutAppBar.build(context: context, title: t.ark_wallet.exit_title),
+      appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background, title: t.ark_wallet.exit_title),
       body: Stack(
         children: [
           ListView(

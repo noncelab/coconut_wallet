@@ -37,6 +37,9 @@ class SelectWalletBottomSheet extends StatefulWidget {
   final List<int>? candidateWalletIds;
   final String? title;
 
+  /// 보이지만 고를 수 없는 지갑, 예: 수수료도 낼 수 없을 만큼 잔액이 적은 지갑
+  final Set<int> disabledWalletIds;
+
   const SelectWalletBottomSheet({
     super.key,
     required this.walletId,
@@ -47,6 +50,7 @@ class SelectWalletBottomSheet extends StatefulWidget {
     this.balanceMode = BalanceMode.includingPending,
     this.candidateWalletIds,
     this.title,
+    this.disabledWalletIds = const {},
   });
 
   static Future<T?> show<T>({required BuildContext context, required String screenName, required Widget child}) =>
@@ -122,6 +126,12 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
       balanceDisplay: widget.currentUnit.displayBitcoinAmount(balance, withUnit: true),
       onPressed: () => _viewModel.selectWallet(wallet.id),
     );
+    if (widget.disabledWalletIds.contains(wallet.id)) {
+      return IgnorePointer(
+        key: ValueKey('select-wallet-disabled-${wallet.id}'),
+        child: Opacity(opacity: 0.3, child: card),
+      );
+    }
     if (!grid) return card;
     const inset = 8.0;
     return LayoutBuilder(
@@ -446,7 +456,8 @@ class _SelectWalletBottomSheetState extends State<SelectWalletBottomSheet> {
               onButtonClicked: () {
                 if (selected != null) widget.onWalletChanged(selected.id);
               },
-              isActive: selected != null && selected.id != widget.walletId,
+              isActive:
+                  selected != null && selected.id != widget.walletId && !widget.disabledWalletIds.contains(selected.id),
               isVisibleAboveKeyboard: false,
               showSurroundings: true,
               surroundingsColor: backgroundColor,

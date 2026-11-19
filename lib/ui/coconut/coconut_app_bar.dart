@@ -111,7 +111,7 @@ class CoconutAppBar {
         CoconutLayout.spacing_100w,
       ],
       flexibleSpace:
-          !isBottom && (backgroundColor == null || hasBackDropFilter)
+          hasBackDropFilter || (!isBottom && backgroundColor == null)
               ? ClipRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),

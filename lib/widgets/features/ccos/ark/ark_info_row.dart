@@ -88,14 +88,19 @@ class ArkInfoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(CoconutStyles.radius_400),
       color: context.coconutColors.surface,
     ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: arkInfoRowsWithDividers(context, children)),
   );
 }
+
+/// 상자 안 행 사이마다 구분선
+List<Widget> arkInfoRowsWithDividers(BuildContext context, List<Widget> rows) => [
+  for (final (index, row) in rows.indexed) ...[if (index > 0) const ArkInfoDivider(), row],
+];
 
 /// 누르면 값을 복사하는 줄, 주소·거래 ID처럼 긴 값. 값은 오른쪽 정렬, [detail]은 아래 보조 글자
 class ArkCopyRow extends StatelessWidget {
@@ -111,4 +116,11 @@ class ArkCopyRow extends StatelessWidget {
     onTap: () => ClipboardCopyUtil.copyWithToast(context, text: value),
     child: ArkInfoRow(label: label, value: value, isNumber: true, detail: detail),
   );
+}
+
+class ArkInfoDivider extends StatelessWidget {
+  const ArkInfoDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(height: 1, color: context.coconutColors.divider);
 }

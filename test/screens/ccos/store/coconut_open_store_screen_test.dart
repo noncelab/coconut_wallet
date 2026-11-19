@@ -63,6 +63,15 @@ void main() {
     expect(find.byType(CoconutSegmentedControl), findsNothing);
   });
 
+  testWidgets('the store scrolls under a frosted glass app bar', (tester) async {
+    await _pump(tester);
+
+    expect(tester.widget<Scaffold>(find.byType(Scaffold).first).extendBodyBehindAppBar, isTrue);
+    expect(find.descendant(of: find.byType(AppBar), matching: find.byType(BackdropFilter)), findsOneWidget);
+    final appBarBottom = tester.getBottomLeft(find.byType(AppBar)).dy;
+    expect(tester.getTopLeft(find.byType(GestureDetector).first).dy, greaterThanOrEqualTo(appBarBottom));
+  });
+
   testWidgets('tapping add on a card adds the feature', (tester) async {
     final preferences = await _pump(tester);
     final card = find.byKey(ValueKey('ccos-store-card-${CoconutThemeFeature.id}'));

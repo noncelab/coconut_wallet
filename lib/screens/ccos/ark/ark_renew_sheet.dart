@@ -102,10 +102,8 @@ class _ArkRenewSheetState extends State<_ArkRenewSheet> {
                         ? t.ark_wallet.problem_fee
                         : fee == null
                         ? '…'
-                        : fee == 0
-                        ? t.ark_wallet.fee_free
                         : unit.displayBitcoinAmount(fee, withUnit: true),
-                isNumber: fee != null && fee != 0,
+                isNumber: fee != null,
                 valueColor: _feeFailed ? colors.danger : null,
               ),
             ],

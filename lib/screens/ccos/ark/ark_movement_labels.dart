@@ -5,6 +5,18 @@ import 'package:coconut_wallet/enums/transaction_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/home/home_widget_data.dart';
 
+/// 거래 내역 필터 칩, 갱신은 아크에 포함
+enum ArkActivityRail { all, onchain, ark, lightning }
+
+ArkActivityRail arkMovementRail(ArkMovement movement) => switch (movement.kind) {
+  ArkMovementKind.lightningSend || ArkMovementKind.lightningReceive => ArkActivityRail.lightning,
+  ArkMovementKind.board ||
+  ArkMovementKind.offboard ||
+  ArkMovementKind.sendOnchain ||
+  ArkMovementKind.exit => ArkActivityRail.onchain,
+  _ => ArkActivityRail.ark,
+};
+
 /// 거래 줄 둘째 줄에 붙는 경로, 실패면 뒤에 "실패"
 String arkMovementRouteLabel(ArkMovement movement) {
   final route = switch (movement.kind) {
@@ -25,15 +37,33 @@ HomeRecentTransaction arkMovementAsRecent(ArkMovement movement, {String? memo}) 
   walletName: memo ?? '',
   amount: movement.effectiveBalanceSats,
   time: movement.timestamp,
-  type: movement.isSend ? TransactionType.sent : TransactionType.received,
-  status: movement.isPending ? (movement.isSend ? TransactionStatus.sending : TransactionStatus.receiving) : null,
+  type:
+      movement.kind == ArkMovementKind.refresh
+          ? TransactionType.self
+          : movement.isSend
+          ? TransactionType.sent
+          : TransactionType.received,
+  status:
+      movement.kind == ArkMovementKind.refresh
+          ? (movement.isPending ? TransactionStatus.selfsending : TransactionStatus.self)
+          : movement.isPending
+          ? (movement.isSend ? TransactionStatus.sending : TransactionStatus.receiving)
+          : null,
   txHash: '${movement.id}',
 );
 
-/// 상태 아이콘, 라이트닝 거래는 가운데만 번개. 원 채움 진하기는 상태끼리 같음
+/// 상태 아이콘, 라이트닝 거래는 가운데만 번개, 채우기는 +, 내보내기·출금은 −, 갱신은 내 지갑 안 이동. 원 채움 진하기는 상태끼리 같음
 String? arkMovementIconPath(List<ArkMovement> movements, HomeRecentTransaction tx) {
   final movement = movements.where((movement) => '${movement.id}' == tx.txHash).firstOrNull;
   if (movement == null) return null;
+  if (movement.kind == ArkMovementKind.refresh) {
+    return movement.isPending ? FeatureArkIconPath.txRenewing : FeatureArkIconPath.txRenewed;
+  }
+  if (arkMovementRail(movement) == ArkActivityRail.onchain) {
+    return movement.kind == ArkMovementKind.board
+        ? (movement.isPending ? FeatureArkIconPath.txFilling : FeatureArkIconPath.txFilled)
+        : (movement.isPending ? FeatureArkIconPath.txExporting : FeatureArkIconPath.txExported);
+  }
   final lightning = movement.isLightning;
   return switch ((movement.isSend, movement.isPending)) {
     (true, true) => lightning ? FeatureArkIconPath.txLightningSending : FeatureArkIconPath.txSending,
@@ -57,6 +87,12 @@ String? arkMovementStatusText(ArkMovement movement) => switch (movement.kind) {
         : movement.isPending
         ? t.ark_wallet.activity_exit_pending
         : t.ark_wallet.activity_exit_done,
+  ArkMovementKind.refresh =>
+    movement.isFailed
+        ? t.ark_wallet.activity_renew_failed
+        : movement.isPending
+        ? t.ark_wallet.activity_renew_pending
+        : t.ark_wallet.activity_renew_done,
   ArkMovementKind.board => movement.isPending ? t.ark_wallet.activity_fill_pending : t.ark_wallet.activity_fill_done,
   ArkMovementKind.offboard || ArkMovementKind.sendOnchain =>
     movement.isPending ? t.ark_wallet.activity_export_pending : t.ark_wallet.activity_export_done,

@@ -99,6 +99,7 @@ class _Host {
     List<int>? candidates,
     bool onlyMfp = false,
     BalanceMode balanceMode = BalanceMode.includingPending,
+    Set<int> disabled = const {},
   }) async {
     callerWalletId = initialWallet;
     await SharedPrefsRepository().setSelectWalletGridView(grid);
@@ -143,6 +144,7 @@ class _Host {
                                 showOnlyMfpWallets: onlyMfp,
                                 candidateWalletIds: candidates,
                                 balanceMode: balanceMode,
+                                disabledWalletIds: disabled,
                               ),
                             ).then((value) {
                               selected = value;
@@ -395,6 +397,30 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       });
     }
+  }
+
+  for (final grid in [false, true]) {
+    testWidgets('a disabled wallet is dimmed and cannot be picked: grid=$grid', (tester) async {
+      final host = _Host();
+      await host.open(
+        tester,
+        fixtures.first,
+        CoconutThemeVariant.values.first,
+        1,
+        candidates: [2, 4],
+        disabled: {2},
+        grid: grid,
+      );
+      expect(find.byKey(const ValueKey('select-wallet-disabled-2')), findsOneWidget);
+      if (!grid) {
+        tester.widget<PageView>(find.byType(PageView)).controller!.jumpToPage(1);
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(_cardTap(2), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(_buttonActive(tester), isFalse);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   }
 
   for (final grid in [false, true]) {

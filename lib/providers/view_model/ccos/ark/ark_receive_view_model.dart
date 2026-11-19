@@ -50,18 +50,23 @@ class ArkReceiveViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setAmount(int? amountSats) async {
+  /// 인보이스에 담아 보내는 사람에게 보이는 라이트닝 메모
+  String get invoiceMemo => _invoiceMemo;
+  String _invoiceMemo = '';
+
+  Future<void> setAmount(int? amountSats, {String memo = ''}) async {
     if (amountSats == null || amountSats <= 0) {
       _clearInvoice();
       notifyListeners();
       return;
     }
     _amountSats = amountSats;
+    _invoiceMemo = memo.trim();
     _isCreatingInvoice = true;
     _invoiceFailed = false;
     notifyListeners();
     try {
-      _invoice = await _wallet.createInvoice(amountSats);
+      _invoice = await _wallet.createInvoice(amountSats, description: _invoiceMemo.isEmpty ? null : _invoiceMemo);
       _format = ArkReceiveFormat.paymentRequest;
     } catch (error) {
       Logger.error('ArkReceiveViewModel: invoice failed: $error');
@@ -83,10 +88,10 @@ class ArkReceiveViewModel extends ChangeNotifier {
 
   void _clearInvoice() {
     _amountSats = null;
+    _invoiceMemo = '';
     _invoice = null;
     _invoiceFailed = false;
     _format = ArkReceiveFormat.arkAddress;
-    _wallet.stopAwaitingInvoice();
   }
 
   static String _btc(int sats) {
@@ -98,7 +103,6 @@ class ArkReceiveViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _wallet.removeListener(_onWalletChanged);
-    _wallet.stopAwaitingInvoice();
     super.dispose();
   }
 }
