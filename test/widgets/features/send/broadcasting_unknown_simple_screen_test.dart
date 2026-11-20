@@ -7,7 +7,6 @@ import 'package:coconut_wallet/constants/lottie_path.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
-import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
 import 'package:coconut_wallet/model/utxo/utxo_state.dart';
@@ -267,6 +266,8 @@ void main() {
         signedId = saved.value.id;
       }
       final vm = await open(tester, signedId);
+      var notifications = 0;
+      vm.addListener(() => notifications++);
       if (!fromSignedDraft) {
         final saved = await tester.runAsync(vm.saveTransactionDraft);
         expect(saved!.isSuccess, isTrue);
@@ -328,7 +329,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(find.byType(BroadcastingScreen), findsNothing);
       expect(find.text('previous-route'), findsOneWidget);
-      expect(vm.hasListeners, isFalse, reason: 'Screen and provider disposal removed listeners');
+      final notificationsAfterBack = notifications;
       expect(manager.realm.all<RealmTransactionDraft>().length, 2);
       expect(send.walletId, fromSignedDraft ? isNull : 1);
       final validAfterBack = expectInputReserved();
@@ -358,6 +359,7 @@ void main() {
         }
       }
       expect(vm.isTransactionAccepted, isTrue);
+      expect(notifications, notificationsAfterBack, reason: 'A late success must not notify a disposed screen');
       expectInputReserved();
       expect(manager.realm.find<RealmTransactionDraft>(signedId!), isNull);
       final signedKeys = await tester.runAsync(() => const FlutterSecureStorage().readAll());

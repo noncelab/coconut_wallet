@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
-import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -192,11 +190,12 @@ class _Electrum extends Fake implements ElectrumService {
   @override
   Future<GetBalanceRes> getBalance(AddressType type, String address) async {
     balanceCalls++;
-    if (!accepted)
+    if (!accepted) {
       return GetBalanceRes(
         confirmed: address == receive ? 1000000 : (address == change ? unrelatedDeposit?.outputs.first.amount ?? 0 : 0),
         unconfirmed: 0,
       );
+    }
     return GetBalanceRes(
       confirmed: address == change && sentHeight > 0 ? 599000 : 0,
       unconfirmed: address == change && sentHeight == 0 ? 599000 : 0,
