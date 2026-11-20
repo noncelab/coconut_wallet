@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
+import 'package:coconut_wallet/constants/realm_constants.dart';
 import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/model/error/app_error.dart';
@@ -57,8 +58,8 @@ class _ObservedUtxos extends UtxoRepository {
   _ObservedUtxos(super.manager);
 
   @override
-  Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> values) async {
-    final result = await super.addAllUtxos(walletId, values);
+  Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> values, {Map<String, int>? expectedVersions}) async {
+    final result = await super.addAllUtxos(walletId, values, expectedVersions: expectedVersions);
     if (values.any((u) => u.to == observedAddress) && receivedSaved?.isCompleted == false) {
       receivedSaved!.complete();
     }
@@ -73,7 +74,7 @@ class _DiskRealm extends Fake implements RealmManager {
     reopen();
   }
   void reopen() {
-    _realm = Realm(Configuration.local(realmAllSchemas, path: path, schemaVersion: 10));
+    _realm = Realm(Configuration.local(realmAllSchemas, path: path, schemaVersion: kRealmVersion));
   }
 
   @override
@@ -165,6 +166,10 @@ class _Electrum extends Fake implements ElectrumService {
   bool accepted = false;
   int sentHeight = 0;
   bool failUnspent = false;
+  Completer<void>? receiveUnspentStarted;
+  Completer<void>? holdNextReceiveUnspent;
+  Completer<void>? sentReadStarted;
+  Completer<void>? holdNextSentRead;
   Completer<void>? holdChangeUnspent;
   Transaction? unrelatedDeposit;
   Transaction? extraPending;
@@ -211,7 +216,7 @@ class _Electrum extends Fake implements ElectrumService {
       accepted = true;
     }
     if (failUnspent) throw TimeoutException('synthetic lost listunspent response');
-    return [
+    final result = [
       if (!accepted && address == receive)
         ListUnspentRes(height: 100, txHash: funding.transactionHash, txPos: 0, value: 1000000),
       if (unrelatedDeposit != null && address == change)
@@ -224,6 +229,13 @@ class _Electrum extends Fake implements ElectrumService {
       if (accepted && address == change)
         ListUnspentRes(height: sentHeight, txHash: sent.transactionHash, txPos: 1, value: 599000),
     ];
+    final hold = holdNextReceiveUnspent;
+    if (address == receive && hold != null) {
+      holdNextReceiveUnspent = null;
+      receiveUnspentStarted!.complete();
+      await hold.future;
+    }
+    return result;
   }
 
   @override
@@ -235,7 +247,15 @@ class _Electrum extends Fake implements ElectrumService {
     }
     if (hash == funding.transactionHash) return funding.serialize();
     if (hash == unrelatedDeposit?.transactionHash) return unrelatedDeposit!.serialize();
-    if (accepted && hash == sent.transactionHash) return sent.serialize();
+    if (accepted && hash == sent.transactionHash) {
+      final hold = holdNextSentRead;
+      if (hold != null) {
+        holdNextSentRead = null;
+        sentReadStarted!.complete();
+        await hold.future;
+      }
+      return sent.serialize();
+    }
     throw StateError('synthetic transaction absent');
   }
 
@@ -271,6 +291,8 @@ void main() {
   late AddressRepository addresses;
   late TransactionDraftRepository drafts;
   late ScriptSyncService sync;
+  late UtxoSyncService utxoSync;
+  late TransactionSyncService txSync;
   late _Electrum electrum;
   late _Node node;
   late SingleSignatureVault vault;
@@ -291,8 +313,8 @@ void main() {
     final wallets = WalletRepository(manager, drafts);
     final state = MockNodeStateManager();
     final callbacks = ScriptCallbackService();
-    final utxoSync = UtxoSyncService(electrum, state, utxos, transactions, addresses);
-    final txSync = TransactionSyncService(
+    utxoSync = UtxoSyncService(electrum, state, utxos, transactions, addresses);
+    txSync = TransactionSyncService(
       electrum,
       transactions,
       TransactionRecordService(electrum, addresses),
@@ -717,6 +739,201 @@ void main() {
         }
       },
     );
+  }
+
+  for (final order in ['before reservation', 'after reservation', 'same transaction reserved again']) {
+    test('AI listunspent started $order cannot release a newer reservation', () async {
+      if (order != 'before reservation') await broadcastUnknown();
+      final hold = Completer<void>();
+      electrum.holdNextReceiveUnspent = hold;
+      electrum.receiveUnspentStarted = Completer<void>();
+      final updating = utxoSync.fetchScriptUtxo(wallet, ScriptStatusMock.createMockScriptStatus(wallet, 0));
+      await electrum.receiveUnspentStarted!.future;
+      if (order == 'same transaction reserved again') {
+        await utxoSync.fetchScriptUtxo(wallet, ScriptStatusMock.createMockScriptStatus(wallet, 0));
+        expectInputSpendable();
+      }
+      if (order != 'after reservation') {
+        await broadcastUnknown();
+        electrum.accepted = true;
+      }
+      hold.complete();
+      await updating;
+      if (order == 'after reservation') {
+        expectInputSpendable();
+        expect(utxoSync.getUnrecordedOutgoingAddresses(1), isEmpty);
+      } else {
+        expectInputReserved();
+        expect(buildPayment().isFailure, isTrue);
+        expect(utxoSync.getUnrecordedOutgoingAddresses(1), {vault.getAddress(0)});
+      }
+    });
+  }
+
+  for (final success in [false, true]) {
+    test('same screen retry success=$success renews the reservation against an earlier list query', () async {
+      final model = await broadcastUnknown();
+      final sub = subscriptions();
+      electrum.receiveUnspentStarted = Completer<void>();
+      final hold = electrum.holdNextReceiveUnspent = Completer<void>();
+      final updating = sub.subscribeWallet(wallet);
+      await electrum.receiveUnspentStarted!.future;
+      node.unknown = !success;
+      await model.broadcast(inheritedTagIds: []);
+      electrum.accepted = true;
+      hold.complete();
+      await updating;
+      expectInputReserved();
+      expect(buildPayment().isFailure, isTrue);
+      expect(model.isTransactionAccepted, success);
+      // Each unknown result includes the existing automatic retry; success needs one request.
+      expect(node.submitted, List.filled(success ? 3 : 4, signed.serialize()));
+    });
+  }
+
+  test('wallet queue prevents two refreshes from releasing and renewing a reservation inside one query', () async {
+    await broadcastUnknown();
+    final sub = subscriptions();
+    electrum.receiveUnspentStarted = Completer<void>();
+    final hold = electrum.holdNextReceiveUnspent = Completer<void>();
+    final first = sub.subscribeWallet(wallet);
+    await electrum.receiveUnspentStarted!.future;
+    await Future<void>.delayed(Duration.zero);
+    final calls = electrum.unspentCalls;
+    var secondCompleted = false;
+    final second = sub.subscribeWallet(wallet).then((result) {
+      secondCompleted = true;
+      return result;
+    });
+    await Future<void>.delayed(Duration.zero);
+    expect(secondCompleted, isFalse);
+    expect(electrum.unspentCalls, calls);
+    expectInputReserved();
+    hold.complete();
+    expect((await first).isSuccess, isTrue);
+    expect((await second).isSuccess, isTrue);
+    expectInputSpendable();
+    expect(electrum.unspentCalls, calls);
+  });
+
+  for (final confirmed in [false, true]) {
+    for (final startsAfterReservation in [false, true]) {
+      test('transaction confirmed=$confirmed read after reservation=$startsAfterReservation', () async {
+        final reserved = TransactionMock.createMockTransaction(
+          toAddress: recipient,
+          amount: 390000,
+          inputTransactionHash: funding.transactionHash,
+        );
+        if (startsAfterReservation) await utxos.markUnspentInputsAsOutgoing(1, reserved);
+        electrum.accepted = true;
+        electrum.sentHeight = confirmed ? 200 : 0;
+        electrum.sentReadStarted = Completer<void>();
+        final hold = electrum.holdNextSentRead = Completer<void>();
+        final updating = txSync.fetchScriptTransaction(wallet, ScriptStatusMock.createMockScriptStatus(wallet, 0));
+        await electrum.sentReadStarted!.future;
+        if (!startsAfterReservation) await utxos.markUnspentInputsAsOutgoing(1, reserved);
+        hold.complete();
+        await updating;
+        if (confirmed) {
+          expect(utxos.getUtxoState(1, inputId), isNull);
+          expect(manager.realm.find<RealmUtxo>('1:$inputId')!.isDeleted, isTrue);
+        } else {
+          final input = utxos.getUtxoState(1, inputId)!;
+          expect(input.status, UtxoStatus.outgoing);
+          expect(
+            input.spentByTransactionHash,
+            startsAfterReservation ? signed.transactionHash : reserved.transactionHash,
+          );
+          // An unchanged confirmed history or an abandoned mempool transaction must still recover.
+          electrum.accepted = false;
+          await utxoSync.fetchScriptUtxo(wallet, ScriptStatusMock.createMockScriptStatus(wallet, 0));
+          expectInputSpendable();
+        }
+      });
+    }
+  }
+
+  test('older history cannot reverse a newer recorded spender into its RBF predecessor', () async {
+    final newer = TransactionMock.createMockTransaction(
+      toAddress: recipient,
+      amount: 380000,
+      inputTransactionHash: funding.transactionHash,
+    );
+    final initialHistoryCalls = electrum.historyCalls;
+    electrum.accepted = true;
+    electrum.sentReadStarted = Completer<void>();
+    final hold = electrum.holdNextSentRead = Completer<void>();
+    final updating = txSync.fetchScriptTransaction(wallet, ScriptStatusMock.createMockScriptStatus(wallet, 0));
+    await electrum.sentReadStarted!.future;
+    await utxos.markUnspentInputsAsOutgoing(1, newer);
+    await transactions.addAllTransactions(1, [
+      TransactionMock.createMockTransactionRecord(transactionHash: newer.transactionHash),
+    ]);
+    electrum.accepted = false;
+    hold.complete();
+    await updating;
+    expect(utxos.getUtxoState(1, inputId)!.spentByTransactionHash, newer.transactionHash);
+    expect(transactions.getRbfHistoryList(1, signed.transactionHash), isEmpty);
+    expect(electrum.historyCalls - initialHistoryCalls, 2);
+  });
+
+  test('a recorded fee replacement updates the spender when its local broadcast finishes during sync', () async {
+    final previous = TransactionMock.createMockTransaction(
+      toAddress: recipient,
+      amount: 390000,
+      inputTransactionHash: funding.transactionHash,
+    );
+    await utxos.markUnspentInputsAsOutgoing(1, previous);
+    await transactions.addAllTransactions(1, [
+      TransactionMock.createMockTransactionRecord(transactionHash: previous.transactionHash),
+    ]);
+    final initialHistoryCalls = electrum.historyCalls;
+    electrum.accepted = true;
+    electrum.sentReadStarted = Completer<void>();
+    final hold = electrum.holdNextSentRead = Completer<void>();
+    final updating = txSync.fetchScriptTransaction(wallet, ScriptStatusMock.createMockScriptStatus(wallet, 0));
+    await electrum.sentReadStarted!.future;
+    await utxos.markUnspentInputsAsOutgoing(1, signed);
+    hold.complete();
+    await updating;
+    expect(transactions.getRbfHistoryList(1, signed.transactionHash), isNotEmpty);
+    expect(utxos.getUtxoState(1, inputId)!.spentByTransactionHash, signed.transactionHash);
+    expect(electrum.historyCalls - initialHistoryCalls, 2);
+  });
+
+  for (final startsAfterReservation in [false, true]) {
+    test('createOutgoingUtxos read after reservation=$startsAfterReservation', () async {
+      final available = utxos.getUtxoState(1, inputId)!;
+      // Restoring a wallet can start with no locally known input.
+      manager.realm.write(() => manager.realm.delete(manager.realm.find<RealmUtxo>('1:$inputId')!));
+      final reserved = TransactionMock.createMockTransaction(
+        toAddress: recipient,
+        amount: 390000,
+        inputTransactionHash: funding.transactionHash,
+      );
+      Future<void> reserve() async {
+        expect((await utxos.addAllUtxos(1, [available])).isSuccess, isTrue);
+        await utxos.markUnspentInputsAsOutgoing(1, reserved);
+      }
+
+      if (startsAfterReservation) await reserve();
+      await transactions.addAllTransactions(1, [
+        TransactionMock.createMockTransactionRecord(transactionHash: signed.transactionHash),
+      ]);
+      electrum.accepted = true;
+      electrum.sentReadStarted = Completer<void>();
+      final hold = electrum.holdNextSentRead = Completer<void>();
+      final updating = utxoSync.createOutgoingUtxos(wallet);
+      await electrum.sentReadStarted!.future;
+      if (!startsAfterReservation) await reserve();
+      hold.complete();
+      await updating;
+      final input = utxos.getUtxoState(1, inputId)!;
+      expect(input.status, UtxoStatus.outgoing);
+      expect(input.spentByTransactionHash, reserved.transactionHash);
+      expect(manager.realm.all<RealmUtxo>().where((u) => u.id == '1:$inputId'), hasLength(1));
+      expect(buildPayment().isFailure, isTrue);
+    });
   }
 
   test('R3 limitation other inputs still build a distinct payment while unknown input is outgoing', () async {

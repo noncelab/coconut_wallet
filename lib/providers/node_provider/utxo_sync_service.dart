@@ -46,10 +46,11 @@ class UtxoSyncService {
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
   }) async {
+    final versions = _utxoRepository.snapshotUtxoVersions(walletItem.id, address: scriptStatus.address);
     // UTXO 목록 조회
     final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
 
-    await _utxoRepository.addAllUtxos(walletItem.id, utxos);
+    await _utxoRepository.addAllUtxos(walletItem.id, utxos, expectedVersions: versions);
 
     if (!inBatchProcess) {
       await restorePendingUtxoLocks(walletItem.id);
@@ -143,6 +144,7 @@ class UtxoSyncService {
         return;
       }
 
+      final versions = _utxoRepository.snapshotUtxoVersions(walletItem.id);
       final newUtxoList = <UtxoState>[];
 
       // 2. 현재 DB에 있는 UTXO 목록 조회 (ID 기준 맵으로 변환)
@@ -203,7 +205,7 @@ class UtxoSyncService {
       }
 
       // 생성한 UTXO 추가
-      await _utxoRepository.addAllUtxos(walletItem.id, newUtxoList);
+      await _utxoRepository.addAllUtxos(walletItem.id, newUtxoList, expectedVersions: versions);
     } catch (e, stackTrace) {
       Logger.error('Failed to create outgoing UTXOs: $e');
       Logger.error('Stack trace: $stackTrace');
@@ -212,6 +214,7 @@ class UtxoSyncService {
 
   /// orphaned UTXO를 정리합니다.
   Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem, {required Set<String> syncedAddresses}) async {
+    final versions = _utxoRepository.snapshotUtxoVersions(walletItem.id);
     final pendingUtxos =
         _utxoRepository
             .getUtxoStateList(walletItem.id)
@@ -235,7 +238,11 @@ class UtxoSyncService {
     }
 
     if (orphanUtxoSet.isNotEmpty) {
-      await _utxoRepository.deleteUtxoList(walletItem.id, orphanUtxoSet.map((utxo) => utxo.utxoId).toList());
+      await _utxoRepository.deleteUtxoList(
+        walletItem.id,
+        orphanUtxoSet.map((utxo) => utxo.utxoId).toList(),
+        expectedVersions: versions,
+      );
     }
   }
 }

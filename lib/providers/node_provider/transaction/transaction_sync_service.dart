@@ -41,6 +41,10 @@ typedef RbfCpfpDetectionResult =
 /// 주소들은 자신의 구독 이벤트 없이 UTXO만 사라졌을 수 있으므로, 잔액 재조회가 필요한지는 호출자가 판단해야 한다.
 typedef FetchScriptTransactionResult = ({List<String> txHashes, Set<String> coSpentAddresses});
 
+class _RbfSyncConflict extends StateError {
+  _RbfSyncConflict() : super('UTXO reservation changed while reading a replacement transaction');
+}
+
 /// 트랜잭션 조회를 담당하는 클래스
 class TransactionSyncService {
   final ElectrumService _electrumService;
@@ -69,7 +73,24 @@ class TransactionSyncService {
     DateTime? now,
     bool inBatchProcess = false,
   }) async {
+    Future<FetchScriptTransactionResult> fetch() =>
+        _fetchScriptTransactionOnce(walletItem, scriptStatus, now, inBatchProcess);
+    try {
+      return await fetch();
+    } on _RbfSyncConflict {
+      // 같은 입력을 쓴 두 거래의 순서는 이전 이력으로 판단할 수 없다. 한 번 새로 확인한다.
+      return fetch();
+    }
+  }
+
+  Future<FetchScriptTransactionResult> _fetchScriptTransactionOnce(
+    WalletItemBase walletItem,
+    ScriptStatus scriptStatus,
+    DateTime? now,
+    bool inBatchProcess,
+  ) async {
     final int walletId = walletItem.id;
+    final versions = _utxoRepository.snapshotUtxoVersions(walletId);
 
     // 1. 초기화 및 준비 단계
     _prepareTransactionFetch(walletId, inBatchProcess);
@@ -131,12 +152,13 @@ class TransactionSyncService {
         fetchedTransactionDetails.fetchedTransactions,
         unconfirmedFetchedTxHashes,
         confirmedFetchedTxHashes,
+        versions: versions,
         triggeringAddress: scriptStatus.address,
         inBatchProcess: inBatchProcess,
       );
 
       // 6. RBF/CPFP 히스토리 저장
-      await _saveRbfAndCpfpHistory(walletItem, txRecords, rbfCpfpResult);
+      await _saveRbfAndCpfpHistory(walletItem, txRecords, rbfCpfpResult, versions);
 
       // 7. 대체된 언컨펌 트랜잭션 삭제
       await _cleanupOrphanedUnconfirmedTransactions(
@@ -229,6 +251,7 @@ class TransactionSyncService {
     List<Transaction> fetchedTransactions,
     Set<String> unconfirmedFetchedTxHashes,
     Set<String> confirmedFetchedTxHashes, {
+    required Map<String, int> versions,
     required String triggeringAddress,
     bool inBatchProcess = false,
   }) async {
@@ -265,7 +288,8 @@ class TransactionSyncService {
         );
         if (cpfpInfo != null) cpfpInfoMap[fetchedTx.transactionHash] = cpfpInfo;
 
-        await _utxoRepository.markUtxoAsOutgoing(walletId, fetchedTx);
+        final matched = await _utxoRepository.markUtxoAsOutgoing(walletId, fetchedTx, expectedVersions: versions);
+        if (!matched && outgoingRbfInfo != null) throw _RbfSyncConflict();
       }
 
       if (confirmedFetchedTxHashes.contains(fetchedTx.transactionHash)) {
@@ -315,6 +339,7 @@ class TransactionSyncService {
     WalletItemBase walletItem,
     List<TransactionRecord> txRecords,
     RbfCpfpDetectionResult rbfCpfpResult,
+    Map<String, int> versions,
   ) async {
     if (rbfCpfpResult.outgoingRbfInfoMap.isEmpty &&
         rbfCpfpResult.replacedTxHashSetByIncomingRbf.isEmpty &&
@@ -335,6 +360,7 @@ class TransactionSyncService {
       await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
         walletId,
         rbfCpfpResult.outgoingRbfInfoMap.values.map((rbf) => rbf.previousTransactionHash).toSet(),
+        expectedVersions: versions,
       );
     }
 
@@ -342,10 +368,12 @@ class TransactionSyncService {
       await _transactionRepository.deleteOrphanedCpfpTransaction(
         walletId,
         rbfCpfpResult.replacedTxHashSetByIncomingRbf,
+        expectedVersions: versions,
       );
       await _utxoRepository.deleteUtxosByReplacedTransactionHashSet(
         walletId,
         rbfCpfpResult.replacedTxHashSetByIncomingRbf,
+        expectedVersions: versions,
       );
     }
 
