@@ -51,7 +51,7 @@ class _FailingUtxoRepository extends UtxoRepository {
   bool failedOutgoingWrite = false;
 
   @override
-  Future<void> markUtxoAsOutgoing(int walletId, Transaction transaction) async {
+  Future<bool> markUtxoAsOutgoing(int walletId, Transaction transaction, {Map<String, int>? expectedVersions}) async {
     if (!failedOutgoingWrite && transaction.transactionHash == failOutgoingHash) {
       failedOutgoingWrite = true;
       final input = transaction.inputs.first;
@@ -62,11 +62,16 @@ class _FailingUtxoRepository extends UtxoRepository {
         throw StateError('injected pending outgoing write rollback');
       });
     }
-    await super.markUtxoAsOutgoing(walletId, transaction);
+    return super.markUtxoAsOutgoing(walletId, transaction, expectedVersions: expectedVersions);
   }
 
   @override
-  Future<void> deleteUtxoList(int walletId, List<String> utxoIds) async {
+  Future<void> deleteUtxoList(
+    int walletId,
+    List<String> utxoIds, {
+    Map<String, int>? expectedVersions,
+    bool confirmed = false,
+  }) async {
     if (!failedWrite && utxoIds.contains(failForOutpoint)) {
       failedWrite = true;
       await realm.writeAsync(() {
@@ -76,7 +81,7 @@ class _FailingUtxoRepository extends UtxoRepository {
         throw StateError('injected UTXO write rollback');
       });
     }
-    await super.deleteUtxoList(walletId, utxoIds);
+    await super.deleteUtxoList(walletId, utxoIds, expectedVersions: expectedVersions, confirmed: confirmed);
   }
 }
 

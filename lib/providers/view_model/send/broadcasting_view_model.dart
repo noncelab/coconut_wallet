@@ -247,6 +247,7 @@ class BroadcastingViewModel extends ChangeNotifier {
     if (result.isFailure && _isUnknownOutcome(result.error)) {
       result = await _confirmUnansweredBroadcast(connectionWaitLimit, onLateSuccess: finalize);
       _isBroadcastResultUnknown = result.isFailure && _isUnknownOutcome(result.error);
+      if (_isBroadcastResultUnknown) await _markInputsAsOutgoing();
     }
     if (result.isFailure) {
       _isBroadcastDispatched = false;

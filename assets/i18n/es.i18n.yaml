@@ -1006,7 +1006,7 @@ broadcasting_screen:
     tag_apply_failed: "La transacción se envió, pero no se pudieron aplicar las etiquetas. Revisa las etiquetas en tu lista de UTXO."
     not_sent_no_connection: "No se pudo conectar al nodo. Inténtalo de nuevo en un momento."
     result_unknown_title: "Verifica el estado del envío"
-    result_unknown: "No pudimos confirmar si la transacción se envió. Es la misma transacción, así que volver a enviarla no la enviará dos veces."
+    result_unknown: "No pudimos confirmar si la transacción se envió. Es posible que ya se haya enviado, así que arrastra la pantalla de la billetera hacia abajo y revisa primero si esta transacción aparece en el historial de transacciones."
 send_address_screen:
   text1: "Escanea QR o\npega la dirección copiada"
   text2: "Escanea el código QR de la dirección"

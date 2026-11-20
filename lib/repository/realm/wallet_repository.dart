@@ -15,6 +15,7 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/model/wallet/watch_only_wallet.dart';
 import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/transaction_draft_repository.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/multisig_wallet.dart';
 import 'package:coconut_wallet/repository/realm/converter/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/repository/realm/converter/singlesig_wallet.dart';
@@ -558,6 +559,7 @@ class WalletRepository extends BaseRepository {
       if (utxos.isNotEmpty) {
         realm.deleteMany(utxos);
       }
+      UtxoRepository.deleteWalletRevisionsInWrite(realm, walletId);
       if (pendingUtxoLocks.isNotEmpty) {
         realm.deleteMany(pendingUtxoLocks);
       }
@@ -599,6 +601,7 @@ class WalletRepository extends BaseRepository {
       if (utxos.isNotEmpty) {
         realm.deleteMany(utxos);
       }
+      UtxoRepository.deleteWalletRevisionsInWrite(realm, walletId);
       if (scriptStatuses.isNotEmpty) {
         realm.deleteMany(scriptStatuses);
       }

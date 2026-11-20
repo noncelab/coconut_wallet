@@ -8,6 +8,7 @@ import 'package:coconut_wallet/repository/realm/base_repository.dart';
 import 'package:coconut_wallet/repository/realm/converter/transaction.dart';
 import 'package:coconut_wallet/repository/realm/model/coconut_wallet_model.dart';
 import 'package:coconut_wallet/repository/realm/service/realm_id_service.dart';
+import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/result.dart';
@@ -499,7 +500,11 @@ class TransactionRepository extends BaseRepository {
     return Result.failure(ErrorCodes.realmNotFound);
   }
 
-  Future<void> deleteOrphanedCpfpTransaction(int walletId, Set<String> receivingRbfTxHashSet) async {
+  Future<void> deleteOrphanedCpfpTransaction(
+    int walletId,
+    Set<String> receivingRbfTxHashSet, {
+    required Map<String, int> expectedVersions,
+  }) async {
     final realmCpfpHistory = realm.query<RealmCpfpHistory>(r'walletId == $0 AND parentTransactionHash IN $1', [
       walletId,
       receivingRbfTxHashSet,
@@ -516,7 +521,7 @@ class TransactionRepository extends BaseRepository {
       realmCpfpHistory.map((cpfp) => cpfp.childTransactionHash).toList(),
     ]);
 
-    final orphanedUtxo = realm.query<RealmUtxo>(r'walletId == $0 AND transactionHash IN $1', [
+    final orphanedUtxos = realm.query<RealmUtxo>(r'walletId == $0 AND transactionHash IN $1', [
       walletId,
       orphanedChildRealmTxs.map((tx) => tx.transactionHash).toList(),
     ]);
@@ -524,7 +529,7 @@ class TransactionRepository extends BaseRepository {
     await realm.writeAsync(() {
       realm.deleteMany<RealmCpfpHistory>(realmCpfpHistory);
       realm.deleteMany<RealmTransaction>(orphanedChildRealmTxs);
-      realm.deleteMany<RealmUtxo>(orphanedUtxo);
+      UtxoRepository.removeOrphanedCpfpOutputsInWrite(realm, orphanedUtxos, expectedVersions);
     });
   }
 

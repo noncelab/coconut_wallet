@@ -98,8 +98,16 @@ void main() {
 
       await utxoRepository.addAllUtxos(testWalletId, [orphanedUtxo1, orphanedUtxo2]);
 
-      // When: cleanupOrphanedUtxos 호출
-      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem);
+      // 조회하지 않은 주소의 코인은 보존한다.
+      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem, syncedAddresses: {orphanedUtxo1.to});
+      expect(utxoRepository.getUtxoState(testWalletId, orphanedUtxo1.utxoId), isNull);
+      expect(utxoRepository.getUtxoState(testWalletId, orphanedUtxo2.utxoId), isNotNull);
+
+      // When: 두 주소 모두 조회한 뒤 cleanup
+      await utxoSyncService.cleanupOrphanedUtxos(
+        testWalletItem,
+        syncedAddresses: {testWalletItem.walletBase.getAddress(0), testWalletItem.walletBase.getAddress(1)},
+      );
 
       // Then: orphaned UTXO가 삭제되었는지 확인
       final remainingUtxos = utxoRepository.getUtxoStateList(testWalletId);
@@ -144,8 +152,16 @@ void main() {
 
       await utxoRepository.addAllUtxos(testWalletId, [orphanedUtxo1, orphanedUtxo2]);
 
-      // When: cleanupOrphanedUtxos 호출
-      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem);
+      // 조회하지 않은 주소의 코인은 보존한다.
+      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem, syncedAddresses: {orphanedUtxo1.to});
+      expect(utxoRepository.getUtxoState(testWalletId, orphanedUtxo1.utxoId), isNull);
+      expect(utxoRepository.getUtxoState(testWalletId, orphanedUtxo2.utxoId), isNotNull);
+
+      // When: 두 주소 모두 조회한 뒤 cleanup
+      await utxoSyncService.cleanupOrphanedUtxos(
+        testWalletItem,
+        syncedAddresses: {testWalletItem.walletBase.getAddress(0), testWalletItem.walletBase.getAddress(1)},
+      );
 
       // Then: orphaned UTXO가 삭제되었는지 확인
       final remainingUtxos = utxoRepository.getUtxoStateList(testWalletId);
@@ -153,8 +169,8 @@ void main() {
       expect(remainingUtxos.where((u) => u.utxoId == orphanedUtxo2.utxoId).isEmpty, isTrue);
     });
 
-    test('존재하지 않는 트랜잭션에 연결된 outgoing UTXO가 정리되는지 확인', () async {
-      // Given: 존재하지 않는 트랜잭션에 연결된 outgoing UTXO 생성
+    test('거래 기록이 없는 outgoing UTXO는 다음 동기화까지 보존하는지 확인', () async {
+      // Given: 아직 거래 기록이 없는 outgoing UTXO 생성
       const String nonExistentTxHash = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
       final outgoingUtxo = UtxoState(
@@ -174,11 +190,17 @@ void main() {
       // 트랜잭션은 DB에 없음 (null 반환)
 
       // When: cleanupOrphanedUtxos 호출
-      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem);
+      await utxoSyncService.cleanupOrphanedUtxos(
+        testWalletItem,
+        syncedAddresses: {testWalletItem.walletBase.getAddress(0), testWalletItem.walletBase.getAddress(1)},
+      );
 
-      // Then: orphaned UTXO가 삭제되었는지 확인
-      final remainingUtxos = utxoRepository.getUtxoStateList(testWalletId);
-      expect(remainingUtxos.where((u) => u.utxoId == outgoingUtxo.utxoId).isEmpty, isTrue);
+      // 기록 부재만으로는 소비 여부를 알 수 없으므로 입력과 예약을 보존한다.
+      final remaining = utxoRepository.getUtxoState(testWalletId, outgoingUtxo.utxoId);
+      expect(remaining, isNotNull);
+      expect(remaining!.status, UtxoStatus.outgoing);
+      expect(remaining.spentByTransactionHash, nonExistentTxHash);
+      expect(remaining.amount, 500000);
     });
 
     test('존재하지 않는 트랜잭션에 연결된 incoming UTXO가 정리되는지 확인', () async {
@@ -201,7 +223,10 @@ void main() {
       // 트랜잭션은 DB에 없음 (null 반환)
 
       // When: cleanupOrphanedUtxos 호출
-      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem);
+      await utxoSyncService.cleanupOrphanedUtxos(
+        testWalletItem,
+        syncedAddresses: {testWalletItem.walletBase.getAddress(0), testWalletItem.walletBase.getAddress(1)},
+      );
 
       // Then: orphaned UTXO가 삭제되었는지 확인
       final remainingUtxos = utxoRepository.getUtxoStateList(testWalletId);
@@ -245,7 +270,10 @@ void main() {
       await utxoRepository.addAllUtxos(testWalletId, [validOutgoingUtxo, validIncomingUtxo]);
 
       // When: cleanupOrphanedUtxos 호출
-      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem);
+      await utxoSyncService.cleanupOrphanedUtxos(
+        testWalletItem,
+        syncedAddresses: {testWalletItem.walletBase.getAddress(0), testWalletItem.walletBase.getAddress(1)},
+      );
 
       // Then: 정상적인 pending UTXO는 유지되는지 확인
       final remainingUtxos = utxoRepository.getUtxoStateList(testWalletId);
@@ -283,7 +311,10 @@ void main() {
       await utxoRepository.addAllUtxos(testWalletId, orphanedUtxos);
 
       // When: cleanupOrphanedUtxos 호출
-      await utxoSyncService.cleanupOrphanedUtxos(testWalletItem);
+      await utxoSyncService.cleanupOrphanedUtxos(
+        testWalletItem,
+        syncedAddresses: {testWalletItem.walletBase.getAddress(0), testWalletItem.walletBase.getAddress(1)},
+      );
 
       // Then: 모든 orphaned UTXO가 삭제되었는지 확인
       final remainingUtxos = utxoRepository.getUtxoStateList(testWalletId);

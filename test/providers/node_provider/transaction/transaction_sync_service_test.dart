@@ -459,8 +459,16 @@ class _RecordingUtxoRepository extends UtxoRepository {
   _RecordingUtxoRepository(super.realmManager);
 
   @override
-  Future<void> deleteUtxosByReplacedTransactionHashSet(int walletId, Set<String> replacedTxHashSet) {
+  Future<void> deleteUtxosByReplacedTransactionHashSet(
+    int walletId,
+    Set<String> replacedTxHashSet, {
+    Map<String, int>? expectedVersions,
+  }) {
     deletedTransactionHashSets.add(Set.of(replacedTxHashSet));
-    return super.deleteUtxosByReplacedTransactionHashSet(walletId, replacedTxHashSet);
+    return super.deleteUtxosByReplacedTransactionHashSet(
+      walletId,
+      replacedTxHashSet,
+      expectedVersions: expectedVersions,
+    );
   }
 }
