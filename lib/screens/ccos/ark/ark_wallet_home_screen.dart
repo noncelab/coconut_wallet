@@ -32,6 +32,7 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_shortcut_tile.
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:flutter/material.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -74,24 +75,51 @@ class ArkWalletHomeScreen extends StatelessWidget {
               : !wallet.hasWallet
               ? ArkWalletWelcomeView(onCreateNew: flow.createNew, onRestore: flow.restore)
               : wallet.state == ArkWalletState.failed
-              ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(t.ark_wallet.open_failed, style: CoconutTypography.body1_16.setColor(colors.primaryText)),
-                    CoconutLayout.spacing_400h,
-                    CoconutButton(
-                      text: t.retry,
-                      height: 40,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      onPressed: wallet.openAfterAppEntrance,
-                      backgroundColor: colors.primaryText,
-                      foregroundColor: colors.background,
-                    ),
-                  ],
-                ),
-              )
+              ? _ArkOpenFailedView(onRetry: wallet.openAfterAppEntrance)
               : _ArkWalletBody(wallet: wallet),
+    );
+  }
+}
+
+/// 지갑을 열지 못했을 때. 보내기 실패와 같은 경고, 복원 중 화면과 같은 높이
+class _ArkOpenFailedView extends StatelessWidget {
+  const _ArkOpenFailedView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    return Stack(
+      children: [
+        Align(
+          alignment: const Alignment(0, -0.45),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SvgPicture.asset(
+                  CommonStateIconPath.circleWarning,
+                  key: const Key('ark-open-failed-icon'),
+                  width: 56,
+                  height: 56,
+                  colorFilter: ColorFilter.mode(colors.danger, BlendMode.srcIn),
+                ),
+                CoconutLayout.spacing_500h,
+                Text(t.ark_wallet.open_failed, style: CoconutTypography.heading4_18_Bold.setColor(colors.primaryText)),
+                CoconutLayout.spacing_200h,
+                Text(
+                  t.ark_wallet.open_failed_desc,
+                  textAlign: TextAlign.center,
+                  style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                ),
+              ],
+            ),
+          ),
+        ),
+        FixedBottomButton(text: t.retry, onButtonClicked: onRetry),
+      ],
     );
   }
 }

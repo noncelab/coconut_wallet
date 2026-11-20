@@ -102,6 +102,13 @@ void main() {
     expect(iconOf(pending), FeatureArkIconPath.txRenewing);
   });
 
+  test('a renewal happens in Ark, so its route reads Ark and it sits under the Ark filter', () {
+    final renewal = _movement(14, subsystem: 'bark.round', sats: 0);
+
+    expect(arkMovementRouteLabel(renewal), t.ark_wallet.route_ark);
+    expect(arkMovementRail(renewal), ArkActivityRail.ark);
+  });
+
   test('filling shows a plus, exporting and exits a minus, each with its pending form', () {
     expect(iconOf(_movement(20, subsystem: 'bark.board', sats: 1000)), FeatureArkIconPath.txFilled);
     expect(iconOf(_movement(21, subsystem: 'bark.board', sats: 1000, status: 'pending')), FeatureArkIconPath.txFilling);

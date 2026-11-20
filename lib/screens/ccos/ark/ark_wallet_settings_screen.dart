@@ -18,6 +18,8 @@ import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_creator_screen.dart';
 
 /// 아크 지갑 설정
 class ArkWalletSettingsScreen extends StatelessWidget {
@@ -108,6 +110,30 @@ class ArkWalletSettingsScreen extends StatelessWidget {
                   const Key('ark-settings-server'),
                   t.ark_wallet.ark_server,
                   ArkServerConfig.serverUrl,
+                ),
+              ],
+            ),
+            InfoSection(
+              title: t.ark_wallet.section_about,
+              dividerHeight: _dividerHeight,
+              children: [
+                InfoMenuRow(
+                  key: const Key('ark-settings-creator'),
+                  title: t.ark_wallet.creator_row,
+                  onPressed: () => ArkCreatorScreen.open(context),
+                  subWidget: Text(
+                    ArkFeature.listing.author,
+                    style: CoconutTypography.body2_14.setColor(colors.tertiaryText),
+                  ),
+                ),
+                InfoMenuRow(
+                  key: const Key('ark-settings-bark-version'),
+                  title: t.ark_wallet.bark_version,
+                  showArrowRight: false,
+                  subWidget: Text(
+                    arkBarkVersion,
+                    style: CoconutTypography.body2_14_Number.setColor(colors.tertiaryText),
+                  ),
                 ),
               ],
             ),

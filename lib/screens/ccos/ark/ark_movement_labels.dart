@@ -21,7 +21,6 @@ ArkActivityRail arkMovementRail(ArkMovement movement) => switch (movement.kind) 
 String arkMovementRouteLabel(ArkMovement movement) {
   final route = switch (movement.kind) {
     ArkMovementKind.lightningSend || ArkMovementKind.lightningReceive => t.ark_wallet.route_lightning,
-    ArkMovementKind.refresh => t.ark_wallet.route_refresh,
     ArkMovementKind.board ||
     ArkMovementKind.offboard ||
     ArkMovementKind.sendOnchain ||

@@ -1,12 +1,16 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_design_system/coconut_design_system.dart' show CoconutButton, CoconutSwitch;
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_exit.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature_copy.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -16,9 +20,12 @@ import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_wallet_home_vie
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_settings_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_vtxo_list_screen.dart';
+import 'package:coconut_wallet/screens/ccos/store/widgets/ccos_store_creator_story.dart';
 import 'package:coconut_wallet/services/security/hot_wallet_authenticator.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
+import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/info/info_section.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
 import 'package:flutter/material.dart';
@@ -277,6 +284,60 @@ void main() {
     expect(find.byKey(const Key('ark-settings-chain')), findsNothing);
   });
 
+  testWidgets(
+    'settings credit the Bark team at Second.tech and show the bark version, and the credit introduces Second.tech',
+    (tester) async {
+      final wallet = await fakeArkWalletProvider(backend: FakeArkBackend(), reminder: FakeArkReminder());
+      await wallet.restore(Uint8List.fromList(utf8.encode('${'abandon ' * 11}about')));
+      await pump(tester, wallet);
+      await tester.tap(find.byKey(const Key('ark-wallet-settings')));
+      await tester.pumpAndSettle();
+
+      final credit = find.byKey(const Key('ark-settings-creator'));
+      await tester.scrollUntilVisible(credit, 200);
+      final section = find.ancestor(of: credit, matching: find.byType(InfoSection));
+      expect(find.descendant(of: section, matching: find.text(t.ark_wallet.section_about)), findsOneWidget);
+      expect(find.descendant(of: section, matching: find.text(ArkFeature.listing.author)), findsOneWidget);
+      expect(find.descendant(of: section, matching: find.text(arkBarkVersion)), findsOneWidget);
+
+      await tester.tap(credit);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(ArkFeature.listing.author), findsOneWidget);
+      expect(find.text(t.ark_wallet.creator_tagline), findsOneWidget);
+      expect(t.ark_wallet.creator_tagline, contains('Second.tech'));
+      expect(find.byKey(const Key('ark-creator-github')), findsOneWidget);
+      expect(
+        find.ancestor(of: find.byKey(const Key('ark-creator-github')), matching: find.byType(ButtonGroup)),
+        findsNothing,
+      );
+      expect(find.text(t.ark_wallet.creator_github), findsOneWidget);
+      expect(GITHUB_URL_BARK, 'https://github.com/ark-bitcoin/bark');
+      for (final paragraph in ArkFeatureCopySource.current.companyParagraphs) {
+        expect(find.text(paragraph), findsOneWidget);
+      }
+      expect(find.byType(CcosStoreCreatorStory), findsNothing);
+    },
+  );
+
+  test('every language introduces Bark as Ark on Bitcoin first and the Second.tech community last', () {
+    for (final locale in AppLocale.values) {
+      LocaleSettings.setLocaleSync(locale);
+      final paragraphs = ArkFeatureCopySource.current.companyParagraphs;
+      expect(paragraphs, hasLength(3), reason: locale.languageCode);
+      expect(paragraphs.first, contains('Ark on Bitcoin'), reason: locale.languageCode);
+      final copy = ArkFeatureCopySource.current;
+      expect([...copy.companyParagraphs, ...copy.creatorParagraphs].join(), isNot(contains('Bitcoin Ark')));
+      expect(paragraphs.last, contains('Second.tech'), reason: locale.languageCode);
+    }
+    LocaleSettings.setLocaleSync(AppLocale.ko);
+  });
+
+  test('the bark version shown matches the bundled bark_bitcoin package', () {
+    final pubspec = File('third_party/bark_bitcoin/pubspec.yaml').readAsStringSync();
+    expect(RegExp(r'version: .*\+bark-(\S+)').firstMatch(pubspec)!.group(1), arkBarkVersion);
+  });
+
   testWidgets('settings show whether renew reminders are on, and a tap turns them on when off', (tester) async {
     final reminder = FakeArkReminder()..allowed = false;
     final wallet = await fakeArkWalletProvider(backend: FakeArkBackend(), reminder: reminder);
@@ -324,23 +385,33 @@ void main() {
     expect(wallet.hasWallet, isTrue);
   });
 
-  testWidgets('a wallet that failed to open says so and can retry', (tester) async {
-    final backend = FakeArkBackend();
-    final secrets = FakeArkSecrets();
-    await (await fakeArkWalletProvider(backend: backend, secrets: secrets)).createNew();
-    backend.opened.clear();
-    backend.failOpen = true;
-    final wallet = await fakeArkWalletProvider(backend: backend, secrets: secrets, keepPrefs: true);
-    await wallet.openAfterAppEntrance();
-    await pump(tester, wallet);
+  testWidgets(
+    'a wallet that failed to open says so with a warning above the middle and retries from the bottom button',
+    (tester) async {
+      final backend = FakeArkBackend();
+      final secrets = FakeArkSecrets();
+      await (await fakeArkWalletProvider(backend: backend, secrets: secrets)).createNew();
+      backend.opened.clear();
+      backend.failOpen = true;
+      final wallet = await fakeArkWalletProvider(backend: backend, secrets: secrets, keepPrefs: true);
+      await wallet.openAfterAppEntrance();
+      await pump(tester, wallet);
 
-    expect(find.text(t.ark_wallet.open_failed), findsOneWidget);
-    backend.failOpen = false;
-    await tester.tap(find.text(t.retry));
-    await tester.pumpAndSettle();
-    expect(wallet.state, ArkWalletState.open);
-    expect(find.text(t.ark_wallet.open_failed), findsNothing);
-  });
+      expect(find.text(t.ark_wallet.open_failed), findsOneWidget);
+      expect(find.text(t.ark_wallet.open_failed_desc), findsOneWidget);
+      expect(find.byKey(const Key('ark-open-failed-icon')), findsOneWidget);
+      expect(find.descendant(of: find.byType(FixedBottomButton), matching: find.text(t.retry)), findsOneWidget);
+      expect(
+        tester.getCenter(find.text(t.ark_wallet.open_failed)).dy,
+        lessThan(tester.getSize(find.byType(Scaffold).first).height / 2),
+      );
+      backend.failOpen = false;
+      await tester.tap(find.text(t.retry));
+      await tester.pumpAndSettle();
+      expect(wallet.state, ArkWalletState.open);
+      expect(find.text(t.ark_wallet.open_failed), findsNothing);
+    },
+  );
 
   testWidgets('without a wallet there is no gear', (tester) async {
     await pump(tester, await fakeArkWalletProvider());

@@ -5,6 +5,7 @@ const MIT_LICENSE_URL = 'https://mit-license.org';
 
 /// COCONUT_WALLET Github Address
 const GITHUB_URL_WALLET = 'https://github.com/noncelab/coconut_wallet';
+const GITHUB_URL_BARK = 'https://github.com/ark-bitcoin/bark';
 const GITHUB_URL_VAULT = 'https://github.com/noncelab/coconut_vault';
 const GITHUB_URL_COCONUT_LIBRARY = 'https://github.com/noncelab/coconut_lib';
 

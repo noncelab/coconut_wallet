@@ -13,6 +13,7 @@ class ArkFeatureCopy {
     required this.subtitle,
     required this.screenshotCaptions,
     required this.creatorParagraphs,
+    required this.companyParagraphs,
     required this.belief,
   });
 
@@ -27,6 +28,9 @@ class ArkFeatureCopy {
   final String subtitle;
   final List<String> screenshotCaptions;
   final List<String> creatorParagraphs;
+
+  /// 아크 지갑 설정의 만든 사람 화면에 보이는 Bark와 Second.tech 소개
+  final List<String> companyParagraphs;
   final String belief;
 }
 
@@ -65,8 +69,13 @@ class ArkFeatureCopySource {
       '라이트닝으로도 바로 보내요',
       'VTXO를 확인하고 만료 전에 갱신해요',
     ],
+    companyParagraphs: [
+      'Bark는 Ark on Bitcoin, 비트코인 위의 아크라는 뜻으로, 비트코인만 다뤄요. 아크뿐 아니라 라이트닝과 온체인까지 지원하는 자기 수탁형 비트코인 결제를 만들 수 있는 오픈 소스 솔루션이에요. 지갑 앱용 Bark SDK, 서버용 barkd, API, Bark Cashu로 제공되고, 채널을 관리할 필요가 없어요.',
+      '모바일·웹 지갑, CLI, 홈 노드, 에이전트, 결제 처리까지 여러 곳에서 Bark로 아크·라이트닝·온체인 결제를 쓸 수 있어요.',
+      'Second.tech는 아크 위에서 만드는 개발자를 위한 커뮤니티도 운영해요. API 게이트웨이, 탐색기, 스왑 같은 프로젝트가 그곳에서 만들어지고 있어요.',
+    ],
     creatorParagraphs: [
-      'Bark 팀은 Second.tech에서 아크 구현체 Bark를 만드는 팀이에요. Bark는 Bitcoin Ark에서 따온 이름으로, 비트코인만 다뤄요.',
+      'Bark 팀은 Second.tech에서 아크 구현체 Bark를 만드는 팀이에요. Bark는 Ark on Bitcoin, 비트코인 위의 아크라는 뜻으로, 비트코인만 다뤄요.',
       '2026년 BTC Prague에서 코코넛에 아크를 연동한 데모를 보여 주었고, 이후 Bark로 개념 증명을 해 주셨어요. 그 후 코코넛 팀과 함께 다듬어 오픈 스토어의 아크 지갑으로 선보이게 되었어요.',
     ],
     belief: '생소한 레이어 2 프로토콜도 최대한 쉽게 사용하실 수 있도록 신경 썼어요',
@@ -92,8 +101,13 @@ class ArkFeatureCopySource {
       'Pay Lightning invoices too',
       'Check your VTXOs and renew them before they expire',
     ],
+    companyParagraphs: [
+      'Bark stands for Ark on Bitcoin, and it is bitcoin only. It is an open-source solution for building self-custodial bitcoin payments across Ark, Lightning and on-chain. It comes as the Bark SDK for wallet apps, barkd for servers, an API and Bark Cashu, with no channels to manage.',
+      'With Bark, Ark, Lightning and on-chain payments run in mobile and web wallets, the CLI, home nodes, AI agents and payment processing.',
+      'Second.tech also runs a community for developers building on Ark, where projects like API gateways, explorers and swaps are taking shape.',
+    ],
     creatorParagraphs: [
-      'The Bark team at Second.tech builds Bark, an Ark implementation. Bark is named after Bitcoin Ark, and it handles only bitcoin.',
+      'The Bark team at Second.tech builds Bark, an Ark implementation. Bark stands for Ark on Bitcoin, and it handles only bitcoin.',
       'At BTC Prague 2026 they showed a demo of Ark integrated into Coconut, then built a proof of concept with Bark. It was then refined with the Coconut team and launched as the Ark Wallet in the Open Store.',
     ],
     belief: 'We worked to make an unfamiliar layer 2 protocol as easy to use as possible',
@@ -118,8 +132,13 @@ class ArkFeatureCopySource {
       'Auch Lightning-Rechnungen bezahlen',
       'VTXOs prüfen und vor Ablauf erneuern',
     ],
+    companyParagraphs: [
+      'Bark steht für Ark on Bitcoin und ist nur für Bitcoin. Es ist eine Open-Source-Lösung für selbstverwahrte Bitcoin-Zahlungen über Ark, Lightning und On-Chain. Es gibt sie als Bark SDK für Wallet-Apps, barkd für Server, als API und als Bark Cashu, ganz ohne Kanalverwaltung.',
+      'Mit Bark laufen Ark-, Lightning- und On-Chain-Zahlungen in Mobile- und Web-Wallets, im CLI, auf Home-Nodes, in KI-Agenten und in der Zahlungsabwicklung.',
+      'Dazu betreibt Second.tech eine Community für Entwickler auf Ark, in der Projekte wie API-Gateways, Explorer und Swaps entstehen.',
+    ],
     creatorParagraphs: [
-      'Das Bark-Team bei Second.tech entwickelt Bark, eine Ark-Umsetzung. Bark ist nach Bitcoin Ark benannt und arbeitet nur mit Bitcoin.',
+      'Das Bark-Team bei Second.tech entwickelt Bark, eine Ark-Umsetzung. Bark steht für Ark on Bitcoin und arbeitet nur mit Bitcoin.',
       'Auf der BTC Prague 2026 zeigte es eine Demo von Ark in Coconut und baute danach mit Bark einen Proof of Concept. Gemeinsam mit dem Coconut-Team verfeinert, erschien es als Ark Wallet im Open Store.',
     ],
     belief: 'Wir wollten ein unbekanntes Layer-2-Protokoll so einfach wie möglich nutzbar machen',
@@ -144,8 +163,13 @@ class ArkFeatureCopySource {
       'Paga también facturas Lightning',
       'Revisa tus VTXO y renuévalos antes de que caduquen',
     ],
+    companyParagraphs: [
+      'Bark significa Ark on Bitcoin y es solo bitcoin. Es una solución de código abierto para crear pagos en bitcoin de autocustodia en Ark, Lightning y on-chain. Se ofrece como Bark SDK para apps de billetera, barkd para servidores, una API y Bark Cashu, sin canales que gestionar.',
+      'Con Bark, los pagos en Ark, Lightning y on-chain funcionan en billeteras móviles y web, la CLI, nodos caseros, agentes de IA y procesamiento de pagos.',
+      'Second.tech también mantiene una comunidad para quienes construyen sobre Ark, donde nacen proyectos como pasarelas de API, exploradores y swaps.',
+    ],
     creatorParagraphs: [
-      'El equipo de Bark en Second.tech desarrolla Bark, una implementación de Ark. Bark viene de Bitcoin Ark y solo maneja bitcoin.',
+      'El equipo de Bark en Second.tech desarrolla Bark, una implementación de Ark. Bark significa Ark on Bitcoin y solo maneja bitcoin.',
       'En BTC Prague 2026 mostró una demo de Ark integrado en Coconut y luego hizo una prueba de concepto con Bark. Después, junto al equipo de Coconut, se pulió y llegó como Ark Wallet a la Open Store.',
     ],
     belief: 'Cuidamos que un protocolo de capa 2 poco conocido sea lo más fácil de usar posible',
@@ -170,8 +194,13 @@ class ArkFeatureCopySource {
       'ライトニングでも送金',
       'VTXOを確認して期限前に更新',
     ],
+    companyParagraphs: [
+      'BarkはArk on Bitcoin(ビットコイン上のArk)を意味し、ビットコインだけを扱います。Arkだけでなくライトニングとオンチェーンにも対応した、セルフカストディ型のビットコイン決済を構築できるオープンソースのソリューションです。ウォレットアプリ向けのBark SDK、サーバー向けのbarkd、API、Bark Cashuとして提供され、チャネル管理は不要です。',
+      'Barkを使えば、モバイル・Webウォレット、CLI、ホームノード、エージェント、決済処理まで、さまざまな場所でArk・ライトニング・オンチェーン決済を使えます。',
+      'Second.techは、Arkの上で開発する人のためのコミュニティも運営しており、APIゲートウェイ、エクスプローラー、スワップなどのプロジェクトが生まれています。',
+    ],
     creatorParagraphs: [
-      'Barkチームは、Second.techでArk実装のBarkを開発するチームです。BarkはBitcoin Arkに由来する名前で、ビットコインだけを扱います。',
+      'Barkチームは、Second.techでArk実装のBarkを開発するチームです。BarkはArk on Bitcoin(ビットコイン上のArk)を意味し、ビットコインだけを扱います。',
       '2026年のBTC Pragueで、CoconutにArkを連携したデモを見せ、その後Barkで概念実証を行ってくれました。その後Coconutチームと磨き上げ、オープンストアのArkウォレットとして公開されました。',
     ],
     belief: 'なじみのないレイヤー2プロトコルも、できるだけ簡単に使えるよう心がけました',

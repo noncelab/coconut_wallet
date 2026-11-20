@@ -12,6 +12,9 @@ import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_entrance.dart';
 import 'package:flutter/material.dart';
 
+/// 함께 빌드한 bark_bitcoin의 bark 버전. 아크 서버와 맞아야 함
+const arkBarkVersion = '0.7.1';
+
 class ArkFeature {
   static const String id = 'ccos-feature-ark';
 
