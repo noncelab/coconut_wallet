@@ -81,8 +81,6 @@ class _Tags extends Fake with ChangeNotifier implements UtxoTagProvider {
 
 class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
-  int? get bitcoinPriceKrw => null;
-  @override
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
 }
 

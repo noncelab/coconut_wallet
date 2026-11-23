@@ -179,6 +179,7 @@ Contributors should provide at least these locales:
 - `ja`
 - `es`
 - `de`
+- `th`
 
 Translation quality rules:
 

@@ -1,0 +1,10 @@
+/// flavor 별로 앱 이름이나 권한 설명을 동적으로 설정하고 있으므로
+/// 이 파일은 사용되지 않습니다.
+/// Xcode - (Targets) Runner - Build Phases - Run Script을 확인해주세요.
+
+CFBundleDisplayName = "Coconut Wallet";
+NSCameraUsageDescription = "ต้องเข้าถึงกล้องเพื่อสแกน QR";
+NSFaceIDUsageDescription = "ต้องใช้ Face ID เพื่อปลดล็อกแอป";
+NSPhotoLibraryUsageDescription = "ต้องเข้าถึงรูปภาพเพื่อตั้งพื้นหลังการ์ดกระเป๋าเงิน";
+NSBluetoothAlwaysUsageDescription = "ต้องใช้ Bluetooth เพื่อสื่อสารกับกระเป๋าฮาร์ดแวร์";
+NSBluetoothPeripheralUsageDescription = "ต้องใช้ Bluetooth เพื่อสื่อสารกับกระเป๋าฮาร์ดแวร์";

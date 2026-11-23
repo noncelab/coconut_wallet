@@ -179,6 +179,7 @@ class CoconutThemeFeatureCopySource {
 - `ja`
 - `es`
 - `de`
+- `th`
 
 번역 품질은 아래 기준으로 확인해 주세요.
 

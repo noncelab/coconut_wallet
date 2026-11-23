@@ -43,4 +43,10 @@ void setupPluralResolvers() {
       return other ?? '';
     },
   );
+
+  // 태국어는 복수형이 따로 없습니다. slang에는 태국어 기본 규칙이 없어 등록하지 않으면 오류 로그를 남기고 영어식 규칙을 씁니다.
+  LocaleSettings.setPluralResolverSync(
+    language: AppLanguage.th.code,
+    cardinalResolver: (n, {zero, one, two, few, many, other}) => other ?? '',
+  );
 }

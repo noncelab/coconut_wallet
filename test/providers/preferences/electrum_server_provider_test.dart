@@ -1,5 +1,6 @@
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
+import 'package:coconut_wallet/enums/electrum_enums.dart';
 import 'package:coconut_wallet/providers/preferences/electrum_server_provider.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,6 +60,23 @@ void main() {
       expect(SharedPrefsRepository().getString(SharedPrefKeys.kElectrumServerName), 'COCONUT');
     });
 
+    test('옛 빌드가 CUSTOM으로 저장한 nunchuk 평문 주소(51001)는 암호화 연결의 NUNCHUK 참조로 옮긴다', () async {
+      await provider.addUserServer('mainnet.nunchuk.io', 51001, false);
+      await provider.setCustomElectrumServer('mainnet.nunchuk.io', 51001, false);
+
+      await provider.migrateLegacyCustomServerStorage();
+
+      expect(SharedPrefsRepository().getString(SharedPrefKeys.kElectrumServerName), 'NUNCHUK');
+      expect(SharedPrefsRepository().isContainsKey(SharedPrefKeys.kCustomElectrumHost), false);
+      final migrated = provider.getElectrumServer();
+      expect(migrated.host, 'mainnet.nunchuk.io');
+      expect(migrated.port, 52002);
+      expect(migrated.ssl, isTrue);
+      // 사용자가 직접 등록한 목록은 그대로 둔다
+      final userServer = (await provider.getUserServers()).single;
+      expect((userServer.host, userServer.port, userServer.ssl), ('mainnet.nunchuk.io', 51001, false));
+    });
+
     test('기본 서버 목록에 없는 진짜 커스텀 서버는 그대로 둔다', () async {
       await provider.setCustomElectrumServer('my-own-node.example.com', 50002, true);
 
@@ -94,6 +112,12 @@ void main() {
     });
   });
 
+  test('기본 서버는 모두 암호화 연결(ssl)로 접속한다', () {
+    for (final server in DefaultElectrumServer.values) {
+      expect(server.server.ssl, isTrue, reason: server.serverName);
+    }
+  });
+
   group('ElectrumServerProvider.setSelectedDefaultServer', () {
     setUp(() async {
       NetworkType.setNetworkType(NetworkType.mainnet);
@@ -110,6 +134,16 @@ void main() {
       expect(SharedPrefsRepository().getString(SharedPrefKeys.kElectrumServerName), 'ACINQ');
       expect(SharedPrefsRepository().isContainsKey(SharedPrefKeys.kCustomElectrumHost), false);
       expect(provider.getElectrumServer().host, 'electrum.acinq.co');
+    });
+
+    test('저장된 NUNCHUK 참조는 암호화 연결 주소(52002, ssl)로 읽는다', () async {
+      final provider = ElectrumServerProvider();
+      await provider.setSelectedDefaultServer('NUNCHUK');
+
+      final server = provider.getElectrumServer();
+      expect(server.host, 'mainnet.nunchuk.io');
+      expect(server.port, 52002);
+      expect(server.ssl, isTrue);
     });
   });
 }

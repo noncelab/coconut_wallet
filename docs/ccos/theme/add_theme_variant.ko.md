@@ -140,6 +140,7 @@ lib/ccos/features/coconut_theme/
 - `ja`
 - `es`
 - `de`
+- `th`
 
 추가 후:
 

@@ -206,7 +206,7 @@ List<FeatureItem> builtinFeatures() {
       launch: (context, _) => AppSettingsScreen.open(context, AppSettingsTarget.language),
       label: () => _subLabels.app_settings_language,
       search: () => _search.app_settings_language,
-      keywords: const ['한국어', 'English', '日本語', 'Español', 'Deutsch'],
+      keywords: const ['한국어', 'English', '日本語', 'Español', 'Deutsch', 'ไทย'],
     ),
     _sub(
       FeatureIds.appSettings,

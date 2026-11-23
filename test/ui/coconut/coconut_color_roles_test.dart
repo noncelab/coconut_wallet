@@ -1,3 +1,4 @@
+import 'package:coconut_design_system/coconut_design_system.dart' as ds;
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/design_system/tokens/coconut_colors.dart';
 import 'package:flutter/painting.dart';
@@ -39,9 +40,24 @@ void main() {
     });
   }
 
+  test(
+    'Coconut secondary text reads at 4.5:1 on cream and pulp while iconSecondary stays husk and other themes keep theirs',
+    () {
+      final coconut = CoconutColors.coconutTheme();
+      // 크림(surface F4E9D3) 4.70:1, 밝은 바탕(background FAF8F3) 5.33:1
+      expect(contrast(coconut.secondaryText, coconut.surface), greaterThanOrEqualTo(4.5));
+      expect(contrast(coconut.secondaryText, coconut.background), greaterThanOrEqualTo(4.5));
+      expect(coconut.iconSecondary, const Color(0xFFB87433));
+      expect(coconut.pageIndicatorActive, const Color(0xFFB87433));
+      expect(coconut.tertiaryText, const Color(0xFFC18C55));
+      expect(CoconutColors.light().secondaryText, ds.CoconutColors.gray700);
+      expect(CoconutColors.dark().secondaryText, ds.CoconutColors.gray400);
+    },
+  );
+
   test('Coconut preserves its palette and readable pressed CTA', () {
     final colors = CoconutColors.coconutTheme();
-    expect(colors.secondaryText, const Color(0xFFB87433));
+    expect(colors.secondaryText, const Color(0xFF905B28));
     expect(colors.inputPlaceholder, const Color(0xFFA0652C));
     expect(colors.buttonPrimaryPressOverlayOpacity, 0.12);
     final pressed = Color.alphaBlend(

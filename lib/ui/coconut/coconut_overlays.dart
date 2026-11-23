@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' show max, pi;
 
 import 'package:coconut_design_system/coconut_design_system.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
@@ -705,6 +706,7 @@ class CoconutPopup extends StatefulWidget {
     this.checkboxTextStyle,
     this.isCheckboxSelected = false,
     this.onCheckboxChanged,
+    this.checkboxNote,
     this.leftButtonTextStyle,
     this.rightButtonTextStyle,
     this.titlePadding,
@@ -735,6 +737,9 @@ class CoconutPopup extends StatefulWidget {
   final String? checkboxText;
   final bool isCheckboxSelected;
   final ValueChanged<bool>? onCheckboxChanged;
+
+  /// 체크박스를 켰을 때만 그 아래에 펼쳐 보이는 경고 한 줄(위험 글자색). 끄면 다시 접힌다
+  final String? checkboxNote;
   final TextStyle? leftButtonTextStyle;
   final TextStyle? rightButtonTextStyle;
   final EdgeInsets? titlePadding;
@@ -891,6 +896,7 @@ class _CoconutPopupState extends State<CoconutPopup> {
                 ],
               ),
             ),
+          if (widget.checkboxText != null && widget.checkboxNote != null) _buildCheckboxNote(context),
           Row(
             children: [
               if (widget.onTapLeft != null)
@@ -961,6 +967,72 @@ class _CoconutPopupState extends State<CoconutPopup> {
                   child: content,
                 )
                 : content,
+      ),
+    );
+  }
+
+  /// 체크하면 경고를 높이와 투명도로 함께 펼친다(팍 뜨지 않게). 체크를 풀면 거꾸로 접힌다.
+  /// 길이·곡선은 앱의 펼침 관례(hot_wallet_create_screen.dart:334-336, passphrase_options_section.dart:21-23: 220ms, easeOutCubic).
+  /// 경고는 설명 스크롤 밖(체크박스 바로 아래)에 둔다: 설명이 길어도 체크한 순간 경고가 화면에 보인다.
+  /// 작은 화면·큰 글자에서 제목·체크박스·경고·버튼이 다 들어가지 않으면 경고만 스크롤해서 버튼을 화면에 남긴다.
+  /// 펼친 동안만 Flexible이라 체크 전 설명 영역은 그대로다.
+  Widget _buildCheckboxNote(BuildContext context) {
+    final colors = context.coconutColors;
+    final reduceMotion = MediaQuery.disableAnimationsOf(context) || MediaQuery.accessibleNavigationOf(context);
+    final style = CoconutTypography.body3_12.setColor(colors.dangerText);
+    final scaler = widget.useFixedFontSize ? const TextScaler.linear(1) : MediaQuery.textScalerOf(context);
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: widget.isCheckboxSelected ? 1 : 0),
+      duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      builder:
+          (context, value, child) =>
+              value == 0
+                  ? const SizedBox.shrink()
+                  : Flexible(
+                    child: ScrollEdgeFade(
+                      child: SingleChildScrollView(
+                        child: ClipRect(
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            heightFactor: value,
+                            child: Opacity(opacity: value, child: child),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
+        child: Semantics(
+          container: true,
+          liveRegion: true,
+          label: widget.checkboxNote,
+          child: ExcludeSemantics(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: SvgPicture.asset(
+                        CommonStateIconPath.triangleWarning,
+                        width: 14,
+                        height: 14,
+                        colorFilter: ColorFilter.mode(colors.dangerText, BlendMode.srcIn),
+                      ),
+                    ),
+                  ),
+                  TextSpan(text: _keepWords(widget.checkboxNote!)),
+                ],
+              ),
+              style: style,
+              textAlign: TextAlign.center,
+              textScaler: scaler,
+            ),
+          ),
+        ),
       ),
     );
   }

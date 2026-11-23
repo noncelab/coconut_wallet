@@ -35,6 +35,8 @@ class CoconutThemeFeatureCopySource {
         return _es;
       case AppLocale.ja:
         return _ja;
+      case AppLocale.th:
+        return _th;
     }
   }
 
@@ -101,5 +103,18 @@ class CoconutThemeFeatureCopySource {
     whyItBelongs: 'Open Store は、良い PoW を見つけて一緒に使うための場所です。このテーマは、これからさまざまな機能が Coconut に加わっていく姿を見せる最初の PoW です。',
     featureHelp: 'Open Store だけでなく、実際のテーマ画面でもこの機能を確認して使えます。',
     tags: ['明るいテーマ'],
+  );
+
+  static const CoconutThemeFeatureCopy _th = CoconutThemeFeatureCopy(
+    title: 'ธีม Coconut',
+    description: 'ธีมสว่างใหม่ของ Coconut Wallet ที่ใช้โทนอุ่นจากมะพร้าวและชายหาด',
+    author: 'ทีม Coconut',
+    authorBio: 'สร้างประสบการณ์กระเป๋าเงินที่ดีกว่าสำหรับบิตคอยน์เท่านั้น',
+    authorIntent:
+        'เราอยากสร้างตัวอย่างแรกที่แสดงให้เห็นว่าฟังก์ชันใหม่ ๆ เพิ่มเข้ามาใน Coconut ได้อย่างเป็นธรรมชาติผ่าน Open Store',
+    whyItBelongs:
+        'Open Store คือพื้นที่สำหรับค้นพบ PoW ดี ๆ และใช้งานร่วมกัน ธีมนี้เป็น PoW แรกที่แสดงให้เห็นภาพของฟังก์ชันหลากหลายที่จะเพิ่มเข้ามาในอนาคต',
+    featureHelp: 'ดูและใช้ฟังก์ชันนี้ได้ทั้งใน Open Store และในหน้าธีมที่ใช้งานจริง',
+    tags: ['ธีมสว่าง'],
   );
 }

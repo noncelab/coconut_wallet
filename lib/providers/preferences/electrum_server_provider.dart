@@ -17,6 +17,11 @@ class ElectrumServerProvider extends ChangeNotifier {
     'electrum1.bluewallet.io': 'electrum2.bluewallet.io',
   };
 
+  /// 기본 서버가 암호화 포트로 옮겨 port/ssl까지 달라진 경우의 이전 리터럴 값 → 지금 기본 서버
+  static const Map<(String, int, bool), DefaultElectrumServer> _legacyDefaultServerEndpoints = {
+    ('mainnet.nunchuk.io', 51001, false): DefaultElectrumServer.nunchuk,
+  };
+
   ElectrumServerProvider();
 
   /// 기본 서버를 선택했을 때 host/port/ssl을 리터럴로 저장하지 않고 serverName 참조로 저장한다.
@@ -44,7 +49,8 @@ class ElectrumServerProvider extends ChangeNotifier {
     final port = _sharedPrefs.getInt(SharedPrefKeys.kCustomElectrumPort);
     final ssl = _sharedPrefs.getBool(SharedPrefKeys.kCustomElectrumIsSsl);
 
-    final matched = DefaultElectrumServer.findMatching(host, port, ssl);
+    final legacy = _legacyDefaultServerEndpoints[(host, port, ssl)]?.server;
+    final matched = DefaultElectrumServer.findMatching(legacy?.host ?? host, legacy?.port ?? port, legacy?.ssl ?? ssl);
     if (matched != null) {
       await setSelectedDefaultServer(matched.serverName);
     }

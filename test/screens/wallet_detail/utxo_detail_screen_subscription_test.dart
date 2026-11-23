@@ -66,7 +66,7 @@ class _Prices extends Fake with ChangeNotifier implements PriceProvider {
   @override
   String getFiatPrice(int satoshiAmount, {FiatCode? fiatCode, bool showCurrencySymbol = true}) => '';
   @override
-  int? get bitcoinPriceKrw => null;
+  int? getBitcoinPriceForFiat(FiatCode fiatCode) => null;
 }
 
 class _Explorer extends Fake with ChangeNotifier implements BlockExplorerProvider {}

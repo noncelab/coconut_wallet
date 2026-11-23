@@ -25,6 +25,17 @@ class ScriptStatus extends UnaddressedScriptStatus {
     super.timestamp = timestamp;
   }
 
+  /// 같은 내용의 새 객체
+  ScriptStatus copy() => ScriptStatus(
+    derivationPath: derivationPath,
+    address: address,
+    index: index,
+    isChange: isChange,
+    scriptPubKey: scriptPubKey,
+    status: status,
+    timestamp: timestamp,
+  );
+
   UnaddressedScriptStatus toUnaddressedScriptStatus() {
     return UnaddressedScriptStatus(scriptPubKey: scriptPubKey, status: status, timestamp: timestamp);
   }

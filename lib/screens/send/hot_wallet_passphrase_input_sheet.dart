@@ -108,6 +108,7 @@ class _HotWalletPassphraseInputSheetState extends State<HotWalletPassphraseInput
             children: [
               CoconutTextField(
                 key: const ValueKey('hot-wallet-passphrase-input'),
+                padding: const EdgeInsets.only(left: 16),
                 controller: _controller,
                 focusNode: _focusNode,
                 onChanged: (_) {},

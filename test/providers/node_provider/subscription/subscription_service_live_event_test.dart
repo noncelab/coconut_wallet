@@ -175,7 +175,9 @@ void main() {
             final first = wallet.walletBase.getAddress(0);
             var failing = true;
             final electrum = ScriptSyncServiceMock.electrumService;
-            when(electrum.unsubscribeScript(any, any)).thenAnswer((_) async => true);
+            when(
+              electrum.unsubscribeScriptForWallet(any, any, walletId: anyNamed('walletId')),
+            ).thenAnswer((_) async => true);
             when(electrum.getBalance(any, any)).thenAnswer((call) async {
               if (failing && failedStage == 'balance') {
                 failing = false;

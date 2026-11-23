@@ -31,8 +31,19 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   final DateTime Function() _now;
   final Listenable? _walletUpdates;
 
-  final Map<FiatCode, List<double>?> _dailyCloses = {};
+  final Map<FiatCode, List<double>> _dailyCloses = {};
   final Set<FiatCode> _loadingCloses = {};
+
+  /// 과거 시세를 못 받은 CoinGecko 통화와 그때의 시세 수신 시각. 같은 서버의 시세가 새로 들어오면 다시 받는다.
+  final Map<FiatCode, DateTime?> _failedClosesAtReceivedAt = {};
+
+  /// 과거 시세를 못 받은 거래소 통화의 재시도 대기. 실패할 때마다 간격을 늘린다.
+  final Map<FiatCode, Timer> _closesRetryTimers = {};
+  final Map<FiatCode, Duration> _closesRetryDelays = {};
+  static const _closesRetryMaxDelay = Duration(minutes: 10);
+
+  /// 종가를 받은 UTC 날짜. 종가는 UTC 날짜로 마감되므로 날짜가 바뀌면 그 통화의 종가를 다시 받는다.
+  final Map<FiatCode, DateTime> _closesUtcDay = {};
   static const priceWaitLimit = Duration(seconds: 10);
 
   final Map<String, Object?> _cache = {};
@@ -61,7 +72,7 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     _walletProvider.walletItemListNotifier.addListener(_onDataChanged);
     _preferenceProvider.addListener(_onDataChanged);
     _walletUpdates?.addListener(_onDataChanged);
-    _priceProvider.addListener(notifyListeners);
+    _priceProvider.addListener(_onPriceChanged);
     _priceWaitTimer = Timer(priceWaitLimit, () {
       _priceWaitExpired = true;
       if (!_disposed) notifyListeners();
@@ -86,13 +97,19 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   /// 오래 오지 않으면(오프라인 등) 기다리지 않고 값 없음으로 보여 준다.
   bool isPriceLoading(FiatCode fiatCode) => priceOf(fiatCode) == null && !_priceWaitExpired;
 
-  bool isDailyClosesLoading(FiatCode fiatCode) {
-    _closesOf(fiatCode);
-    return _loadingCloses.contains(fiatCode);
-  }
+  /// 처음 받을 때만 로딩이다. 날짜가 바뀌어 다시 받는 동안은 받아 둔 종가를 그대로 보여 준다.
+  bool isDailyClosesLoading(FiatCode fiatCode) => _closesOf(fiatCode) == null && _loadingCloses.contains(fiatCode);
 
   void _onDataChanged() {
     _cache.clear();
+    notifyListeners();
+  }
+
+  void _onPriceChanged() {
+    _failedClosesAtReceivedAt.removeWhere((fiat, failedAt) {
+      final receivedAt = _priceProvider.priceReceivedAt(fiat);
+      return receivedAt != null && receivedAt != failedAt;
+    });
     notifyListeners();
   }
 
@@ -158,14 +175,24 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     return price == null ? null : FiatUtil.calculateFiatAmount(sats, price);
   }
 
+  /// 앱을 켜 둔 채 UTC 자정(한국 오전 9시)을 넘기면 새로 마감된 종가를 다시 받는다.
+  /// 기기 현지 날짜로 비우는 [_cache]와 경계가 달라서 여기서 UTC 날짜를 따로 비교한다.
   List<double>? _closesOf(FiatCode fiatCode) {
-    if (!_dailyCloses.containsKey(fiatCode) && _loadingCloses.add(fiatCode)) {
-      unawaited(_loadCloses(fiatCode));
+    final closes = _dailyCloses[fiatCode];
+    final isWaitingToRetry =
+        _failedClosesAtReceivedAt.containsKey(fiatCode) || _closesRetryTimers.containsKey(fiatCode);
+    // CoinGecko는 마감된 날의 종가를 다음 날 00:35 UTC 뒤에 준다. 그 전에 받으면 새 종가가 없으므로 날짜 경계를 40분 늦춘다.
+    final utcNow = _now().toUtc().subtract(fiatCode.hasExchangeSource ? Duration.zero : const Duration(minutes: 40));
+    final utcDay = DateTime.utc(utcNow.year, utcNow.month, utcNow.day);
+    // 처음이거나 UTC 날짜가 바뀌었으면 받는다. 실패 뒤에는 기존 재시도 규칙(거래소: 간격 늘림, CoinGecko: 새 시세)을 따른다
+    final isStale = closes != null && _closesUtcDay[fiatCode] != utcDay;
+    if ((closes == null || isStale) && !isWaitingToRetry && _loadingCloses.add(fiatCode)) {
+      unawaited(_loadCloses(fiatCode, utcDay));
     }
-    return _dailyCloses[fiatCode];
+    return closes;
   }
 
-  Future<void> _loadCloses(FiatCode fiatCode) async {
+  Future<void> _loadCloses(FiatCode fiatCode, DateTime utcDay) async {
     List<double>? closes;
     try {
       closes = await _historicalPriceService.fetchDailyCloses(fiatCode);
@@ -174,8 +201,30 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     }
     if (_disposed) return;
     _loadingCloses.remove(fiatCode);
-    _dailyCloses[fiatCode] = closes;
+    if (closes != null && closes.isNotEmpty) {
+      _dailyCloses[fiatCode] = closes;
+      _closesUtcDay[fiatCode] = utcDay;
+      _closesRetryDelays.remove(fiatCode);
+    } else if (fiatCode.hasExchangeSource) {
+      // 실패하면 받아 둔 종가는 그대로 두고 재시도한다
+      _scheduleClosesRetry(fiatCode);
+    } else {
+      _failedClosesAtReceivedAt[fiatCode] = _priceProvider.priceReceivedAt(fiatCode);
+    }
     notifyListeners();
+  }
+
+  void _scheduleClosesRetry(FiatCode fiatCode) {
+    final previous = _closesRetryDelays[fiatCode];
+    final delay =
+        previous == null
+            ? const Duration(minutes: 1)
+            : (previous * 2 > _closesRetryMaxDelay ? _closesRetryMaxDelay : previous * 2);
+    _closesRetryDelays[fiatCode] = delay;
+    _closesRetryTimers[fiatCode] = Timer(delay, () {
+      _closesRetryTimers.remove(fiatCode);
+      if (!_disposed) notifyListeners();
+    });
   }
 
   /// 최근 [days]일의 시세: 지난 날들은 일별 종가, 마지막은 현재 시세. 시세나 종가가 없으면 null.
@@ -382,11 +431,14 @@ class HomeWidgetsViewModel extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _priceWaitTimer?.cancel();
+    for (final timer in _closesRetryTimers.values) {
+      timer.cancel();
+    }
     _walletProvider.walletLoadStateNotifier.removeListener(_onDataChanged);
     _walletProvider.walletItemListNotifier.removeListener(_onDataChanged);
     _preferenceProvider.removeListener(_onDataChanged);
     _walletUpdates?.removeListener(_onDataChanged);
-    _priceProvider.removeListener(notifyListeners);
+    _priceProvider.removeListener(_onPriceChanged);
     super.dispose();
   }
 }

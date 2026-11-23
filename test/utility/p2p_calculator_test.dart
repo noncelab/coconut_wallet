@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'dart:ui';
 
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -57,6 +58,20 @@ class FakePriceProvider extends Fake implements PriceProvider {
   @override
   int? getBitcoinPriceForFiat(FiatCode fiatCode) => _prices[fiatCode];
 
+  @override
+  void setCalculatorFiat(Object owner, FiatCode? fiat) {}
+
+  final DateTime _receivedAt = DateTime.now();
+
+  @override
+  DateTime? priceReceivedAt(FiatCode fiatCode) => _prices[fiatCode] == null ? null : _receivedAt;
+
+  @override
+  bool isPriceStale(FiatCode fiatCode) => _prices[fiatCode] == null;
+
+  @override
+  void refreshCoinGeckoNow() {}
+
   BitcoinUnit get currentUnit => _currentUnit;
 
   @override
@@ -92,6 +107,35 @@ void main() {
 
     return P2PCalculatorViewModel(prefProvider, connectivityProvider, priceProvider, walletProvider);
   }
+
+  group('transaction bill price source', () {
+    test('names the exchange or CoinGecko that the reference price comes from', () {
+      expect(createViewModel(fiatCode: FiatCode.KRW).priceSourceName, t.utility.p2p_calculator.source_upbit);
+      expect(createViewModel(fiatCode: FiatCode.USD).priceSourceName, t.utility.p2p_calculator.source_binance);
+      expect(createViewModel(fiatCode: FiatCode.EUR).priceSourceName, t.utility.p2p_calculator.source_binance);
+      expect(createViewModel(fiatCode: FiatCode.JPY).priceSourceName, t.utility.p2p_calculator.source_bitflyer);
+      expect(createViewModel(fiatCode: FiatCode.CHF).priceSourceName, t.utility.p2p_calculator.source_coingecko);
+    });
+
+    test('the copied bill lists creation time, reference price with its source and time, then premium', () {
+      final bill = createViewModel().generateTransactionBill(
+        '100,000,000',
+        '업비트 · 26-10-29 15:58:09',
+        '10,000',
+        '10,000',
+        '26-10-29 16:00:00',
+        '1%',
+        '100',
+        '100',
+      );
+      final createdAt = bill.indexOf('26-10-29 16:00:00');
+      final price = bill.indexOf('100,000,000 / BTC (업비트 · 26-10-29 15:58:09)');
+      final premium = bill.indexOf('1% /');
+      expect(createdAt, isNonNegative);
+      expect(price, greaterThan(createdAt));
+      expect(premium, greaterThan(price));
+    });
+  });
 
   group('editing the result preserves the selected premium equation', () {
     test('fiat input inverse divides by the discount instead of adding a premium', () {

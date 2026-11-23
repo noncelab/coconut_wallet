@@ -6,6 +6,7 @@ import 'package:coconut_wallet/constants/security_warning_constants.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/model/node/wallet_update_info.dart';
 import 'package:coconut_wallet/model/faucet/faucet_history.dart';
+import 'package:coconut_wallet/model/wallet/hot_wallet_metadata.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/node_provider.dart';
@@ -203,10 +204,17 @@ class WalletDetailViewModel extends ChangeNotifier {
     }
   }
 
+  HotWalletMetadata? get _fundedHotWalletMetadata {
+    final metadata = wallet.hotWalletMetadata;
+    return metadata != null && balance > 0 ? metadata : null;
+  }
+
+  bool get shouldShowBackupBadge => _fundedHotWalletMetadata?.backupVerified == false;
+
   WalletDetailSecurityWarningType? getSecurityWarningType({required bool isAppLockEnabled}) {
-    if (!wallet.hasLocalKey || balance <= 0) return null;
-    if (!(wallet.hotWalletMetadata?.backupVerified ?? false) &&
-        canShowSecurityWarning(WalletDetailSecurityWarningType.unbackedHotWallet)) {
+    final metadata = _fundedHotWalletMetadata;
+    if (metadata == null) return null;
+    if (!metadata.backupVerified && canShowSecurityWarning(WalletDetailSecurityWarningType.unbackedHotWallet)) {
       return WalletDetailSecurityWarningType.unbackedHotWallet;
     }
     if (!isAppLockEnabled && canShowSecurityWarning(WalletDetailSecurityWarningType.appLock)) {

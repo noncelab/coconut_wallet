@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/constants/shared_pref_keys.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -40,8 +41,56 @@ const Set<String> _euroRegionCodes = {
   'MC', 'SM', 'VA', 'AD', 'BL', 'PM', 'TF', 'ME', 'XK',
 };
 
+/// 거래소 시세가 없는 통화(CoinGecko)를 기본 통화로 쓰는 지역의 ISO 3166-1 alpha-2 코드.
+/// 지역마다 CLDR의 주 통화(끝나지 않은 첫 법정 통화)를 보고 FiatCode에 있는 통화만 골라 만들었습니다.
+/// 지역의 주 통화를 지원하지 않으면 USD를 씁니다(예: 이집트 EGP, 부탄 BTN, 나미비아 NAD).
+/// 출처: CLDR 49 `cldr-core/supplemental/currencyData.json` (https://github.com/unicode-org/cldr-json, 2026-11-12)
+const Map<FiatCode, List<String>> _localFiatRegions = {
+  FiatCode.AED: ['AE'],
+  FiatCode.ARS: ['AR'],
+  FiatCode.AUD: ['AU', 'CC', 'CX', 'HM', 'KI', 'NF', 'NR', 'TV'],
+  FiatCode.BDT: ['BD'],
+  FiatCode.BHD: ['BH'],
+  FiatCode.BMD: ['BM'],
+  FiatCode.BRL: ['BR'],
+  FiatCode.CAD: ['CA'],
+  FiatCode.CHF: ['CH', 'LI'],
+  FiatCode.CLP: ['CL'],
+  FiatCode.CZK: ['CZ'],
+  FiatCode.DKK: ['DK', 'FO', 'GL'],
+  FiatCode.GBP: ['GB', 'GG', 'GS', 'IM', 'JE', 'TA'],
+  FiatCode.GEL: ['GE'],
+  FiatCode.HKD: ['HK'],
+  FiatCode.HUF: ['HU'],
+  FiatCode.IDR: ['ID'],
+  FiatCode.ILS: ['IL', 'PS'],
+  FiatCode.INR: ['IN'],
+  FiatCode.KWD: ['KW'],
+  FiatCode.LKR: ['LK'],
+  FiatCode.MMK: ['MM'],
+  FiatCode.MXN: ['MX'],
+  FiatCode.MYR: ['MY'],
+  FiatCode.NGN: ['NG'],
+  FiatCode.NOK: ['BV', 'NO', 'SJ'],
+  FiatCode.NZD: ['CK', 'NU', 'NZ', 'PN', 'TK'],
+  FiatCode.PHP: ['PH'],
+  FiatCode.PKR: ['PK'],
+  FiatCode.PLN: ['PL'],
+  FiatCode.RUB: ['RU'],
+  FiatCode.SAR: ['SA'],
+  FiatCode.SEK: ['SE'],
+  FiatCode.SGD: ['SG'],
+  FiatCode.THB: ['TH'],
+  FiatCode.TRY: ['TR'],
+  FiatCode.TWD: ['TW'],
+  FiatCode.UAH: ['UA'],
+  FiatCode.VND: ['VN'],
+  FiatCode.ZAR: ['LS', 'ZA'],
+};
+
 /// 기본 통화를 locale로 정합니다. 지역(countryCode)을 먼저 보고, 지역이 없으면 언어로 정합니다.
-/// 지역: KR→KRW, JP→JPY, 유로 사용 지역→EUR, 그 밖→USD / 언어: ko→KRW, ja→JPY, de→EUR, 그 밖→USD
+/// 지역: KR→KRW, JP→JPY, 유로 사용 지역→EUR, 지원하는 그 지역의 통화(TH→THB 등), 그 밖→USD
+/// 언어: ko→KRW, ja→JPY, de→EUR, th→THB, 그 밖→USD
 FiatCode defaultFiatForLocale(Locale locale) {
   final region = locale.countryCode?.toUpperCase() ?? '';
   if (region.isEmpty) {
@@ -49,6 +98,7 @@ FiatCode defaultFiatForLocale(Locale locale) {
       AppLanguage.ko => FiatCode.KRW,
       AppLanguage.ja => FiatCode.JPY,
       AppLanguage.de => FiatCode.EUR,
+      AppLanguage.th => FiatCode.THB,
       AppLanguage.en || AppLanguage.es => FiatCode.USD,
     };
   }
@@ -56,7 +106,10 @@ FiatCode defaultFiatForLocale(Locale locale) {
     'KR' => FiatCode.KRW,
     'JP' => FiatCode.JPY,
     _ when _euroRegionCodes.contains(region) => FiatCode.EUR,
-    _ => FiatCode.USD,
+    _ => FiatCode.values.firstWhere(
+      (fiat) => _localFiatRegions[fiat]?.contains(region) ?? false,
+      orElse: () => FiatCode.USD,
+    ),
   };
 }
 
@@ -74,8 +127,16 @@ AppLocale resolveAppLocale(String languageCode) {
     AppLanguage.ja => AppLocale.ja,
     AppLanguage.es => AppLocale.es,
     AppLanguage.de => AppLocale.de,
+    AppLanguage.th => AppLocale.th,
   };
 }
+
+/// 이용약관 주소. 태국어 페이지가 없어 태국어일 때만 영어 페이지를 엽니다. 다른 언어는 기본 주소 그대로입니다.
+String termsOfServiceUrlFor(AppLocale locale) =>
+    locale == AppLocale.th ? TERMS_OF_SERVICE_URL_EN : TERMS_OF_SERVICE_URL;
+
+/// 개인정보 처리방침 주소. 태국어일 때만 영어 페이지를 엽니다.
+String privacyPolicyUrlFor(AppLocale locale) => locale == AppLocale.th ? PRIVACY_POLICY_URL_EN : PRIVACY_POLICY_URL;
 
 /// SharedPrefs에서 저장된 언어 코드를 읽어 반환합니다.
 /// 저장된 값이 없으면 시스템 언어를 반환합니다.

@@ -35,6 +35,7 @@ import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
 import 'package:coconut_wallet/screens/home/wallet_add/wallet_add_screen.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/screens/settings/fiat_bottom_sheet.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/config/number_format_config.dart';
@@ -105,12 +106,16 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   void _resetCalculator() {
+    _clearInputFields();
+    _viewModel.resetInput();
+  }
+
+  void _clearInputFields() {
     _isUpdatingController = true;
     _inputController.clear();
     _resultController.clear();
     _premiumController.text = _formatLocaleDecimalText('1.0');
     _isUpdatingController = false;
-    _viewModel.resetInput();
   }
 
   @override
@@ -164,13 +169,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           curve: Curves.easeOut,
         );
       });
-    } else {
-      // 포커스를 잃었을 때 - BTC 단위면 readable 형식으로 변환 (소수부 4자리씩 공백)
-      if (_viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi) {
-        final currentInput = _viewModel.inputAmount;
-        if (currentInput != null && currentInput > 0) {
-          final formatted = BalanceFormatUtil.formatSatoshiToReadableBitcoin(currentInput, forceEightDecimals: false);
+    }
+    if (_viewModel.inputAssetType == InputAssetType.btc && !_viewModel.currentUnit.isBasedOnSatoshi) {
+      final currentInput = _viewModel.inputAmount;
+      if (currentInput != null && currentInput > 0) {
+        final formatted = _formatBtcAmountText(currentInput);
 
+        if (_inputController.text != formatted) {
           _isUpdatingController = true;
           _inputController.value = TextEditingValue(
             text: formatted,
@@ -178,12 +183,15 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           );
           _isUpdatingController = false;
         }
-      } else if (!_inputFocusNode.hasFocus && _viewModel.inputAssetType == InputAssetType.fiat) {
-        _stripTrailingZeroDecimalOnFocusLost();
       }
+    } else if (!_inputFocusNode.hasFocus && _viewModel.inputAssetType == InputAssetType.fiat) {
+      _stripTrailingZeroDecimalOnFocusLost();
     }
     setState(() {});
   }
+
+  String _formatBtcAmountText(int sats) =>
+      _inputFocusNode.hasFocus ? BalanceFormatUtil.formatSatoshiToBtcInputText(sats) : _viewModel.formatBtc(sats);
 
   /// 소수점 구분자 뒤 소수부가 비어있거나 전부 0이면(예: "50.", "50.0", "50.00")
   /// 포커스 아웃 시 소수점 이하를 통째로 제거한다.
@@ -239,21 +247,29 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   List<TextInputFormatter> _amountInputFormatters() {
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      final decimalDigits = _viewModel.fiatCode.decimalDigits;
-      return decimalDigits > 0
-          ? [FiatAmountInputFormatter(decimalPlaces: decimalDigits)]
-          : [FilteringTextInputFormatter.digitsOnly];
+      return [FiatAmountInputFormatter(decimalPlaces: _viewModel.fiatCode.decimalDigits)];
     }
     if (!_viewModel.currentUnit.isBasedOnSatoshi) {
       return [const BtcAmountInputFormatter()];
     }
+    // sats·BIP-177: develop과 같은 digitsOnly. develop의 SatoshiAmountInputFormatter는 숫자가 없는 입력을 그대로
+    // 돌려줘 빈 칸에 기호가 남고, 쉼표 소수점 설정에서 커서가 앞으로 튄다.
     return [FilteringTextInputFormatter.digitsOnly];
   }
 
   void _handleAmountInputChanged(String value) {
     if (_isUpdatingController) return; // 무한 루프 방지
 
-    final sanitized = _sanitizeInput(value, _amountInputAllowsDecimal);
+    final String sanitized;
+    if (_amountInputAllowsDecimal) {
+      sanitized = _sanitizeInput(value);
+    } else {
+      // 소수 0자리 통화 칸은 '1000.0'처럼 소수점·부호·지수가 섞인 입력을 거부한다(숫자만 남기면 10000으로 커진다).
+      // sats·BIP-177 칸은 develop처럼 형식기(digitsOnly)가 먼저 숫자만 남겨서 여기서 거부되지 않는다('1000.0' → 10,000).
+      final digits = _strictIntegerDigits(value);
+      if (digits == null) return;
+      sanitized = digits;
+    }
 
     if (sanitized.isEmpty) {
       _viewModel.setInputAmount(null);
@@ -283,7 +299,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   void _handleResultInputChanged(String value) {
     final decimal = _resultIsFiat ? _viewModel.fiatCode.decimalDigits > 0 : !_viewModel.currentUnit.isBasedOnSatoshi;
-    final sanitized = _sanitizeInput(value, decimal);
+    final sanitized = decimal ? _sanitizeInput(value) : _strictIntegerDigits(value);
+    if (sanitized == null) return;
     if (sanitized.isEmpty) {
       _viewModel.setResultAmount(null);
       _isUpdatingController = true;
@@ -337,12 +354,11 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       }
     }
 
-    // decimalDigits==0인 통화(KRW/JPY)는 입력 필드에 digitsOnly 포매터만 붙어 있어
-    // 그룹 구분자(,)를 스스로 넣어주지 않으므로 매 입력마다 직접 그룹 포맷을 적용해야 한다.
-    // decimalDigits>0인 통화(USD/EUR)는 FiatAmountInputFormatter가 이미 타이핑 중에
-    // 그룹/소수점을 실시간으로 처리하므로, 프로그래매틱 갱신(Quick Add 등)일 때만 갱신한다.
-    if (fiatCode.decimalDigits == 0 || shouldUpdateController) {
-      final formatted = _formatFiatInputText(fiatText);
+    // 정수 통화도 FiatAmountInputFormatter가 그룹과 selection/composing을 만든다.
+    // 표시가 같으면 컨트롤러를 다시 쓰지 않는다. 소수 통화는 퀵 애드처럼 문자열이 다를 때만 갱신한다.
+    final formatted = _formatFiatInputText(fiatText);
+    final updateDisplay = fiatCode.decimalDigits == 0 ? formatted != _inputController.text : shouldUpdateController;
+    if (updateDisplay) {
       _isUpdatingController = true;
       _inputController.value = TextEditingValue(
         text: formatted,
@@ -448,6 +464,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _viewModel.setInputAmount(sats);
 
     final formatted = sats.toThousandsSeparatedString();
+    if (_inputController.text == formatted) return;
     _isUpdatingController = true;
     _inputController.value = TextEditingValue(
       text: formatted,
@@ -610,8 +627,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       _isUpdatingController = true;
 
       if (prevIsBasedOnSatoshi && !_viewModel.currentUnit.isBasedOnSatoshi) {
-        // Sats → BTC 전환 (readable bitcoin 형식)
-        final formatted = _viewModel.formatBtc(currentInput);
+        final formatted = _formatBtcAmountText(currentInput);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -655,8 +671,7 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
           selection: TextSelection.collapsed(offset: formatted.length),
         );
       } else {
-        // BTC 단위: readable bitcoin 형식 (trailing zero 제거)
-        final formatted = _viewModel.formatBtc(result);
+        final formatted = _formatBtcAmountText(result);
         _inputController.value = TextEditingValue(
           text: formatted,
           selection: TextSelection.collapsed(offset: formatted.length),
@@ -667,23 +682,36 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     _isUpdatingController = false;
   }
 
-  String _sanitizeInput(String value, bool allowDecimal) {
-    if (!allowDecimal) {
-      return value.replaceAll(RegExp(r'[^0-9]'), '');
-    } else {
-      final normalizedValue = normalizeNumTextForNumParsing(value);
-      final buffer = StringBuffer();
-      bool dotSeen = false;
-      for (final ch in normalizedValue.split('')) {
-        if (ch == '.' && !dotSeen) {
-          buffer.write('.');
-          dotSeen = true;
-        } else if (RegExp(r'[0-9]').hasMatch(ch)) {
-          buffer.write(ch);
-        }
+  /// 소수 입력만 정규화한다. 정수 필드의 소수점·부호·지수는 [_strictIntegerDigits]가 거부한다.
+  String _sanitizeInput(String value) {
+    final normalizedValue = normalizeNumTextForNumParsing(value);
+    final buffer = StringBuffer();
+    bool dotSeen = false;
+    for (final ch in normalizedValue.split('')) {
+      if (ch == '.' && !dotSeen) {
+        buffer.write('.');
+        dotSeen = true;
+      } else if (RegExp(r'[0-9]').hasMatch(ch)) {
+        buffer.write(ch);
       }
-      return buffer.toString();
     }
+    return buffer.toString();
+  }
+
+  /// 그룹 구분자만 제거한 정수면 그 숫자열을 반환한다. 소수점, 부호, 지수, 깨진 그룹은 null이다.
+  String? _strictIntegerDigits(String value) {
+    final grouping = NumberFormatConfig.instance.groupingSeparator;
+    final decimal = NumberFormatConfig.instance.decimalSeparator;
+    if (value.contains(decimal)) return null;
+    final alternate = decimal == '.' ? ',' : '.';
+    if (grouping != alternate && value.contains(alternate)) return null;
+    if (value.contains(grouping)) {
+      final grouped = RegExp('^[0-9]{1,3}(?:${RegExp.escape(grouping)}[0-9]{3})*\$');
+      if (!grouped.hasMatch(value)) return null;
+    }
+    final digits = value.replaceAll(grouping, '');
+    if (!RegExp(r'^[0-9]*$').hasMatch(digits)) return null;
+    return digits;
   }
 
   String formatResultAmount(int result) {
@@ -710,12 +738,13 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
   }
 
   String _formatPremiumAmount(double amount) {
-    final fixedText = amount.toStringAsFixed(2);
+    // 소수 3자리 통화(KWD·BHD)는 3자리까지 보인다(괄호 안 sats와 같은 금액). 0·2자리 통화는 지금처럼 2자리(A-C1)
+    final fixedText = amount.toStringAsFixed(math.max(2, _viewModel.fiatCode.decimalDigits));
     final parts = fixedText.split('.');
     final integerText = (parts[0].toIntSafe() ?? 0).toThousandsSeparatedString();
     final decimalText = parts.length > 1 ? parts[1] : '';
 
-    if (decimalText == '00') {
+    if (decimalText.replaceAll('0', '').isEmpty) {
       return integerText;
     }
 
@@ -740,9 +769,12 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     }
 
     final int result = _viewModel.resultAmount ?? _viewModel.calculate(input);
-    final referenceDateTime = DateTime.now();
-    final referenceDateTimeString =
-        '${referenceDateTime.year.toString().substring(2)}-${referenceDateTime.month.toString().padLeft(2, '0')}-${referenceDateTime.day.toString().padLeft(2, '0')} ${referenceDateTime.hour.toString().padLeft(2, '0')}:${referenceDateTime.minute.toString().padLeft(2, '0')}:${referenceDateTime.second.toString().padLeft(2, '0')}';
+    final billCreatedAtString = _formatBillDateTime(DateTime.now());
+    final priceAt = _viewModel.btcPriceAt;
+    final priceSourceStr =
+        priceAt == null
+            ? _viewModel.priceSourceName
+            : '${_viewModel.priceSourceName} · ${_formatBillDateTime(priceAt)}';
 
     final btcPriceStr = _viewModel.btcPrice?.toThousandsSeparatedString() ?? '-';
     final fiatAmountStr =
@@ -775,132 +807,170 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        return Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              padding: const EdgeInsets.all(8),
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: context.coconutColors.popupBackground,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
-                children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RepaintBoundary(
-                        key: _billCaptureKey,
-                        child: Container(
-                          color: context.coconutColors.popupBackground,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CoconutLayout.spacing_1000h,
-                              Align(
-                                alignment: Alignment.center,
-                                child: Text(
-                                  t.utility.p2p_calculator.transaction_bill,
-                                  style: CoconutTypography.heading3_21_Bold,
-                                ),
-                              ),
-                              CoconutLayout.spacing_900h,
-                              // 입력값
-                              _buildBillRow(
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _viewModel.fiatCode.code
-                                    : _viewModel.currentUnit.symbol,
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _formatFiatResultForDisplay(input)
-                                    : _viewModel.formatSatsResult(input),
-                                canCopy: true,
-                              ),
-                              const SizedBox(height: 8),
-                              // 결과값
-                              _buildBillRow(
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _viewModel.currentUnit.symbol
-                                    : _viewModel.fiatCode.code,
-                                _viewModel.inputAssetType == InputAssetType.fiat
-                                    ? _viewModel.formatSatsResult(result)
-                                    : _formatFiatResultForDisplay(result),
-                                canCopy: true,
-                              ),
-                              const SizedBox(height: 24),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 15),
-                                child: Divider(color: context.coconutColors.primaryText.withAlpha(50), height: 1),
-                              ),
-                              const SizedBox(height: 24),
-                              _buildBillRow(
-                                t.utility.p2p_calculator.reference_price,
-                                '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
-                              ),
-                              const SizedBox(height: 20),
-                              _buildBillRow(
-                                t.utility.p2p_calculator.reference_datetime,
-                                referenceDateTimeString,
-                                valueLineHeight: 1.0,
-                              ),
-                              const SizedBox(height: 20),
-                              _buildBillRow(
-                                t.utility.p2p_calculator.transaction_premium,
-                                '$premiumRateValueStr %',
-                                valueLineHeight: 1.0,
-                              ),
-                              const SizedBox(height: 2),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
-                                      style: CoconutTypography.body3_12_Number.copyWith(
-                                        color: context.coconutColors.mutedText,
-                                      ),
+        // 계산서 글자는 1.2배까지만 키운다(거래 카드·M37 팝업·M20과 같은 규칙, A-C2): 큰 글자에서 계산서가 화면을 넘지 않게
+        return MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.2,
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: context.coconutColors.popupBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Stack(
+                  children: [
+                    // 1.2배 상한에서도 작은 화면(320×568 등)에서는 계산서가 화면보다 길 수 있어 그때는 내용만 스크롤한다(A-C2)
+                    SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          RepaintBoundary(
+                            key: _billCaptureKey,
+                            child: Container(
+                              color: context.coconutColors.popupBackground,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CoconutLayout.spacing_1000h,
+                                  Align(
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      t.utility.p2p_calculator.transaction_bill,
+                                      style: CoconutTypography.heading3_21_Bold,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  CoconutLayout.spacing_900h,
+                                  // 입력값
+                                  _buildBillRow(
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _viewModel.fiatCode.code
+                                        : _viewModel.currentUnit.symbol,
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _formatFiatResultForDisplay(input)
+                                        : _viewModel.formatSatsResult(input),
+                                    canCopy: true,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // 결과값
+                                  _buildBillRow(
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _viewModel.currentUnit.symbol
+                                        : _viewModel.fiatCode.code,
+                                    _viewModel.inputAssetType == InputAssetType.fiat
+                                        ? _viewModel.formatSatsResult(result)
+                                        : _formatFiatResultForDisplay(result),
+                                    canCopy: true,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                                    child: Divider(color: context.coconutColors.primaryText.withAlpha(50), height: 1),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildBillRow(
+                                    t.utility.p2p_calculator.bill_created_at,
+                                    billCreatedAtString,
+                                    valueLineHeight: 1.0,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  _buildBillRow(
+                                    t.utility.p2p_calculator.reference_price,
+                                    '${_viewModel.fiatCode.symbol} ${_viewModel.btcPrice?.toThousandsSeparatedString() ?? '-'} / BTC',
+                                  ),
+                                  const SizedBox(height: 2),
+                                  _buildBillSubLine(priceSourceStr),
+                                  const SizedBox(height: 20),
+                                  _buildBillRow(
+                                    t.utility.p2p_calculator.transaction_premium,
+                                    '$premiumRateValueStr %',
+                                    valueLineHeight: 1.0,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  _buildBillSubLine(
+                                    '${_viewModel.fiatCode.symbol} $premiumAmountStr ($premiumSatsStr sats)',
+                                  ),
+                                  CoconutLayout.spacing_800h,
+                                ],
                               ),
-                              CoconutLayout.spacing_800h,
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                      _buildBillActions(
-                        btcPriceStr,
-                        fiatAmountStr,
-                        btcAmountStr,
-                        referenceDateTimeString,
-                        premiumRateStr,
-                        premiumAmountStr,
-                        premiumSatsStr,
-                        _viewModel.inputAssetType == InputAssetType.fiat ? result : input,
-                      ),
-                      CoconutLayout.spacing_500h,
-                    ],
-                  ),
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      color: context.coconutColors.primaryText,
-                      icon: SvgPicture.asset(
-                        CommonActionIconPath.close,
-                        colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                          _buildBillActions(
+                            btcPriceStr,
+                            priceSourceStr,
+                            fiatAmountStr,
+                            btcAmountStr,
+                            billCreatedAtString,
+                            premiumRateStr,
+                            premiumAmountStr,
+                            premiumSatsStr,
+                            _viewModel.inputAssetType == InputAssetType.fiat ? result : input,
+                          ),
+                          CoconutLayout.spacing_500h,
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    // 시트 머리: 닫기 버튼은 위에 고정하고, 내용은 머리 아래로 지나가게 머리 자리를 시트 색으로 덮는다.
+                    // 머리 높이는 계산서 위 빈 여백(spacing_1000h)과 같아 내리기 전 모습은 그대로다
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: ColoredBox(
+                        key: const Key('p2p-bill-close-header'),
+                        color: context.coconutColors.popupBackground,
+                        child: CoconutLayout.spacing_1000h,
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        // 화면 읽기에 "닫기"로 읽힌다
+                        tooltip: t.close,
+                        color: context.coconutColors.primaryText,
+                        icon: SvgPicture.asset(
+                          CommonActionIconPath.close,
+                          colorFilter: ColorFilter.mode(context.coconutColors.primaryText, BlendMode.srcIn),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  String _formatBillDateTime(DateTime dateTime) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${dateTime.year.toString().substring(2)}-${twoDigits(dateTime.month)}-${twoDigits(dateTime.day)} '
+        '${twoDigits(dateTime.hour)}:${twoDigits(dateTime.minute)}:${twoDigits(dateTime.second)}';
+  }
+
+  Widget _buildBillSubLine(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // 출처·시각이 남은 폭보다 길면 오른쪽 끝선에 맞춰 줄을 바꾼다(A-C2)
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.end,
+              style: CoconutTypography.body3_12_Number.copyWith(color: context.coconutColors.mutedText),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -944,9 +1014,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
 
   Widget _buildBillActions(
     String btcPriceStr,
+    String priceSourceStr,
     String fiatAmountStr,
     String btcAmountStr,
-    String referenceDateTime,
+    String billCreatedAt,
     String premiumRateStr,
     String premiumAmountStr,
     String premiumSatsStr,
@@ -962,9 +1033,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
             onTap: () async {
               final textToCopy = _viewModel.generateTransactionBill(
                 btcPriceStr,
+                priceSourceStr,
                 fiatAmountStr,
                 btcAmountStr,
-                referenceDateTime,
+                billCreatedAt,
                 premiumRateStr,
                 premiumAmountStr,
                 premiumSatsStr,
@@ -1154,13 +1226,21 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildCurrentPriceWidget(isVisible),
+        Expanded(child: _buildCurrentPriceWidget(isVisible)),
         if (_viewModel.isNetworkOn && isFiatButtonVisible)
           ShrinkAnimationButton(
             pressedOverlayColor: context.coconutColors.surfacePressOverlay,
             onPressed: () async {
-              await _viewModel.onFiatUnitChange();
-              _resetCalculator();
+              await FiatBottomSheet.show(
+                context,
+                screenName: AnalyticsScreenNames.p2pCalculatorFiatSheet,
+                title: t.fiat_bottom_sheet.select_title,
+                closeOnSelect: true,
+                selectedValue: _viewModel.fiatCode,
+                onSelected: (fiat) {
+                  if (_viewModel.selectFiat(fiat)) _clearInputFields();
+                },
+              );
               _inputFocusNode.unfocus();
             },
             defaultColor: context.coconutColors.surface,
@@ -1192,17 +1272,21 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         children: [
           MediaQuery(
             data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.2)),
-            child: Row(
-              children: [
-                Text(
-                  '${t.utility.p2p_calculator.one_btc} = ',
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-                Text(
-                  _viewModel.formattedOneBtcPrice,
-                  style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
-                ),
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Text(
+                    '${t.utility.p2p_calculator.one_btc} = ',
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                  Text(
+                    _viewModel.formattedOneBtcPrice,
+                    style: CoconutTypography.body1_16_Number.setColor(context.coconutColors.primaryText),
+                  ),
+                ],
+              ),
             ),
           ),
           _buildExchangePriceLabel(),
@@ -1255,6 +1339,8 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
         return t.utility.p2p_calculator.bitflyer_price;
       case FiatCode.EUR:
         return t.utility.p2p_calculator.binance_price;
+      default:
+        return t.utility.p2p_calculator.coingecko_price;
     }
   }
 
@@ -1891,36 +1977,10 @@ class _P2PCalculatorScreenState extends State<P2PCalculatorScreen> with TickerPr
     if (!isInputFocused) return [];
 
     if (_viewModel.inputAssetType == InputAssetType.fiat) {
-      switch (_viewModel.fiatCode) {
-        case FiatCode.KRW:
-          return [
-            {'label': '+${10000.toThousandsSeparatedString()}', 'value': '10000'},
-            {'label': '+${50000.toThousandsSeparatedString()}', 'value': '50000'},
-            {'label': '+${100000.toThousandsSeparatedString()}', 'value': '100000'},
-            {'label': '+${500000.toThousandsSeparatedString()}', 'value': '500000'},
-          ];
-        case FiatCode.USD:
-          return [
-            {'label': '+10', 'value': '10'},
-            {'label': '+50', 'value': '50'},
-            {'label': '+100', 'value': '100'},
-            {'label': '+500', 'value': '500'},
-          ];
-        case FiatCode.JPY:
-          return [
-            {'label': '+${1000.toThousandsSeparatedString()}', 'value': '1000'},
-            {'label': '+${5000.toThousandsSeparatedString()}', 'value': '5000'},
-            {'label': '+${10000.toThousandsSeparatedString()}', 'value': '10000'},
-            {'label': '+${50000.toThousandsSeparatedString()}', 'value': '50000'},
-          ];
-        case FiatCode.EUR:
-          return [
-            {'label': '+10', 'value': '10'},
-            {'label': '+50', 'value': '50'},
-            {'label': '+100', 'value': '100'},
-            {'label': '+500', 'value': '500'},
-          ];
-      }
+      final amounts = kFiatQuickAddAmounts[_viewModel.fiatCode] ?? const [10, 50, 100, 500];
+      return [
+        for (final amount in amounts) {'label': '+${amount.toThousandsSeparatedString()}', 'value': '$amount'},
+      ];
     } else {
       // BTC/Sats 입력
       if (_viewModel.currentUnit.isBasedOnSatoshi) {

@@ -11,6 +11,7 @@ import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/settings/app_info_license_bottom_sheet.dart';
+import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:coconut_wallet/utils/uri_launcher.dart';
 import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
@@ -408,7 +409,11 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.top,
                 title: t.app_info_screen.terms_of_service,
                 onPressed: () {
-                  launchURL(context, TERMS_OF_SERVICE_URL, destination: ExternalLinkDestination.termsOfService);
+                  launchURL(
+                    context,
+                    termsOfServiceUrlFor(LocaleSettings.currentLocale),
+                    destination: ExternalLinkDestination.termsOfService,
+                  );
                 },
               ),
               SingleButton(
@@ -416,7 +421,11 @@ class _AppInfoScreenState extends State<AppInfoScreen> {
                 buttonPosition: SingleButtonPosition.middle,
                 title: t.app_info_screen.privacy_policy,
                 onPressed: () {
-                  launchURL(context, PRIVACY_POLICY_URL, destination: ExternalLinkDestination.privacyPolicy);
+                  launchURL(
+                    context,
+                    privacyPolicyUrlFor(LocaleSettings.currentLocale),
+                    destination: ExternalLinkDestination.privacyPolicy,
+                  );
                 },
               ),
               SingleButton(

@@ -242,7 +242,33 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
         .initialize()
         .onError((e, _) {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
-            if (mounted) {
+            if (mounted && e is UnverifiedOriginalTransactionException) {
+              // 연결한 서버가 잘못된 거래를 보냈을 수 있다. 다른 서버로 바꾸는 화면으로 안내한다
+              // (아래 다른 오류 안내와 같은 앱 공통 팝업: 글자 크기를 따르고 긴 설명은 스크롤된다)
+              showDialog(
+                context: context,
+                builder: (BuildContext dialogContext) {
+                  return CoconutPopup(
+                    languageCode: dialogContext.read<PreferenceProvider>().language,
+                    title: t.transaction_fee_bumping_screen.dialog.unverified_original_title,
+                    description: t.transaction_fee_bumping_screen.dialog.unverified_original,
+                    leftButtonText: t.close,
+                    onTapLeft: () {
+                      final navigator = Navigator.of(dialogContext);
+                      navigator.pop();
+                      navigator.pop();
+                    },
+                    rightButtonText: t.transaction_fee_bumping_screen.dialog.change_server,
+                    onTapRight: () {
+                      // 수수료 올리기 화면 대신 일렉트럼 서버 설정 화면을 띄운다(뒤로 가면 거래 상세로 돌아간다)
+                      final navigator = Navigator.of(dialogContext);
+                      navigator.pop();
+                      navigator.pushReplacementNamed(AppRouteNames.electrumServer);
+                    },
+                  );
+                },
+              );
+            } else if (mounted) {
               String title = t.alert.error_occurs;
               String description = t.alert.contact_admin(error: e.toString());
 
@@ -368,7 +394,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
   }
 
   void _onFeeRateChanged(String input) async {
-    if (_viewModel.isInitializedSuccess == false) {
+    // 준비가 예외로 끝나면 성공 여부가 null로 남는다(안내를 바깥 터치·뒤로 가기로 닫으면 이 화면에서 입력할 수 있다).
+    // 준비에 성공했을 때만 계산한다
+    if (_viewModel.isInitializedSuccess != true) {
       return;
     }
 
@@ -389,6 +417,9 @@ class _TransactionFeeBumpingScreenState extends State<TransactionFeeBumpingScree
               languageCode: context.read<PreferenceProvider>().language,
               title: t.transaction_fee_bumping_screen.dialog.fee_alert_title,
               description: t.transaction_fee_bumping_screen.dialog.fee_alert_description,
+              // 팝업의 기본 버튼 글자는 ko·es만 번역돼 있어 나머지 언어는 영어로 나온다. 번역 문자열을 넘긴다.
+              leftButtonText: t.cancel,
+              rightButtonText: t.OK,
               onTapRight: () {
                 Navigator.pop(context, true);
               },

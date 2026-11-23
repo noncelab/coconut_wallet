@@ -7,6 +7,7 @@ import 'package:coconut_wallet/constants/app_language.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
+import 'package:coconut_wallet/utils/locale_sort_util.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,6 +50,9 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
       } else if (_language == AppLanguage.ja.code) {
         termList.sort();
         groupedTermList = groupByInitialsJa(termList);
+      } else if (_language == AppLanguage.th.code) {
+        termList.sort((a, b) => _thaiSortKey(a).compareTo(_thaiSortKey(b)));
+        groupedTermList = groupByInitialsTh(termList);
       } else {
         termList.sort((a, b) => _latinSortKey(a).compareTo(_latinSortKey(b)));
         groupedTermList = groupByInitialsLatin(termList);
@@ -168,11 +172,20 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
 
   String _latinSortKey(String term) => term.toLowerCase().split('').map((char) => _accents[char] ?? char).join();
 
+  /// 태국어 사전 순서에 가깝게: 자음 앞에 쓰는 모음(เ แ โ ใ ไ)은 뒤 자음 자리에서 견주고 성조는 무시한다. 영문 용어는 영어와 같다.
+  String _thaiSortKey(String term) => thaiDictionaryKey(_latinSortKey(term));
+
   /// 영어·스페인어·독일어: 첫 글자(악센트 제거) 알파벳, 숫자는 0-9
-  Map<String, List<String>> groupByInitialsLatin(List<String> terms) {
+  Map<String, List<String>> groupByInitialsLatin(List<String> terms) => _groupByFirstCharacter(terms, _latinSortKey);
+
+  /// 태국어: 첫 자음으로 묶는다. 앞 모음으로 시작하는 용어(예: โหนด)는 뒤 자음(ห) 묶음에 들어간다.
+  Map<String, List<String>> groupByInitialsTh(List<String> terms) => _groupByFirstCharacter(terms, _thaiSortKey);
+
+  Map<String, List<String>> _groupByFirstCharacter(List<String> terms, String Function(String) sortKey) {
     final grouped = <String, List<String>>{};
     for (final term in terms) {
-      final first = _latinSortKey(term).isEmpty ? '' : _latinSortKey(term)[0];
+      final key = sortKey(term);
+      final first = key.isEmpty ? '' : key[0];
       final initial = RegExp(r'[0-9]').hasMatch(first) ? '0-9' : first.toUpperCase();
       (grouped[initial] ??= []).add(term);
     }
