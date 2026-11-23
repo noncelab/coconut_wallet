@@ -59,7 +59,8 @@ rescue Errno::ENOENT
 end
 
 def prompt_for_android_signing_password(flavor:)
-  password = UI.password(prompt: "Keystore/key password: ")
+  password = ENV["ANDROID_SIGNING_STORE_PASSWORD"].to_s
+  password = UI.password(prompt: "Keystore/key password: ") if password.empty? || ENV["ANDROID_SIGNING_KEY_PASSWORD"].to_s != password
   UI.user_error!("Keystore/key password cannot be empty.") if password.empty?
 
   validate_android_signing_password(flavor: flavor, password: password)
