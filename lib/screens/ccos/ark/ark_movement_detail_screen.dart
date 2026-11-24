@@ -95,6 +95,13 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> with 
     final lightningMemo = invoice == null ? null : ArkPaymentRequest.bolt11Description(invoice);
     final counterpartyIsInvoice = invoice != null && counterparty?.toLowerCase() == invoice.toLowerCase();
     final date = DateTimeUtil.formatTimestamp(movement.timestamp).join(' ');
+    final hasDetails =
+        movement.kind == ArkMovementKind.exit ||
+        movement.isSend ||
+        counterparty != null ||
+        movement.paymentHash != null ||
+        movement.lightningInvoice != null ||
+        movement.outputVtxoIds.isNotEmpty;
     return Scaffold(
       backgroundColor: colors.background,
       appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background, title: ''),
@@ -102,14 +109,15 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> with 
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
           Center(child: ArkSignedAmount(unit: unit, sats: movement.effectiveBalanceSats, struck: movement.isFailed)),
-          Center(
-            child: FiatPrice(
-              key: const Key('ark-movement-fiat'),
-              satoshiAmount: amount,
-              sign: movement.isSend ? '-' : '+',
-              textColor: colors.secondaryText,
+          if (amount > 0)
+            Center(
+              child: FiatPrice(
+                key: const Key('ark-movement-fiat'),
+                satoshiAmount: amount,
+                sign: movement.isSend ? '-' : '+',
+                textColor: colors.secondaryText,
+              ),
             ),
-          ),
           if (movement.isPending || movement.isFailed) ...[
             CoconutLayout.spacing_200h,
             Center(
@@ -135,26 +143,27 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> with 
                   valueColor: memo == null ? colors.secondaryText : null,
                 ),
               ),
-              GestureDetector(
-                key: const Key('ark-movement-details'),
-                behavior: HitTestBehavior.opaque,
-                onTap: _toggleDetails,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Row(
-                    children: [
-                      Text(t.ark_wallet.details, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
-                      const Spacer(),
-                      Icon(
-                        _showDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                        color: colors.iconSecondary,
-                        size: 20,
-                      ),
-                    ],
+              if (hasDetails)
+                GestureDetector(
+                  key: const Key('ark-movement-details'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toggleDetails,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(
+                      children: [
+                        Text(t.ark_wallet.details, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+                        const Spacer(),
+                        Icon(
+                          _showDetails ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                          color: colors.iconSecondary,
+                          size: 20,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (!_details.isDismissed)
+              if (hasDetails && !_details.isDismissed)
                 SizeTransition(
                   sizeFactor: _detailsSize,
                   axisAlignment: -1,
@@ -191,7 +200,6 @@ class _ArkMovementDetailScreenState extends State<ArkMovementDetailScreen> with 
                           ArkCopyRow(label: t.ark_wallet.payment_hash, value: movement.paymentHash!),
                         if (movement.lightningInvoice != null && !counterpartyIsInvoice)
                           ArkCopyRow(label: t.ark_wallet.invoice, value: movement.lightningInvoice!),
-                        ArkCopyRow(label: t.ark_wallet.movement_id, value: '${movement.id}'),
                         if (movement.outputVtxoIds.isNotEmpty)
                           ArkCopyRow(label: 'VTXO', value: movement.outputVtxoIds.join('\n')),
                       ],

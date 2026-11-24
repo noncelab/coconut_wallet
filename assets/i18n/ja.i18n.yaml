@@ -2302,7 +2302,6 @@ ark_wallet:
   details: "詳細"
   payment_hash: "支払いハッシュ"
   invoice: "インボイス"
-  movement_id: "取引番号"
   status_pending_send: "送信中"
   status_pending_receive: "受信中"
   status_sent: "送信済み"

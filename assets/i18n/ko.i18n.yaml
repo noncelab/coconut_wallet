@@ -2311,7 +2311,6 @@ ark_wallet:
   details: "자세히"
   payment_hash: "결제 해시"
   invoice: "인보이스"
-  movement_id: "거래 번호"
   status_pending_send: "보내는 중"
   status_pending_receive: "받는 중"
   status_sent: "보냄"

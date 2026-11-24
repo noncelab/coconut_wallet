@@ -8,10 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   setUp(() => LocaleSettings.setLocaleSync(AppLocale.ko));
 
-  Future<void> pump(WidgetTester tester, BitcoinUnit unit) => tester.pumpWidget(
+  Future<void> pump(WidgetTester tester, BitcoinUnit unit, {int sats = -5010}) => tester.pumpWidget(
     MaterialApp(
       theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
-      home: Scaffold(body: Center(child: ArkSignedAmount(unit: unit, sats: -5010))),
+      home: Scaffold(body: Center(child: ArkSignedAmount(unit: unit, sats: sats))),
     ),
   );
 
@@ -27,5 +27,14 @@ void main() {
 
     expect(find.text('-5,010'), findsOneWidget);
     expect(find.text(BitcoinUnit.sats.symbol), findsOneWidget);
+  });
+
+  testWidgets('zero has no sign', (tester) async {
+    await pump(tester, BitcoinUnit.bip177, sats: 0);
+    expect(find.text('+'), findsNothing);
+    expect(find.text('-'), findsNothing);
+
+    await pump(tester, BitcoinUnit.sats, sats: 0);
+    expect(find.text('0'), findsOneWidget);
   });
 }

@@ -2305,7 +2305,6 @@ ark_wallet:
   details: "Detalles"
   payment_hash: "Hash de pago"
   invoice: "Factura"
-  movement_id: "ID de movimiento"
   status_pending_send: "Enviando"
   status_pending_receive: "Recibiendo"
   status_sent: "Enviado"

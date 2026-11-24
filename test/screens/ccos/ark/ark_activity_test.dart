@@ -204,7 +204,7 @@ void main() {
 
     expect(find.text(t.ark_wallet.route), findsOneWidget);
     expect(find.text(t.ark_wallet.date), findsOneWidget);
-    expect(find.text(t.ark_wallet.movement_id), findsNothing);
+    expect(find.text('VTXO'), findsNothing);
 
     final box = find.byType(ArkInfoBox);
     final collapsed = tester.getSize(box).height;
@@ -216,17 +216,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.getSize(box).height, inExclusiveRange(collapsed, expanded));
-    expect(find.text(t.ark_wallet.movement_id), findsOneWidget);
+    expect(find.text('VTXO'), findsOneWidget);
     await tester.pumpAndSettle();
     expect(tester.getSize(box).height, collapsed);
-    expect(find.text(t.ark_wallet.movement_id), findsNothing);
+    expect(find.text('VTXO'), findsNothing);
 
     await tester.tap(find.byKey(const Key('ark-movement-details')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(tester.getSize(box).height, inExclusiveRange(collapsed, expanded));
     await tester.pumpAndSettle();
-    expect(find.text(t.ark_wallet.movement_id), findsOneWidget);
+    expect(find.text('VTXO'), findsOneWidget);
     expect(find.text('VTXO'), findsOneWidget);
     expect(find.text('vtxo-a:0\nvtxo-b:1'), findsOneWidget);
     expect(find.byType(CopyTextContainer), findsNothing);
@@ -336,7 +336,7 @@ void main() {
     expect(find.text(t.ark_wallet.recipient), findsNothing);
     expect(find.text('bcrt1pbarkinternal'), findsNothing);
     expect(find.text(t.ark_wallet.sent_amount), findsNothing);
-    expect(find.text(t.ark_wallet.movement_id), findsNothing);
+    expect(find.text('VTXO'), findsNothing);
   });
 
   testWidgets('an exit still running or made before records has no fee or transaction yet', (tester) async {
@@ -356,6 +356,6 @@ void main() {
     expect(find.text(t.fee), findsNothing);
     expect(find.text(t.ark_wallet.exit_received), findsNothing);
     expect(find.text(t.tx_id), findsNothing);
-    expect(find.text(t.ark_wallet.movement_id), findsNothing);
+    expect(find.text('VTXO'), findsNothing);
   });
 }
