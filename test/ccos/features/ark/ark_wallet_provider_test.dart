@@ -102,6 +102,7 @@ class _Backend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements ArkWallet
   final List<String> openedWith = [];
   bool failCreate = false;
   bool failOpen = false;
+  bool failBalance = false;
   Completer<void>? openGate;
 
   @override
@@ -126,7 +127,10 @@ class _Backend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements ArkWallet
   bool isOpen(String fingerprint) => opened.contains(fingerprint);
 
   @override
-  Future<ArkBalance> balance(String fingerprint) async => ArkBalance.zero;
+  Future<ArkBalance> balance(String fingerprint) async {
+    if (failBalance) throw StateError('balance failed');
+    return ArkBalance.zero;
+  }
 
   @override
   Future<bool> isRecoveryPending(String fingerprint) async => false;
@@ -293,6 +297,17 @@ void main() {
     await provider.openAfterAppEntrance();
 
     expect(secrets.stored, isEmpty);
+  });
+
+  test('an opened wallet stays open when reading its balance fails', () async {
+    await create().createNew();
+    backend.opened.clear();
+    backend.failBalance = true;
+    final provider = create();
+
+    await provider.openAfterAppEntrance();
+
+    expect(provider.state, ArkWalletState.open);
   });
 
   test('balance counts as known only after a successful open', () async {

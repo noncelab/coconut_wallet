@@ -242,17 +242,23 @@ class ArkWalletProvider extends ChangeNotifier {
       } finally {
         mnemonic.fillRange(0, mnemonic.length, 0);
       }
-      _state = ArkWalletState.open;
-      await refreshBalance();
-      await _loadActivity(info.fingerprint);
-      await _readRemindersAllowed();
-      _startSync();
-      unawaited(syncNow());
     } catch (error) {
       Logger.error('ArkWalletProvider: failed to open the Ark wallet: $error');
       _state = ArkWalletState.failed;
       notifyListeners();
+      return;
     }
+    _state = ArkWalletState.open;
+    for (final read in [refreshBalance, () => _loadActivity(info.fingerprint), _readRemindersAllowed]) {
+      try {
+        await read();
+      } catch (error) {
+        Logger.error('ArkWalletProvider: failed to read the opened Ark wallet: $error');
+      }
+    }
+    notifyListeners();
+    _startSync();
+    unawaited(syncNow());
   }
 
   Future<void> refreshBalance() async {
