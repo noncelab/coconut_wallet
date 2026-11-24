@@ -16,6 +16,7 @@ import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_navigation.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
 import 'package:coconut_wallet/utils/clipboard_copy_util.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/info/info_section.dart';
@@ -102,7 +103,10 @@ class _ArkExitIntroState extends State<_ArkExitIntro> {
         ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
           children: [
-            Text(t.ark_wallet.exit_intro, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+            Text(
+              TextUtils.preventLineBreakInsideWords(t.ark_wallet.exit_intro),
+              style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+            ),
             CoconutLayout.spacing_500h,
             _ArkExitFact(
               iconPath: CommonStateIconPath.clock,

@@ -8,6 +8,7 @@ import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_overlays.dart';
 import 'package:coconut_wallet/utils/logger.dart';
+import 'package:coconut_wallet/utils/text_utils.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/ccos/ark/ark_info_row.dart';
 import 'package:flutter/material.dart';
@@ -86,7 +87,10 @@ class _ArkRenewSheetState extends State<_ArkRenewSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(t.ark_wallet.renew_sheet_line, style: CoconutTypography.body2_14.setColor(colors.secondaryText)),
+          Text(
+            TextUtils.preventLineBreakInsideWords(t.ark_wallet.renew_sheet_line),
+            style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+          ),
           CoconutLayout.spacing_300h,
           ArkInfoBox(
             children: [
