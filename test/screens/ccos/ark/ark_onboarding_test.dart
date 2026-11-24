@@ -53,6 +53,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(text(t.ark_wallet.consent_same_words), findsOneWidget);
     expect(text(t.ark_wallet.consent_restore_history), findsNothing);
+    expect(text(t.ark_wallet.consent_lead), findsOneWidget);
+    expect(text(t.ark_wallet.consent_lightning), findsOneWidget);
+    expect(find.byKey(const Key('ark-consent-about')), findsOneWidget);
 
     await tester.tap(find.text(t.ark_wallet.consent_confirm));
     await tester.pump();

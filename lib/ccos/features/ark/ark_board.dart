@@ -9,7 +9,12 @@ class ArkBoardFunding {
 
 /// 아크 서버의 보딩 한도
 class ArkBoardTerms {
-  const ArkBoardTerms({required this.minAmountSats, required this.maxAmountSats, required this.requiredConfirmations});
+  const ArkBoardTerms({
+    required this.minAmountSats,
+    required this.maxAmountSats,
+    required this.requiredConfirmations,
+    this.vtxoLifetimeBlocks,
+  });
 
   /// P2TR 출력의 더스트 한도, 이보다 작으면 보딩 자체가 안 됨
   static const int dustLimitSats = 330;
@@ -19,6 +24,9 @@ class ArkBoardTerms {
 
   /// 아크 잔액이 되기까지 필요한 블록 확정 수
   final int requiredConfirmations;
+
+  /// 갱신한 VTXO가 만료되기까지의 블록 수
+  final int? vtxoLifetimeBlocks;
 
   int get minimumSats => minAmountSats > dustLimitSats ? minAmountSats : dustLimitSats;
 

@@ -20,6 +20,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_creator_screen.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_about_screen.dart';
 
 /// 아크 지갑 설정
 class ArkWalletSettingsScreen extends StatelessWidget {
@@ -117,6 +118,11 @@ class ArkWalletSettingsScreen extends StatelessWidget {
               title: t.ark_wallet.section_about,
               dividerHeight: _dividerHeight,
               children: [
+                InfoMenuRow(
+                  key: const Key('ark-settings-about'),
+                  title: t.ark_wallet.about_row,
+                  onPressed: () => ArkAboutScreen.open(context),
+                ),
                 InfoMenuRow(
                   key: const Key('ark-settings-creator'),
                   title: t.ark_wallet.creator_row,

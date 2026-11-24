@@ -50,6 +50,17 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('with a Lightning invoice it asks to keep the screen open', (tester) async {
+    await pump(tester);
+    expect(find.text(t.ark_wallet.receive_keep_open), findsNothing);
+
+    final viewModel = Provider.of<ArkReceiveViewModel>(tester.element(find.byType(QrCodeInfo)), listen: false);
+    await viewModel.setAmount(2100);
+    await tester.pumpAndSettle();
+
+    expect(find.text(t.ark_wallet.receive_keep_open), findsOneWidget);
+  });
+
   testWidgets('without an amount the invoice ways are dimmed', (tester) async {
     await pump(tester);
 

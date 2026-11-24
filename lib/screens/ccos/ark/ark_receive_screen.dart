@@ -198,6 +198,17 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
                       ),
                     ),
                   ),
+                if (viewModel.needsScreenOpen) ...[
+                  CoconutLayout.spacing_300h,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      t.ark_wallet.receive_keep_open,
+                      textAlign: TextAlign.center,
+                      style: CoconutTypography.body2_14.setColor(colors.secondaryText),
+                    ),
+                  ),
+                ],
                 if (viewModel.invoiceFailed) ...[
                   CoconutLayout.spacing_300h,
                   Text(t.ark_wallet.invoice_failed, style: CoconutTypography.body2_14.setColor(colors.danger)),

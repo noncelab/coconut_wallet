@@ -24,6 +24,9 @@ class ArkReceiveViewModel extends ChangeNotifier {
   ArkReceiveFormat get format => _format;
   bool get isCreatingInvoice => _isCreatingInvoice;
   bool get invoiceFailed => _invoiceFailed;
+
+  /// 라이트닝 결제는 앱이 화면에 있어야 받음
+  bool get needsScreenOpen => _invoice != null && _format != ArkReceiveFormat.arkAddress;
   String? get arkAddress => _wallet.arkAddress;
 
   List<ArkReceiveFormat> get availableFormats =>

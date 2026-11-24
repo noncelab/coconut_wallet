@@ -178,6 +178,7 @@ class ArkWalletService implements ArkWalletBackend {
       minAmountSats: info.minBoardAmountSats,
       maxAmountSats: info.maxVtxoAmountSats,
       requiredConfirmations: info.requiredBoardConfirmations,
+      vtxoLifetimeBlocks: info.vtxoLifetime,
     );
   });
 

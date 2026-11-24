@@ -15,6 +15,7 @@ class AnalyticsScreenNames {
   static const String ccosArkWalletHome = 'ccos-ark-wallet-home';
   static const String ccosArkWalletSettings = 'ccos-ark-wallet-settings';
   static const String ccosArkWalletCreator = 'ccos-ark-wallet-creator';
+  static const String ccosArkWalletAbout = 'ccos-ark-wallet-about';
   static const String ccosArkWalletReceive = 'ccos-ark-wallet-receive';
   static const String ccosArkWalletSend = 'ccos-ark-wallet-send';
   static const String ccosArkWalletActivity = 'ccos-ark-wallet-activity';
