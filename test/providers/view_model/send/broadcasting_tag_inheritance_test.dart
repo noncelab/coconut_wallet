@@ -505,7 +505,7 @@ void main() {
     expect(node.broadcasts, 2);
     expect(viewModel.isBroadcastResultUnknown, isTrue);
     expect(viewModel.isBroadcastDispatched, isFalse);
-    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.unspent);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
   });
 
   test('a node rejection is reported as is without checking or resending', () async {
@@ -531,6 +531,12 @@ void main() {
     expect(viewModel.isBroadcastResultUnknown, isTrue);
     node.lookingUp!.complete();
     await tester.pump(const Duration(seconds: 1));
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    for (var attempt = 0; result == null && attempt < 40; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+      await tester.pump();
+    }
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
 
     expect(result, isNotNull);
     expect(node.lookups, 1);
@@ -631,6 +637,13 @@ void main() {
     expect(result, isNull);
     expect(viewModel.isBroadcastDispatched, isTrue);
     await tester.pump(const Duration(seconds: 1));
+    expect(viewModel.isBroadcastResultUnknown, isTrue);
+    for (var attempt = 0; result == null && attempt < 40; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+      await tester.pump();
+    }
+    expect(result, isNotNull);
+    expect(repository.getUtxoState(1, inputId)!.status, UtxoStatus.outgoing);
 
     expect(
       BroadcastingViewModel.broadcastFailureMessage(result!.error.message),

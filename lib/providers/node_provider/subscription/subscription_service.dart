@@ -162,6 +162,16 @@ class SubscriptionService {
 
     List<ScriptStatus> fetchedScriptStatuses = [...receiveResult.scriptStatuses, ...changeResult.scriptStatuses];
 
+    // 전송 결과가 불명인 입력은 이력이 그대로여도 서버 상태를 다시 확인한다.
+    final unrecordedOutgoingAddresses = _scriptSyncService.getUnrecordedOutgoingAddresses(walletItem.id);
+    final fetchedAddresses = fetchedScriptStatuses.map((s) => s.address).toSet();
+    for (final address in unrecordedOutgoingAddresses.difference(fetchedAddresses)) {
+      final info = _addressRepository.getIndexAndIsChange(walletItem.id, address);
+      if (info == null) continue;
+      final result = await _subscribeAddress(walletItem, info.index, address, info.isChange, _scriptStatusController);
+      fetchedScriptStatuses.add(result.scriptStatus);
+    }
+
     // 지갑 최신화
     await _addressRepository.syncWalletWithSubscriptionData(
       walletItem,
@@ -185,10 +195,13 @@ class SubscriptionService {
       fetchedScriptStatuses,
       walletItem.id,
     );
-    final failedAddresses = _scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address).toSet();
+    final retryAddresses = {
+      ..._scriptSyncService.getFailedScripts(walletItem.id).map((s) => s.address),
+      ...unrecordedOutgoingAddresses,
+    };
     final updatedKeys = updatedScriptStatuses.map((s) => s.scriptPubKey).toSet();
     for (final script in fetchedScriptStatuses) {
-      if (failedAddresses.contains(script.address) && updatedKeys.add(script.scriptPubKey)) {
+      if (retryAddresses.contains(script.address) && updatedKeys.add(script.scriptPubKey)) {
         updatedScriptStatuses.add(script);
       }
     }

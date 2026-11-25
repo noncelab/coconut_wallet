@@ -32,6 +32,13 @@ class UtxoSyncService {
     return _utxoRepository.restorePendingUtxoLocks(walletId);
   }
 
+  Set<String> getUnrecordedOutgoingAddresses(int walletId) => {
+    for (final utxo in _utxoRepository.getUtxosByStatus(walletId, UtxoStatus.outgoing))
+      if (utxo.spentByTransactionHash != null &&
+          _transactionRepository.getTransactionRecord(walletId, utxo.spentByTransactionHash!) == null)
+        utxo.to,
+  };
+
   /// 스크립트의 UTXO를 조회하고 업데이트합니다.
   /// TransactionRecord 데이터를 사용하므로 트랜잭션 fetch 이후 호출되어야 합니다.
   Future<void> fetchScriptUtxo(
@@ -39,10 +46,11 @@ class UtxoSyncService {
     ScriptStatus scriptStatus, {
     bool inBatchProcess = false,
   }) async {
+    final versions = _utxoRepository.snapshotUtxoVersions(walletItem.id, address: scriptStatus.address);
     // UTXO 목록 조회
     final utxos = await fetchUtxoStateList(walletItem, scriptStatus);
 
-    await _utxoRepository.addAllUtxos(walletItem.id, utxos);
+    await _utxoRepository.addAllUtxos(walletItem.id, utxos, expectedVersions: versions);
 
     if (!inBatchProcess) {
       await restorePendingUtxoLocks(walletItem.id);
@@ -105,7 +113,7 @@ class UtxoSyncService {
     } catch (e, stackTrace) {
       Logger.error('Failed to get UTXO list - [${scriptStatus.derivationPath}-${scriptStatus.address}}] $e');
       Logger.error('Stack trace: $stackTrace');
-      return [];
+      rethrow;
     }
   }
 
@@ -136,6 +144,7 @@ class UtxoSyncService {
         return;
       }
 
+      final versions = _utxoRepository.snapshotUtxoVersions(walletItem.id);
       final newUtxoList = <UtxoState>[];
 
       // 2. 현재 DB에 있는 UTXO 목록 조회 (ID 기준 맵으로 변환)
@@ -196,7 +205,7 @@ class UtxoSyncService {
       }
 
       // 생성한 UTXO 추가
-      await _utxoRepository.addAllUtxos(walletItem.id, newUtxoList);
+      await _utxoRepository.addAllUtxos(walletItem.id, newUtxoList, expectedVersions: versions);
     } catch (e, stackTrace) {
       Logger.error('Failed to create outgoing UTXOs: $e');
       Logger.error('Stack trace: $stackTrace');
@@ -204,14 +213,20 @@ class UtxoSyncService {
   }
 
   /// orphaned UTXO를 정리합니다.
-  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem) async {
-    final pendingUtxos = _utxoRepository.getUtxoStateList(walletItem.id).where((utxo) => utxo.isPending).toList();
+  Future<void> cleanupOrphanedUtxos(WalletItemBase walletItem, {required Set<String> syncedAddresses}) async {
+    final versions = _utxoRepository.snapshotUtxoVersions(walletItem.id);
+    final pendingUtxos =
+        _utxoRepository
+            .getUtxoStateList(walletItem.id)
+            .where((utxo) => utxo.isPending && syncedAddresses.contains(utxo.to))
+            .toList();
 
     final orphanUtxoSet = <UtxoState>{};
     for (final utxo in pendingUtxos) {
       if (utxo.status == UtxoStatus.outgoing && utxo.spentByTransactionHash != null) {
         final tx = _transactionRepository.getTransactionRecord(walletItem.id, utxo.spentByTransactionHash!);
-        if (tx == null || tx.blockHeight > 0) {
+        // 거래 기록이 늦게 도착할 수 있으므로 부재만으로 입력을 삭제하지 않는다.
+        if (tx != null && tx.blockHeight > 0) {
           orphanUtxoSet.add(utxo);
         }
       } else if (utxo.status == UtxoStatus.incoming) {
@@ -223,7 +238,11 @@ class UtxoSyncService {
     }
 
     if (orphanUtxoSet.isNotEmpty) {
-      await _utxoRepository.deleteUtxoList(walletItem.id, orphanUtxoSet.map((utxo) => utxo.utxoId).toList());
+      await _utxoRepository.deleteUtxoList(
+        walletItem.id,
+        orphanUtxoSet.map((utxo) => utxo.utxoId).toList(),
+        expectedVersions: versions,
+      );
     }
   }
 }

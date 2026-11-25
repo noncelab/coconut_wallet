@@ -131,8 +131,8 @@ class _RealmTransactionMemo {
 @RealmModel()
 class _RealmIntegerId {
   @PrimaryKey()
-  late String key; // "RealmTransaction"처럼 테이블 이름
-  late int value; // 마지막으로 사용한 id
+  late String key; // 번호를 발급하는 단위. 테이블 이름 또는 코인별 변경 번호 키.
+  late int value; // 마지막 발급 번호. 사라진 코인의 소비가 확정된 경우에는 그 최종 번호를 보관한다.
 }
 
 @RealmModel()

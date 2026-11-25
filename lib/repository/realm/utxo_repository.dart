@@ -320,62 +320,93 @@ class UtxoRepository extends BaseRepository {
     });
   }
 
-  /// 모든 UTXO 추가
-  Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> utxos) async {
-    realm.refresh();
-    return handleAsyncRealm<bool>(() async {
-      final existingUtxos = realm.query<RealmUtxo>(r'walletId == $0', [walletId]);
+  static const _revisionPrefix = 'UtxoRevision:';
+  static const _spentRevisionPrefix = 'SpentUtxoRevision:';
 
-      // v9 개발 과정에서 outpoint만 primary key로 저장된 데이터도 정리한다.
-      // 배포 사용자는 v9 마이그레이션에서 초기화되지만, 이미 v9 DB를 사용 중인
-      // 개발 기기는 마이그레이션이 다시 실행되지 않으므로 동기화 시 복구가 필요하다.
-      final legacyUtxos =
-          existingUtxos.where((utxo) => utxo.id != getRealmUtxoId(walletId, utxo.transactionHash, utxo.index)).toList();
-
-      final existingUtxoMap = Map<String, RealmUtxo>.fromEntries(
-        existingUtxos
-            .where((utxo) => !legacyUtxos.contains(utxo))
-            .map((realmUtxo) => MapEntry(getUtxoId(realmUtxo.transactionHash, realmUtxo.index), realmUtxo)),
-      );
-      final newUtxos =
-          utxos
-              .where((utxo) => !existingUtxoMap.containsKey(utxo.utxoId))
-              .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
-              .toList();
-
-      final toUpdateUtxos =
-          utxos
-              .where((utxo) => existingUtxoMap.containsKey(utxo.utxoId))
-              .map((utxo) => mapUtxoToRealmUtxo(walletId, utxo))
-              .toList();
-
-      await realm.writeAsync(() {
-        realm.deleteMany(legacyUtxos);
-        for (final toUpdateUtxo in toUpdateUtxos) {
-          final existingUtxo = existingUtxoMap[getUtxoId(toUpdateUtxo.transactionHash, toUpdateUtxo.index)];
-          if (existingUtxo != null && !existingUtxo.isDeleted) {
-            existingUtxo.blockHeight = toUpdateUtxo.blockHeight;
-            existingUtxo.timestamp = toUpdateUtxo.timestamp;
-            existingUtxo.status = toUpdateUtxo.status;
-          }
-        }
-        realm.addAll<RealmUtxo>(newUtxos);
-      });
-
-      return true;
-    });
+  static void deleteWalletRevisionsInWrite(Realm realm, int walletId) {
+    assert(realm.isInTransaction);
+    realm.deleteMany(
+      realm.query<RealmIntegerId>(r'key BEGINSWITH $0 OR key BEGINSWITH $1', [
+        '$_revisionPrefix$walletId:',
+        '$_spentRevisionPrefix$walletId:',
+      ]),
+    );
   }
 
-  // UTXO 상태를 "출금 중(outgoing)"으로 표시
-  Future<void> _markUtxoAsOutgoing(int walletId, String utxoId, String pendingTxHash) async {
-    final utxoToMark = realm.find<RealmUtxo>('$walletId:$utxoId');
+  static int _stateVersion(Realm realm, RealmUtxo utxo) {
+    return realm.find<RealmIntegerId>('$_revisionPrefix${utxo.id}')?.value ?? 0;
+  }
 
-    if (utxoToMark == null) return;
-    if (utxoToMark.isDeleted) return;
+  static int _advanceStateVersion(Realm realm, RealmUtxo utxo) {
+    assert(realm.isInTransaction);
+    final key = '$_revisionPrefix${utxo.id}';
+    final counter = realm.find<RealmIntegerId>(key);
+    if (counter == null) {
+      return realm.add(RealmIntegerId(key, 1)).value;
+    }
+    return ++counter.value;
+  }
 
-    await realm.writeAsync(() {
-      utxoToMark.status = utxoStatusToString(UtxoStatus.outgoing);
-      utxoToMark.spentByTransactionHash = pendingTxHash;
+  /// RPC 전에 복사한다. Realm 객체는 live이므로 상태 값 대신 변경 번호를 보관한다.
+  Map<String, int> snapshotUtxoVersions(int walletId, {String? address}) {
+    realm.refresh();
+    final utxos = realm.query<RealmUtxo>(
+      address == null
+          ? r'walletId == $0 AND isDeleted == false'
+          : r'walletId == $0 AND address == $1 AND isDeleted == false',
+      address == null ? [walletId] : [walletId, address],
+    );
+    final versions = {for (final utxo in utxos) utxo.id: 0};
+    // 사라진 CPFP 출력은 주소 행이 없어도, 조회가 시작됐을 때의 번호를 알아야 한다.
+    final revisions = realm.query<RealmIntegerId>(r'key BEGINSWITH $0', ['$_revisionPrefix$walletId:']);
+    for (final revision in revisions) {
+      final id = revision.key.substring(_revisionPrefix.length);
+      versions[id] = revision.value;
+    }
+    return versions;
+  }
+
+  void _setUtxoState(RealmUtxo utxo, String status, String? spentBy) {
+    // 같은 값이어도 새 관찰이므로 그 전에 시작한 응답과 구별한다.
+    utxo.status = status;
+    utxo.spentByTransactionHash = spentBy;
+    _advanceStateVersion(realm, utxo);
+  }
+
+  /// 모든 UTXO 추가. 조회 뒤 바뀐 행은 쓰기 잠금 안에서 제외한다.
+  Future<Result<bool>> addAllUtxos(int walletId, List<UtxoState> utxos, {Map<String, int>? expectedVersions}) async {
+    final versions = expectedVersions ?? snapshotUtxoVersions(walletId);
+    return handleAsyncRealm<bool>(() async {
+      await realm.writeAsync(() {
+        // v9 개발 기기의 outpoint 전용 기본키를 정리한다.
+        final legacyUtxos =
+            realm
+                .query<RealmUtxo>(r'walletId == $0 AND NOT (id BEGINSWITH $1)', [walletId, '$walletId:'])
+                .where((utxo) => utxo.isDeleted || versions[utxo.id] == _stateVersion(realm, utxo))
+                .toList();
+        realm.deleteMany(legacyUtxos);
+        for (final value in utxos) {
+          final id = getRealmUtxoId(walletId, value.transactionHash, value.index);
+          final existing = realm.find<RealmUtxo>(id);
+          if (existing?.isDeleted == true) continue;
+          final revision = realm.find<RealmIntegerId>('$_revisionPrefix$id');
+          if ((revision?.value ?? (existing == null ? null : 0)) != versions[id]) continue;
+          if (existing == null) {
+            if (realm.find<RealmIntegerId>('$_spentRevisionPrefix$id') != null) continue;
+            realm.add(mapUtxoToRealmUtxo(walletId, value));
+            versions[id] = revision == null ? 0 : ++revision.value;
+          } else {
+            existing.blockHeight = value.blockHeight;
+            existing.timestamp = value.timestamp;
+            final status = utxoStatusToString(value.status);
+            if (existing.status != status || existing.spentByTransactionHash != value.spentByTransactionHash) {
+              _setUtxoState(existing, status, value.spentByTransactionHash);
+            }
+            versions[id] = _stateVersion(realm, existing);
+          }
+        }
+      });
+      return true;
     });
   }
 
@@ -414,43 +445,20 @@ class UtxoRepository extends BaseRepository {
 
   Future<Result<void>> toggleUtxoLockStatus(int walletId, String utxoId) async {
     return handleAsyncRealm(() async {
-      final utxo =
-          realm.query<RealmUtxo>(r'walletId == $0 AND id == $1 AND isDeleted == false', [
-            walletId,
-            '$walletId:$utxoId',
-          ]).firstOrNull;
-
-      if (utxo == null) return;
-
       await realm.writeAsync(() {
+        final utxo = realm.find<RealmUtxo>('$walletId:$utxoId');
+        if (utxo == null || utxo.isDeleted) return;
         if (utxo.status == utxoStatusToString(UtxoStatus.locked)) {
-          utxo.status = utxoStatusToString(UtxoStatus.unspent);
+          _setUtxoState(utxo, utxoStatusToString(UtxoStatus.unspent), utxo.spentByTransactionHash);
         } else if (utxo.status == utxoStatusToString(UtxoStatus.unspent)) {
-          utxo.status = utxoStatusToString(UtxoStatus.locked);
+          _setUtxoState(utxo, utxoStatusToString(UtxoStatus.locked), utxo.spentByTransactionHash);
         }
       });
     });
   }
 
-  Future<Result<void>> lockAllUtxos(int walletId, List<String> utxoIds) async {
-    if (utxoIds.isEmpty) return Result.success(null);
-    return handleAsyncRealm(() async {
-      final realmUtxoIds = utxoIds.map((utxoId) => '$walletId:$utxoId').toList();
-      final utxosToLock =
-          realm
-              .query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [walletId, realmUtxoIds])
-              .where((u) => u.status != utxoStatusToString(UtxoStatus.locked))
-              .toList();
-
-      if (utxosToLock.isEmpty) return;
-
-      final lockedStr = utxoStatusToString(UtxoStatus.locked);
-      await realm.writeAsync(() {
-        for (final utxo in utxosToLock) {
-          utxo.status = lockedStr;
-        }
-      });
-    });
+  Future<Result<void>> lockAllUtxos(int walletId, List<String> utxoIds) {
+    return handleAsyncRealm(() => updateUtxoStatus(walletId, utxoIds, UtxoStatus.locked));
   }
 
   /// 재동기화 시작 전 호출. 잠금된 UTXO id 집합을 메모리로만 반환한다(Realm에 저장하지 않음).
@@ -463,20 +471,7 @@ class UtxoRepository extends BaseRepository {
   Future<void> restoreLockedUtxos(int walletId, Set<String> lockedUtxoIdsSnapshot) async {
     if (lockedUtxoIdsSnapshot.isEmpty) return;
 
-    final realmUtxoIds = lockedUtxoIdsSnapshot.map((utxoId) => '$walletId:$utxoId').toList();
-    final toRelock = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND status == $2 AND isDeleted == false', [
-      walletId,
-      realmUtxoIds,
-      utxoStatusToString(UtxoStatus.unspent),
-    ]);
-
-    if (toRelock.isEmpty) return;
-
-    await realm.writeAsync(() {
-      for (final utxo in toRelock) {
-        utxo.status = utxoStatusToString(UtxoStatus.locked);
-      }
-    });
+    await updateUtxoStatus(walletId, lockedUtxoIdsSnapshot.toList(), UtxoStatus.locked);
   }
 
   /// 앱 업데이트 마이그레이션에서 보관한 잠금 설정을 최신 UTXO 동기화 결과에 적용한다.
@@ -489,7 +484,7 @@ class UtxoRepository extends BaseRepository {
         if (utxo == null || utxo.walletId != walletId || utxo.isDeleted) continue;
 
         if (utxo.status == utxoStatusToString(UtxoStatus.unspent)) {
-          utxo.status = utxoStatusToString(UtxoStatus.locked);
+          _setUtxoState(utxo, utxoStatusToString(UtxoStatus.locked), utxo.spentByTransactionHash);
         }
         if (utxo.status == utxoStatusToString(UtxoStatus.locked)) {
           realm.delete(pendingLock);
@@ -499,103 +494,148 @@ class UtxoRepository extends BaseRepository {
   }
 
   Future<void> updateUtxoStatus(int walletId, List<String> utxoList, UtxoStatus status) async {
-    final statusStr = utxoStatusToString(status);
+    if (status != UtxoStatus.unspent && status != UtxoStatus.locked) {
+      throw ArgumentError.value(status, 'status', 'Only user lock changes are supported');
+    }
     final realmUtxoIds = utxoList.map((utxoId) => '$walletId:$utxoId').toList();
-    final utxosToUpdate = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [
-      walletId,
-      realmUtxoIds,
-    ]);
-
-    if (utxosToUpdate.isEmpty) return;
-
     await realm.writeAsync(() {
-      for (var utxo in utxosToUpdate) {
-        utxo.status = statusStr;
+      final utxos = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [
+        walletId,
+        realmUtxoIds,
+      ]);
+      for (final utxo in utxos) {
+        if (utxo.status == utxoStatusToString(UtxoStatus.unspent) ||
+            utxo.status == utxoStatusToString(UtxoStatus.locked)) {
+          _setUtxoState(utxo, utxoStatusToString(status), utxo.spentByTransactionHash);
+        }
       }
     });
   }
 
-  Future<void> deleteUtxoList(int walletId, List<String> utxoIds) async {
-    final realmUtxoIds = utxoIds.map((utxoId) => '$walletId:$utxoId').toList();
-    final utxosToDelete = realm.query<RealmUtxo>(r'walletId == $0 AND id IN $1 AND isDeleted == false', [
-      walletId,
-      realmUtxoIds,
-    ]);
-
-    if (utxosToDelete.isEmpty) return;
-
-    final deletedIds = utxosToDelete.map((e) => getUtxoId(e.transactionHash, e.index)).toList();
-
+  Future<void> deleteUtxoList(
+    int walletId,
+    List<String> utxoIds, {
+    Map<String, int>? expectedVersions,
+    bool confirmed = false,
+  }) async {
+    realm.refresh();
+    final ids = utxoIds.map((outpoint) => '$walletId:$outpoint').toList();
+    final hasCoin = realm.query<RealmUtxo>(r'id IN $0 AND isDeleted == false', [ids]).isNotEmpty;
+    if (!hasCoin) {
+      final revisions = ids.map((id) => '$_revisionPrefix$id').toList();
+      if (!confirmed || realm.query<RealmIntegerId>(r'key IN $0', [revisions]).isEmpty) return;
+    }
+    final versions = confirmed ? null : expectedVersions ?? snapshotUtxoVersions(walletId);
     await realm.writeAsync(() {
-      for (var utxo in utxosToDelete) {
-        utxo.isDeleted = true;
+      final deletedIds = <String>{};
+      for (final outpoint in utxoIds) {
+        final id = '$walletId:$outpoint';
+        final utxo = realm.find<RealmUtxo>(id);
+        if (utxo?.isDeleted == true) continue;
+        final revision = realm.find<RealmIntegerId>('$_revisionPrefix$id');
+        if (utxo == null) {
+          // 사라진 CPFP 출력의 소비가 확정되면 나중의 조회로도 되살릴 수 없다.
+          if (!confirmed || revision == null) continue;
+          realm.add(RealmIntegerId('$_spentRevisionPrefix$id', revision.value + 1), update: true);
+        } else {
+          if (versions != null && versions[id] != (revision?.value ?? 0)) continue;
+          utxo.isDeleted = true;
+        }
+        if (revision != null) realm.delete(revision);
+        versions?.remove(id);
+        final pendingLock = realm.find<RealmPendingUtxoLock>(id);
+        if (pendingLock != null) realm.delete(pendingLock);
+        deletedIds.add(outpoint);
       }
-
-      final tags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
-      for (var tag in tags) {
-        if (tag.utxoIdList.isEmpty) continue;
-        tag.utxoIdList.removeWhere((id) => deletedIds.contains(id));
+      if (deletedIds.isEmpty) return;
+      for (final tag in realm.query<RealmUtxoTag>(r'walletId == $0', [walletId])) {
+        tag.utxoIdList.removeWhere(deletedIds.contains);
       }
     });
   }
 
-  Future<void> deleteUtxosByReplacedTransactionHashSet(int walletId, Set<String> replacedTxHashSet) async {
-    final utxosToDelete = realm.query<RealmUtxo>(r'walletId == $0 AND transactionHash IN $1 AND isDeleted == false', [
+  /// CPFP 자식은 다시 나타날 수 있다. 태그와 잠금을 보존하고 삭제 전의 조회만 무효화한다.
+  static void removeOrphanedCpfpOutputsInWrite(Realm realm, Iterable<RealmUtxo> utxos, Map<String, int> versions) {
+    assert(realm.isInTransaction);
+    for (final utxo in utxos.toList()) {
+      if (utxo.isDeleted || versions[utxo.id] != _stateVersion(realm, utxo)) continue;
+      versions[utxo.id] = _advanceStateVersion(realm, utxo);
+      realm.delete(utxo);
+    }
+  }
+
+  Future<void> deleteUtxosByReplacedTransactionHashSet(
+    int walletId,
+    Set<String> replacedTxHashSet, {
+    Map<String, int>? expectedVersions,
+  }) async {
+    final versions = expectedVersions ?? snapshotUtxoVersions(walletId);
+    final utxos = realm.query<RealmUtxo>(r'walletId == $0 AND transactionHash IN $1 AND isDeleted == false', [
       walletId,
       replacedTxHashSet,
     ]);
+    await deleteUtxoList(
+      walletId,
+      utxos.map((u) => getUtxoId(u.transactionHash, u.index)).toList(),
+      expectedVersions: versions,
+    );
+  }
 
-    if (utxosToDelete.isEmpty) return;
-
-    final deletedIds = utxosToDelete.map((e) => getUtxoId(e.transactionHash, e.index)).toList();
-
-    await realm.writeAsync(() {
-      for (var utxo in utxosToDelete) {
-        utxo.isDeleted = true;
+  /// 더 최근의 다른 송금 예약 때문에 소비자를 반영하지 못한 입력이 있으면 false를 반환한다.
+  Future<bool> markUtxoAsOutgoing(
+    int walletId,
+    lib.Transaction transaction, {
+    Map<String, int>? expectedVersions,
+  }) async {
+    realm.refresh();
+    final ids =
+        transaction.inputs.map((input) => getRealmUtxoId(walletId, input.transactionHash, input.index)).toList();
+    if (realm.query<RealmUtxo>(r'id IN $0 AND isDeleted == false', [ids]).isEmpty) return true;
+    final versions = expectedVersions ?? snapshotUtxoVersions(walletId);
+    return realm.writeAsync(() {
+      var matched = true;
+      for (final id in ids) {
+        final utxo = realm.find<RealmUtxo>(id);
+        if (utxo == null || utxo.isDeleted) continue;
+        if (utxo.status == utxoStatusToString(UtxoStatus.outgoing) && versions[id] != _stateVersion(realm, utxo)) {
+          if (utxo.spentByTransactionHash != transaction.transactionHash) matched = false;
+          continue;
+        }
+        _setUtxoState(utxo, utxoStatusToString(UtxoStatus.outgoing), transaction.transactionHash);
+        versions[id] = _stateVersion(realm, utxo);
       }
-
-      final tags = realm.query<RealmUtxoTag>(r'walletId == $0', [walletId]);
-      for (var tag in tags) {
-        if (tag.utxoIdList.isEmpty) continue;
-        tag.utxoIdList.removeWhere((id) => deletedIds.contains(id));
-      }
+      return matched;
     });
   }
 
-  Future<void> markUtxoAsOutgoing(int walletId, lib.Transaction transaction) async {
-    /// 트랜잭션에 사용된 UTXO의 상태를 업데이트합니다.
-    for (var input in transaction.inputs) {
-      // UTXO 소유 지갑 ID 찾기
-      final utxoId = getUtxoId(input.transactionHash, input.index);
-      final utxo = getUtxoState(walletId, utxoId);
-
-      // UTXO가 자기 자신을 참조하지 않는지 확인
-      if (utxo?.spentByTransactionHash == transaction.transactionHash) {
-        continue;
-      }
-
-      if (utxo == null) {
-        continue;
-      }
-
-      // UTXO를 outgoing 상태로 표시하고 RBF 관련 정보 저장
-      await _markUtxoAsOutgoing(walletId, utxoId, transaction.transactionHash);
-    }
-  }
-
-  /// 방금 전송한 거래의 입력 중 아직 사용 가능으로 남은 UTXO만 보내는 중으로 표시 (동기화 전 재선택 방지)
+  /// 방금 전송한 확정 입력을 예약한다. 전송 도중 사용자 잠금이 먼저 반영되어도 예약이 우선한다.
   Future<void> markUnspentInputsAsOutgoing(int walletId, lib.Transaction transaction) async {
-    for (final input in transaction.inputs) {
-      final utxoId = getUtxoId(input.transactionHash, input.index);
-      if (getUtxoState(walletId, utxoId)?.status != UtxoStatus.unspent) continue;
-      await _markUtxoAsOutgoing(walletId, utxoId, transaction.transactionHash);
-    }
+    await realm.writeAsync(() {
+      for (final input in transaction.inputs) {
+        final utxo = realm.find<RealmUtxo>(getRealmUtxoId(walletId, input.transactionHash, input.index));
+        if (utxo == null || utxo.isDeleted) continue;
+        if (utxo.status == utxoStatusToString(UtxoStatus.outgoing)) {
+          _advanceStateVersion(realm, utxo); // 같은 화면 재시도·늦은 성공도 이전 조회로 풀리지 않게 예약을 갱신한다.
+          continue;
+        }
+        if (utxo.status != utxoStatusToString(UtxoStatus.unspent) &&
+            utxo.status != utxoStatusToString(UtxoStatus.locked)) {
+          continue;
+        }
+        if (utxo.status == utxoStatusToString(UtxoStatus.locked)) {
+          realm.add(
+            RealmPendingUtxoLock(utxo.id, walletId, getUtxoId(input.transactionHash, input.index)),
+            update: true,
+          );
+        }
+        _setUtxoState(utxo, utxoStatusToString(UtxoStatus.outgoing), transaction.transactionHash);
+      }
+    });
   }
 
   Future<void> deleteUtxosByTransaction(int walletId, lib.Transaction transaction) async {
     final utxoIds = transaction.inputs.map((input) => getUtxoId(input.transactionHash, input.index)).toList();
-
-    await deleteUtxoList(walletId, utxoIds);
+    await deleteUtxoList(walletId, utxoIds, confirmed: true);
   }
 
   /// 선택된 UTXO의 상태를 확인하고 유효한 UTXO 목록과 제외된 상태를 반환

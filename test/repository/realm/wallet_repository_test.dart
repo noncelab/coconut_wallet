@@ -780,6 +780,31 @@ void main() {
       expect(realmManager.realm.query<RealmTransactionMemo>('walletId == 1').length, 1);
     });
 
+    for (final deleting in [false, true]) {
+      test('wallet removal preserves other wallets and their ID counters, delete=$deleting', () async {
+        seedWalletData(1);
+        seedWalletData(10);
+        final realm = realmManager.realm;
+        realm.write(() {
+          realm.add(RealmIntegerId('UtxoRevision:1:coin', 7));
+          realm.add(RealmIntegerId('UtxoRevision:10:coin', 8));
+          realm.add(RealmIntegerId('SpentUtxoRevision:1:coin', 3));
+          realm.add(RealmIntegerId('SpentUtxoRevision:10:coin', 4));
+          realm.add(RealmIntegerId('UnrelatedCounter', 9));
+        });
+        if (deleting) {
+          await walletRepository.deleteWallet(1);
+        } else {
+          await walletRepository.resetWalletForResync(1);
+        }
+        expect(realm.find<RealmIntegerId>('UtxoRevision:1:coin'), isNull);
+        expect(realm.find<RealmIntegerId>('UtxoRevision:10:coin')!.value, 8);
+        expect(realm.find<RealmIntegerId>('SpentUtxoRevision:1:coin'), isNull);
+        expect(realm.find<RealmIntegerId>('SpentUtxoRevision:10:coin')!.value, 4);
+        expect(realm.find<RealmIntegerId>('UnrelatedCounter')!.value, 9);
+      });
+    }
+
     test('다른 지갑의 데이터는 영향받지 않음', () async {
       seedWalletData(1);
       seedWalletData(2, usedReceiveIndex: 7, usedChangeIndex: 4);

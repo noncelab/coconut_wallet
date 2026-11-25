@@ -68,6 +68,8 @@ class ScriptSyncService {
     return _utxoSyncService.restorePendingUtxoLocks(walletId);
   }
 
+  Set<String> getUnrecordedOutgoingAddresses(int walletId) => _utxoSyncService.getUnrecordedOutgoingAddresses(walletId);
+
   Iterable<ScriptStatus> getFailedScripts(int walletId) =>
       _failedScriptSyncs.entries.where((entry) => entry.key.$1 == walletId).map((entry) => entry.value);
 
@@ -615,7 +617,10 @@ class ScriptSyncService {
       await _utxoSyncService.createOutgoingUtxos(walletItem);
 
       // orphaned UTXO가 있으면 정리함
-      await _utxoSyncService.cleanupOrphanedUtxos(walletItem);
+      await _utxoSyncService.cleanupOrphanedUtxos(
+        walletItem,
+        syncedAddresses: scriptStatuses.map((s) => s.address).toSet(),
+      );
 
       await _utxoSyncService.restorePendingUtxoLocks(walletItem.id);
 
