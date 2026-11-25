@@ -67,6 +67,59 @@ void main() {
     expect(tester.widget<Text>(allTagChip).style!.color, colors.chipSelectedText);
   });
 
+  testWidgets('showChangeFilter shows only the change chip from the default filters and selects it', (tester) async {
+    final colors = resolveCoconutThemeExtension(variant: CoconutThemeVariant.values.first).colors;
+    var selected = UtxoFilter.all;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder:
+                (context, setState) => CustomTagHorizontalSelector(
+                  tags: const [],
+                  showDefaultTags: false,
+                  showChangeFilter: true,
+                  selectedFilter: selected,
+                  onSelectedFilter: (value) => setState(() => selected = value),
+                ),
+          ),
+        ),
+      ),
+    );
+    final changeChip = find.text(t.change);
+    expect(find.text(t.all), findsOneWidget);
+    expect(changeChip, findsOneWidget);
+    expect(find.text(t.utxo_detail_screen.utxo_locked), findsNothing);
+    expect(tester.widget<Text>(changeChip).style!.color, colors.chipUnselectedText);
+
+    await tester.tap(changeChip);
+    await tester.pump();
+    expect(selected, UtxoFilter.change);
+    expect(tester.widget<Text>(changeChip).style!.color, colors.chipSelectedText);
+    expect(tester.widget<Text>(find.text(t.all)).style!.color, colors.chipUnselectedText);
+  });
+
+  testWidgets('the change chip stays hidden when neither default filters nor showChangeFilter are enabled', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: CustomTagHorizontalSelector(
+            tags: const [],
+            showDefaultTags: false,
+            selectedFilter: UtxoFilter.all,
+            onSelectedFilter: (_) {},
+          ),
+        ),
+      ),
+    );
+    expect(find.text(t.all), findsOneWidget);
+    expect(find.text(t.change), findsNothing);
+  });
+
   group('CustomTagSelector', () {
     final tags = [
       const UtxoTag(id: 'uuid1', walletId: 1, name: 'Tag1', colorIndex: 0, utxoIdList: ['a', 'b', 'c', 'd', 'e']),

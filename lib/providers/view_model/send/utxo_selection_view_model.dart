@@ -102,6 +102,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   bool get hasLoadError => _hasLoadError;
   bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
+  bool get hasChangeUtxo => _confirmedUtxoList.any((utxo) => utxo.isChange);
   bool get isNetworkOn => _isNetworkOn == true;
   List<UtxoState> get filteredUtxoList => _filteredUtxoList;
 

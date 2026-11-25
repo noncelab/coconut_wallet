@@ -51,6 +51,9 @@ class UtxoSelectionScreen extends StatefulWidget {
   final int? minimumSelectableUtxoAmount;
   final Color? backgroundColor;
 
+  /// true이면 잔돈 주소로 받은 UTXO만 모아 볼 수 있는 필터 칩을 보여줍니다.
+  final bool showChangeFilter;
+
   const UtxoSelectionScreen({
     super.key,
     required this.currentUnit,
@@ -60,6 +63,7 @@ class UtxoSelectionScreen extends StatefulWidget {
     this.showSkipButton = false,
     this.minimumSelectableUtxoAmount,
     this.backgroundColor,
+    this.showChangeFilter = false,
   });
 
   @override
@@ -374,13 +378,17 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
   }
 
   Widget _buildUtxoTagList(UtxoSelectionViewModel viewModel) {
+    // 잔돈 UTXO가 없으면 칩을 숨기되, 이미 잔돈 필터가 선택된 상태라면 선택 표시가 사라지지 않게 유지
+    final showChangeFilter =
+        widget.showChangeFilter && (viewModel.hasChangeUtxo || viewModel.selectedUtxoFilter == UtxoFilter.change);
     return Visibility(
-      visible: !viewModel.isUtxoTagListEmpty,
+      visible: !viewModel.isUtxoTagListEmpty || showChangeFilter,
       child: Container(
         margin: const EdgeInsets.only(left: 4, bottom: 12),
         child: CustomTagHorizontalSelector(
           tags: viewModel.utxoTagList,
           showDefaultTags: false,
+          showChangeFilter: showChangeFilter,
           selectedFilter: viewModel.selectedUtxoFilter,
           onSelectedFilter: viewModel.setSelectedUtxoFilter,
         ),

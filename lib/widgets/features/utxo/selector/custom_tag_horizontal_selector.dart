@@ -8,10 +8,13 @@ import 'package:flutter/material.dart';
 /// [CustomTagHorizontalSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯 (가로)
 /// [tags] : 표시할 태그 목록
 /// [onSelectedFilter]: 필터 선택시 호출되는 콜백
+/// [showDefaultTags] : 기본 필터(잠금, 잔돈) 표시 여부
+/// [showChangeFilter] : [showDefaultTags]가 false여도 잔돈 필터만 따로 표시할지 여부
 class CustomTagHorizontalSelector extends StatefulWidget {
   final List<UtxoTag> tags;
   final UtxoFilter selectedFilter;
   final bool showDefaultTags;
+  final bool showChangeFilter;
   final ValueChanged<UtxoFilter> onSelectedFilter;
   final ScrollPhysics? scrollPhysics;
   const CustomTagHorizontalSelector({
@@ -20,6 +23,7 @@ class CustomTagHorizontalSelector extends StatefulWidget {
     required this.selectedFilter,
     required this.onSelectedFilter,
     this.showDefaultTags = true,
+    this.showChangeFilter = false,
     this.scrollPhysics = const AlwaysScrollableScrollPhysics(),
   });
 
@@ -32,10 +36,9 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
   Widget build(BuildContext context) {
     final items = <({UtxoFilter filter, String text, bool isFixedTag})>[
       (filter: UtxoFilter.all, text: t.all, isFixedTag: true),
-      if (widget.showDefaultTags) ...[
-        (filter: UtxoFilter.locked, text: t.utxo_detail_screen.utxo_locked, isFixedTag: true),
+      if (widget.showDefaultTags) (filter: UtxoFilter.locked, text: t.utxo_detail_screen.utxo_locked, isFixedTag: true),
+      if (widget.showDefaultTags || widget.showChangeFilter)
         (filter: UtxoFilter.change, text: t.change, isFixedTag: true),
-      ],
       for (final tag in widget.tags) (filter: UtxoFilter.tag(tag.id), text: '#${tag.name}', isFixedTag: false),
     ];
 
