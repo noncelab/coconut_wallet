@@ -2271,7 +2271,7 @@ ark_wallet:
   format_lightning_needs_amount: "금액을 넣으면 만들어요"
   format_ark: "아크 주소"
   format_ark_caption: "아크 내에서 주고받을 땐 수수료가 없어요"
-  invoice_creating: "인보이스를 만드는 중"
+  invoice_creating: "인보이스 만드는 중"
   receive_keep_open: "라이트닝 결제가 끝날 때까지 이 화면을 띄워 두세요"
   invoice_failed: "인보이스를 만들지 못했어요"
   received(amount): "$amount 받았어요"

@@ -148,6 +148,7 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
       ),
       body: InputAndShareOverlay(
         shareButtonKey: _shareButtonKey,
+        showBottomActions: !viewModel.isCreatingInvoice,
         onEnterAmountTap: () => _enterAmount(viewModel),
         onShareTap: () => _share(viewModel),
         child: SafeArea(

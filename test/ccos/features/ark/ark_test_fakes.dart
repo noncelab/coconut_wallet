@@ -239,8 +239,11 @@ class FakeArkBackend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements Ark
   final List<String?> invoiceDescriptions = [];
   String invoiceBody = 'fake';
 
+  Completer<void>? invoiceGate;
+
   @override
   Future<ArkLightningInvoice> createLightningInvoice(String fingerprint, int amountSats, {String? description}) async {
+    await invoiceGate?.future;
     invoiceAmounts.add(amountSats);
     invoiceDescriptions.add(description);
     return ArkLightningInvoice(

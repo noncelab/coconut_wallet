@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -59,6 +61,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(t.ark_wallet.receive_keep_open), findsOneWidget);
+  });
+
+  testWidgets('while an invoice is being made, the amount and share buttons are hidden', (tester) async {
+    final backend = FakeArkBackend()..invoiceGate = Completer<void>();
+    await pump(tester, backend: backend);
+    expect(find.text(t.address_list_screen.share), findsOneWidget);
+
+    final viewModel = Provider.of<ArkReceiveViewModel>(tester.element(find.byType(QrCodeInfo)), listen: false);
+    final making = viewModel.setAmount(2100);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text(t.ark_wallet.invoice_creating), findsOneWidget);
+    expect(find.text(t.address_list_screen.share), findsNothing);
+    expect(find.text(t.address_list_screen.set_amount), findsNothing);
+
+    backend.invoiceGate!.complete();
+    await making;
+    await tester.pumpAndSettle();
+    expect(find.text(t.address_list_screen.share), findsOneWidget);
   });
 
   testWidgets('without an amount the invoice ways are dimmed', (tester) async {
