@@ -28,6 +28,7 @@ import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/common/info/info_section.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_received_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -40,11 +41,11 @@ class _Auth extends Fake implements AuthProvider {
   bool get isAuthEnabled => false;
 }
 
-ArkMovement _movement(int id, {int sats = 1000}) => ArkMovement.fromBark(
+ArkMovement _movement(int id, {int sats = 1000, String subsystem = 'bark.arkoor'}) => ArkMovement.fromBark(
   bark.Movement(
     id: id,
     status: 'successful',
-    subsystemName: 'bark.arkoor',
+    subsystemName: subsystem,
     subsystemKind: sats < 0 ? 'send' : 'receive',
     metadataJson: '{}',
     intendedBalanceSats: sats,
@@ -602,16 +603,31 @@ void main() {
     });
   });
 
-  testWidgets('a payment that arrives while the wallet is open shows a toast', (tester) async {
+  testWidgets('a payment shows a toast on any screen of the app, not only inside the Ark wallet', (tester) async {
     late FakeArkBackend fake;
     final wallet = await walletWith(restored: true, setup: (backend) => fake = backend);
-    await pump(tester, wallet);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<ArkWalletProvider>.value(
+        value: wallet,
+        child: MaterialApp(
+          theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
+          home: const ArkReceivedToast(child: Scaffold(body: Text('home'))),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     fake.movements = [_movement(1, sats: 3000)];
     await wallet.syncNow();
     await tester.pump();
 
     expect(find.text(t.ark_wallet.received(amount: '3,000 sats')), findsOneWidget);
+    await tester.pumpAndSettle(const Duration(seconds: 5));
+
+    fake.movements = [_movement(2, sats: 50000, subsystem: 'bark.board'), _movement(1, sats: 3000)];
+    await wallet.syncNow();
+    await tester.pump();
+    expect(find.text(t.ark_wallet.filled(amount: '50,000 sats')), findsOneWidget);
     await tester.pumpAndSettle(const Duration(seconds: 5));
   });
 

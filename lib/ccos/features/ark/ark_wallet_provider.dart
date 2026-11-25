@@ -85,6 +85,12 @@ class ArkWalletProvider extends ChangeNotifier {
 
   /// 받기 화면을 닫아도 수령·실패·1시간까지 기다리는 인보이스(결제 해시 → 기한)
   final Map<String, DateTime> _awaitedInvoices = {};
+
+  /// 받기 화면이 결제 완료를 직접 보여 주는 인보이스, 이 결제는 토스트 없이
+  final Set<String> _invoicesOnScreen = {};
+  void showInvoiceOnScreen(String paymentHash) => _invoicesOnScreen.add(paymentHash);
+  void hideInvoiceFromScreen(String paymentHash) => _invoicesOnScreen.remove(paymentHash);
+  bool isInvoiceOnScreen(String? paymentHash) => paymentHash != null && _invoicesOnScreen.contains(paymentHash);
   Timer? _syncTimer;
   AppLifecycleListener? _lifecycle;
   List<ArkVtxo> _vtxos = const [];

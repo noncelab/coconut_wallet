@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
+import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -8,6 +10,7 @@ import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_receive_view_mo
 import 'package:coconut_wallet/screens/ccos/ark/ark_receive_screen.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_received_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -33,10 +36,11 @@ void main() {
         providers: [
           ChangeNotifierProvider<PreferenceProvider>.value(value: FakeStorePreferences()),
           ChangeNotifierProvider<ArkWalletProvider>.value(value: wallet),
+          ...fakeArkPriceProviders(),
         ],
         child: MaterialApp(
           theme: buildCoconutThemeData(variant: CoconutThemeVariant.dark),
-          home: const ArkReceiveScreen(),
+          home: const ArkReceivedToast(child: ArkReceiveScreen()),
         ),
       ),
     );
@@ -79,6 +83,44 @@ void main() {
     await making;
     await tester.pumpAndSettle();
     expect(find.text(t.address_list_screen.share), findsOneWidget);
+  });
+
+  testWidgets('when the invoice on screen is paid, the screen shows what was received', (tester) async {
+    final backend = FakeArkBackend();
+    final wallet = await pump(tester, backend: backend);
+    final viewModel = Provider.of<ArkReceiveViewModel>(tester.element(find.byType(QrCodeInfo)), listen: false);
+    await viewModel.setAmount(2100);
+    await tester.pumpAndSettle();
+
+    backend.movements = [
+      ArkMovement.fromBark(
+        bark.Movement(
+          id: 1,
+          status: 'successful',
+          subsystemName: 'bark.lightning_receive',
+          subsystemKind: 'receive',
+          metadataJson: '{}',
+          intendedBalanceSats: 2100,
+          effectiveBalanceSats: 2100,
+          offchainFeeSats: 0,
+          sentToAddresses: const [],
+          receivedOnAddresses: const [],
+          inputVtxoIds: const [],
+          outputVtxoIds: const [],
+          exitedVtxoIds: const [],
+          createdAt: '2026-11-25T10:00:00Z',
+          updatedAt: '2026-11-25T10:00:00Z',
+          paymentHash: 'hash-2100',
+        ),
+      ),
+    ];
+    await wallet.syncNow();
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('ark-receive-received')), findsOneWidget);
+    expect(find.text(t.ark_wallet.result_received), findsOneWidget);
+    expect(find.byType(QrCodeInfo), findsNothing);
+    expect(find.byWidgetPredicate((w) => w is Text && (w.data?.endsWith(' 받았어요') ?? false)), findsNothing);
   });
 
   testWidgets('without an amount the invoice ways are dimmed', (tester) async {

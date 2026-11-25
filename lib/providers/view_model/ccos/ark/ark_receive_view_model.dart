@@ -77,6 +77,8 @@ class ArkReceiveViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       _invoice = await _wallet.createInvoice(amountSats, description: _invoiceMemo.isEmpty ? null : _invoiceMemo);
+      _shownInvoices.add(_invoice!.paymentHash);
+      _wallet.showInvoiceOnScreen(_invoice!.paymentHash);
       _format = ArkReceiveFormat.paymentRequest;
     } catch (error) {
       Logger.error('ArkReceiveViewModel: invoice failed: $error');
@@ -89,9 +91,15 @@ class ArkReceiveViewModel extends ChangeNotifier {
     }
   }
 
+  /// 화면을 띄워 둔 동안 결제된 인보이스 금액
+  int? _receivedSats;
+  final Set<String> _shownInvoices = {};
+  int? get receivedSats => _receivedSats;
+
   void _onWalletChanged() {
     final invoice = _invoice;
     if (invoice == null || !_wallet.isInvoicePaid(invoice.paymentHash)) return;
+    _receivedSats = invoice.amountSats;
     _clearInvoice();
     notifyListeners();
   }
@@ -112,6 +120,9 @@ class ArkReceiveViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
+    for (final paymentHash in _shownInvoices) {
+      _wallet.hideInvoiceFromScreen(paymentHash);
+    }
     _wallet.removeListener(_onWalletChanged);
     super.dispose();
   }

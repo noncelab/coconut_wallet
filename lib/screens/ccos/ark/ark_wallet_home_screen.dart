@@ -139,28 +139,6 @@ class _ArkWalletBodyState extends State<_ArkWalletBody> {
 
   final GlobalKey _topKey = GlobalKey();
   double? _topHeight;
-  StreamSubscription<ArkMovement>? _received;
-
-  @override
-  void initState() {
-    super.initState();
-    _received = widget.wallet.received.listen((movement) {
-      if (!mounted) return;
-      final unit = context.read<ArkWalletProvider>().unit;
-      CoconutToast.showToast(
-        context: context,
-        text: t.ark_wallet.received(amount: unit.displayBitcoinAmount(movement.effectiveBalanceSats, withUnit: true)),
-        isVisibleIcon: true,
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _received?.cancel();
-    super.dispose();
-  }
-
   int _rowsFor(double viewportHeight) {
     final top = _topHeight;
     if (top == null) return RecentTransactionsView.defaultRows;

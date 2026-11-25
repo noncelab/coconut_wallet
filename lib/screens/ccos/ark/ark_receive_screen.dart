@@ -2,18 +2,25 @@ import 'package:coconut_design_system/coconut_design_system.dart' hide CoconutAp
 import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app_guard.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
+import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
+import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/view_model/ccos/ark/ark_receive_view_model.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_receive_amount_sheet.dart';
 import 'package:coconut_wallet/ui/coconut/coconut_app_bar.dart';
+import 'package:coconut_wallet/widgets/common/amount/bitcoin_amount_unit.dart';
+import 'package:coconut_wallet/widgets/common/amount/fiat_price.dart';
 import 'package:coconut_wallet/widgets/common/buttons/copy_text_container.dart';
+import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 import 'package:coconut_wallet/widgets/features/ccos/ark/ark_box_text.dart';
 import 'package:coconut_wallet/widgets/common/overlays/common_bottom_sheets.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
+import 'package:coconut_wallet/widgets/features/home/widgets/activity_widget_views.dart';
 import 'package:coconut_wallet/widgets/features/qr/qrcode_info.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -130,6 +137,8 @@ class _ArkReceiveViewState extends State<_ArkReceiveView> {
   Widget build(BuildContext context) {
     final colors = context.coconutColors;
     final viewModel = context.watch<ArkReceiveViewModel>();
+    final received = viewModel.receivedSats;
+    if (received != null) return _ArkReceivedView(amountSats: received);
     final qrData = viewModel.qrData;
     return Scaffold(
       backgroundColor: colors.background,
@@ -283,6 +292,62 @@ class _WayRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 띄워 둔 받기 화면에서 라이트닝 결제가 끝났을 때. 보내기 결과와 같은 배치
+class _ArkReceivedView extends StatelessWidget {
+  const _ArkReceivedView({required this.amountSats});
+
+  final int amountSats;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.coconutColors;
+    final unit = context.select<ArkWalletProvider, BitcoinUnit>((wallet) => wallet.unit);
+    return Scaffold(
+      backgroundColor: colors.background,
+      appBar: CoconutAppBar.build(context: context, backgroundColor: colors.background, title: ''),
+      body: Stack(
+        children: [
+          ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+            children: [
+              CoconutLayout.spacing_400h,
+              Center(
+                child: SvgPicture.asset(
+                  FeatureArkIconPath.txLightningReceived,
+                  key: const Key('ark-receive-received'),
+                  width: 56,
+                  height: 56,
+                  colorFilter: monochromeIconFilter(colors.primaryText),
+                ),
+              ),
+              CoconutLayout.spacing_400h,
+              Text(
+                t.ark_wallet.result_received,
+                textAlign: TextAlign.center,
+                style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText),
+              ),
+              CoconutLayout.spacing_200h,
+              Center(
+                child: BitcoinAmountUnit(
+                  currentUnit: unit,
+                  unitStyle: CoconutTypography.heading4_18_Number.setColor(colors.primaryText),
+                  spacing: CoconutLayout.spacing_100w,
+                  child: Text(
+                    unit.displayBitcoinAmount(amountSats),
+                    style: CoconutTypography.heading2_28_NumberBold.setColor(colors.primaryText),
+                  ),
+                ),
+              ),
+              Center(child: FiatPrice(satoshiAmount: amountSats, textColor: colors.secondaryText)),
+            ],
+          ),
+          FixedBottomButton(text: t.done, onButtonClicked: () => Navigator.of(context).pop()),
+        ],
       ),
     );
   }

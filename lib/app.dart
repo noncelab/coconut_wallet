@@ -18,6 +18,7 @@ import 'package:coconut_wallet/services/analytics_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:coconut_wallet/utils/system_chrome_util.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_received_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:coconut_wallet/screens/common/pin_check_screen.dart';
 import 'package:coconut_wallet/screens/onboarding/start_screen.dart';
@@ -161,7 +162,7 @@ class _CoconutWalletAppState extends State<CoconutWalletApp> {
                   _appEntryFlow == AppEntryFlow.splash
                       ? StartScreen(onComplete: _completeSplash)
                       : _appEntryFlow == AppEntryFlow.main
-                      ? HomeScreen(onPageChanged: _onHomePageChanged)
+                      ? ArkReceivedToast(child: HomeScreen(onPageChanged: _onHomePageChanged))
                       : CustomLoadingOverlay(
                         child: PinCheckScreen(
                           appEntrance: true,
