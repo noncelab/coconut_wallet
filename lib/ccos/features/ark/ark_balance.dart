@@ -41,9 +41,21 @@ class ArkBalance {
 
   /// Everything that belongs to the Ark wallet, mirroring `Balance::total()` on bark master.
   ///
-  /// bark 0.7.1 has no total of its own, and its fields can overlap: the inputs of a delegated
-  /// round the server hasn't picked up yet count as both spendable and pending in round, so this
-  /// over-reports while a delegated refresh waits. Sats held by an offboard or an Ark send in
-  /// progress are in no field. Switch to bark's `summary()` once the SDK ships it.
+  /// bark 0.7.1 has no total of its own. Sats held by an offboard or an Ark send in progress are
+  /// in no field. Switch to bark's `summary()` once the SDK ships it.
   int get total => spendable + pending;
+
+  /// bark 0.7.1 counts the inputs of a delegated round the server hasn't picked up yet both as
+  /// spendable and as pending in round. Takes those [sats] out of pending in round once.
+  ArkBalance withoutRoundInputsStillSpendable(int sats) =>
+      sats <= 0
+          ? this
+          : ArkBalance(
+            spendable: spendable,
+            pendingInRound: pendingInRound > sats ? pendingInRound - sats : 0,
+            pendingBoard: pendingBoard,
+            pendingExit: pendingExit,
+            pendingLightningSend: pendingLightningSend,
+            claimableLightningReceive: claimableLightningReceive,
+          );
 }

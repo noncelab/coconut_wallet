@@ -137,7 +137,19 @@ class ArkWalletProvider extends ChangeNotifier {
   bool get hasWallet => _info != null;
   ArkWalletState get state => _state;
   ArkCreateStep? get step => _step;
-  ArkBalance get balance => _balance;
+  ArkBalance get balance => _balance.withoutRoundInputsStillSpendable(_roundInputsStillSpendable());
+
+  int _roundInputsStillSpendable() {
+    final inputs = {
+      for (final movement in _movements)
+        if (movement.kind == ArkMovementKind.refresh && movement.isPending) ...movement.inputVtxoIds,
+    };
+    if (inputs.isEmpty) return 0;
+    return _vtxos
+        .where((vtxo) => !vtxo.isLocked && inputs.contains(vtxo.id))
+        .fold(0, (sum, vtxo) => sum + vtxo.amountSats);
+  }
+
   bool get needsBackup => _info != null && !_info!.backupVerified;
   bool get isRecoveryPending => _isRecoveryPending;
 
