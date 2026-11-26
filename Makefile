@@ -112,6 +112,23 @@ fastlane-regtest:
 	$(REQUIRE_ASC_API_KEY) \
 	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest && cd .. && cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest skip_prep:true
 
+# Single-platform uploads
+fastlane-mainnet-android:
+	cd android && REQUIRE_GOOGLE_SERVICES=true caffeinate -dimsu bundle exec fastlane release_android_mainnet
+
+fastlane-mainnet-ios:
+	@$(REQUIRE_ASC_API_KEY) \
+	cd ios && caffeinate -dimsu bundle exec fastlane release_ios_mainnet
+
+fastlane-regtest-android:
+	@$(REQUIRE_REGTEST_BRANCH) \
+	cd android && caffeinate -dimsu bundle exec fastlane release_android_regtest
+
+fastlane-regtest-ios:
+	@$(REQUIRE_REGTEST_BRANCH) \
+	$(REQUIRE_ASC_API_KEY) \
+	cd ios && caffeinate -dimsu bundle exec fastlane release_ios_regtest
+
 # Production draft/App Store preparation (manual review submission remains required)
 fastlane-production-mainnet:
 	@$(REQUIRE_ASC_API_KEY) \

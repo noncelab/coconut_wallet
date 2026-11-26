@@ -18,6 +18,42 @@ void main() {
         }
       });
     }
+
+    // 태국어는 낱말 사이를 띄우지 않는다. 이음 문자를 넣으면 문장이 한 덩어리가 되어 음절 중간에서 줄이 바뀐다
+    test('Thai words are left as they are, so the renderer can break lines between words', () {
+      const thai = 'เพิ่มกระเป๋าแบบดูอย่างเดียว เพื่อดูยอดคงเหลือและรับบิตคอยน์';
+      expect(TextUtils.preventLineBreakInsideWords(thai), thai);
+      expect(TextUtils.preventLineBreakInsideWords('ธีม Coconut'), 'ธีม C\u2060o\u2060c\u2060o\u2060n\u2060u\u2060t');
+    });
+
+    test('a sentence with Thai and Korean joins only the words without Thai letters', () {
+      expect(TextUtils.preventLineBreakInsideWords('지갑 กระเป๋า 추가'), '지\u2060갑 กระเป๋า 추\u2060가');
+    });
+
+    // 띄어쓰기 없이 붙여 쓴 낱말에 태국 글자가 하나라도 있으면 그 낱말 전체를 그대로 둔다
+    test('a word that mixes Thai with other letters is left whole', () {
+      expect(TextUtils.preventLineBreakInsideWords('지갑กระเป๋า Coconutธีม'), '지갑กระเป๋า Coconutธีม');
+    });
+
+    test('spans keep their children, style and semantics label; only texts without Thai are joined', () {
+      const style = TextStyle(fontSize: 14);
+      final result =
+          TextUtils.preventLineBreakInsideWordsInSpan(
+                const TextSpan(
+                  text: 'กระเป๋าเงิน ',
+                  style: style,
+                  semanticsLabel: 'wallet',
+                  children: [TextSpan(text: '지갑'), TextSpan(text: 'เพิ่มกระเป๋า')],
+                ),
+              )
+              as TextSpan;
+      expect(result.text, 'กระเป๋าเงิน ');
+      expect(result.style, style);
+      expect(result.semanticsLabel, 'wallet');
+      expect(result.children!.map((child) => (child as TextSpan).text), ['지\u2060갑', 'เพิ่มกระเป๋า']);
+      // 이음 문자가 든 글은 화면 낭독에서 원래 글을 읽는다
+      expect((result.children!.first as TextSpan).semanticsLabel, '지갑');
+    });
   });
 
   group('TextUtils.ellipsisIfLonger', () {

@@ -153,6 +153,7 @@ void main() {
       AppLocale.ja: ['数値形式', '桁区切り', '小数点'],
       AppLocale.es: ['formato numérico', 'miles', 'decimales'],
       AppLocale.de: ['Zahlenformat', 'Tausendertrennzeichen', 'Dezimaltrennzeichen'],
+      AppLocale.th: ['รูปแบบตัวเลข', 'หลักพัน', 'จุดทศนิยม'],
     };
     for (final locale in AppLocale.values) {
       LocaleSettings.setLocaleSync(locale);
@@ -168,6 +169,44 @@ void main() {
       }
     }
   });
+
+  test('Thai currency aliases lead to the currency setting in Thai', () {
+    LocaleSettings.setLocaleSync(AppLocale.th);
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+    for (final query in ['บาท', 'เงินบาท', 'THB', 'thb']) {
+      expect(registry.search(query).first.matchedItem.id, 'app_settings.fiat', reason: query);
+    }
+  });
+
+  test('ไทย leads to the language setting in every locale', () {
+    addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+    for (final locale in AppLocale.values) {
+      LocaleSettings.setLocaleSync(locale);
+      expect(registry.search('ไทย').first.matchedItem.id, 'app_settings.language', reason: locale.languageCode);
+    }
+  });
+
+  // develop(58dc46b80)의 검색 대상: THB의 부분 문자열이 기존 언어에서 통화 설정을 끼워 넣지 않아야 한다.
+  const expectedMatches = {
+    AppLocale.ko: {'t': 'unit', 'h': 'language', 'b': 'unit', 'th': null},
+    AppLocale.en: {'t': 'theme', 'h': 'pin_change', 'b': 'biometrics', 'th': 'theme'},
+    AppLocale.ja: {'t': 'unit', 'h': 'language', 'b': 'unit', 'th': null},
+    AppLocale.es: {'t': 'theme', 'h': 'biometrics', 'b': 'pin', 'th': null},
+    AppLocale.de: {'t': 'number_format', 'h': 'theme', 'b': 'biometrics', 'th': 'ccos.ccos-feature-theme-coconut-pulp'},
+  };
+  for (final entry in expectedMatches.entries) {
+    test('Thai currency aliases preserve ${entry.key.languageCode} search matches', () {
+      LocaleSettings.setLocaleSync(entry.key);
+      addTearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
+      final registry = FeatureRegistry.builtin();
+      for (final query in {...entry.value, 'hb': null, 'thb': null}.entries) {
+        final matches = registry.search(query.key).where((result) => result.item.id == FeatureIds.appSettings);
+        expect(matches.map((result) => result.matchedItem.id), [
+          if (query.value != null) 'app_settings.${query.value}',
+        ], reason: query.key);
+      }
+    });
+  }
 
   test('all registered sub-features have their own launch action', () {
     for (final item in registry.all.where((item) => !item.isTopLevel)) {

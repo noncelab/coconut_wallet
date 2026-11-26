@@ -103,8 +103,8 @@ release-x.y 배포가 완료되면 GitHub TAG를 추가합니다. 예를 들어 
 
 ## Localization (i18n) | 문구 수정
 
-When modifying text strings, edit the base locale file `assets/i18n/ko.i18n.yaml`, and update the other locale files under `assets/i18n/` (`en`, `ja`, `es`, `de`). Then run the following command to regenerate the localization files:</br>
-문구 변경 시 기준 언어 파일인 `assets/i18n/ko.i18n.yaml`을 수정하고, `assets/i18n/` 아래의 다른 언어 파일(`en`, `ja`, `es`, `de`)도 함께 수정해 주세요. 이후 아래 명령어를 실행하면 `lib/localization/`의 `strings_ko.g.dart`, `strings.g.dart` 파일이 업데이트됩니다.
+When modifying text strings, edit the base locale file `assets/i18n/ko.i18n.yaml`, and update the other locale files under `assets/i18n/` (`en`, `ja`, `es`, `de`, `th`). Then run the following command to regenerate the localization files:</br>
+문구 변경 시 기준 언어 파일인 `assets/i18n/ko.i18n.yaml`을 수정하고, `assets/i18n/` 아래의 다른 언어 파일(`en`, `ja`, `es`, `de`, `th`)도 함께 수정해 주세요. 이후 아래 명령어를 실행하면 `lib/localization/`의 `strings_ko.g.dart`, `strings.g.dart` 파일이 업데이트됩니다.
 
 ```bash
 flutter pub run slang

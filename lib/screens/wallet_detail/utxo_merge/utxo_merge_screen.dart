@@ -1072,7 +1072,9 @@ class _UtxoMergeScreenState extends State<UtxoMergeScreen> with SingleTickerProv
         return _localizedAmountRangeText(t.merge_utxos_screen.amount_range_bottomsheet.below_00001, '0.0001');
       case UtxoAmountRange.custom:
         if (_viewModel.customAmountRangeText != null && _viewModel.customAmountRangeText!.isNotEmpty) {
-          return '${_viewModel.isCustomAmountLessThan ? '${t.merge_utxos_screen.amount_range_bottomsheet.less_than} ' : ''}${_viewModel.customAmountRangeText!.toBtcDisplayString()}${t.btc} ${_viewModel.isCustomAmountLessThan ? '' : ' ${t.merge_utxos_screen.amount_range_bottomsheet.or_less}'}';
+          // BTC 뒤 공백에 '이하' 앞 공백이 겹쳐 두 칸으로 나온다(다른 언어는 지금 모양 그대로 둔다). 태국어는 한 칸만 둔다
+          final gap = LocaleSettings.currentLocale == AppLocale.th ? '' : ' ';
+          return '${_viewModel.isCustomAmountLessThan ? '${t.merge_utxos_screen.amount_range_bottomsheet.less_than} ' : ''}${_viewModel.customAmountRangeText!.toBtcDisplayString()}${t.btc}$gap${_viewModel.isCustomAmountLessThan ? '' : ' ${t.merge_utxos_screen.amount_range_bottomsheet.or_less}'}';
         }
         return t.merge_utxos_screen.amount_range_bottomsheet.custom;
     }

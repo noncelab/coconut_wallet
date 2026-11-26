@@ -104,7 +104,11 @@ class CoinGeckoPriceService {
     final next = _currentInterval * 2;
     _currentInterval = next > _maxBackoff ? _maxBackoff : next;
     _retryWait?.cancel();
-    _retryWait = Timer(_currentInterval, () => _retryWait = null);
+    _retryWait = Timer(_currentInterval, () {
+      _retryWait = null;
+      // 대기 중에 멈췄다 다시 시작해 주기 타이머가 밀렸어도, 대기가 끝나면 바로 다시 묻는다.
+      refreshNow();
+    });
     if (_timer != null) _schedule(_currentInterval);
   }
 

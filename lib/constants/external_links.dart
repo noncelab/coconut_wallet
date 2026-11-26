@@ -11,6 +11,8 @@ const GITHUB_URL_COCONUT_LIBRARY = 'https://github.com/noncelab/coconut_lib';
 /// Terms of service, Policy
 const TERMS_OF_SERVICE_URL = "https://www.coconut.onl/tos";
 const PRIVACY_POLICY_URL = "https://www.coconut.onl/privacy";
+const TERMS_OF_SERVICE_URL_EN = "https://www.coconut.onl/en/tos";
+const PRIVACY_POLICY_URL_EN = "https://www.coconut.onl/en/privacy";
 
 /// Email To Address
 const CONTACT_EMAIL_ADDRESS = 'hello@noncelab.com';

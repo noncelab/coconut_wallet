@@ -1380,7 +1380,7 @@ wallet_detail_screen:
   vault_sync_required_description: "We cannot confirm this vault’s transaction history and receiving address yet. Check your connection and sync status, then select it again once syncing is complete."
   vault_select_receiving_wallet: "Select a receiving vault"
   vault_connect_watch_only_wallet: "Connect a vault monitoring wallet"
-  vault_watch_only_description: "Add a “vault monitoring (watch-only) wallet” to the app. You can safely check your Bitcoin in real time without turning on your dedicated device each time."
+  vault_watch_only_description: "Add a watch-only wallet.\nYou can check your vault’s bitcoin balance in the app without exposing your keys."
   vault_watch_only_title: "Keep your device offline and check your assets easily in the app!"
   vault_no_balance_title: "You don’t have any Bitcoin to send right now"
   vault_no_balance_description: "Please try again after receiving Bitcoin"
@@ -1564,6 +1564,9 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "This transaction is not supported."
     utxo_not_found_title: "UTXO Not Found"
     utxo_not_found: "Cannot find the UTXO used in the transaction."
+    unverified_original_title: "Signature Not Verified"
+    unverified_original: "We couldn't verify this transaction's signature, so its fee can't be bumped. The server you're connected to may have sent an incorrect transaction. Switch to a different server in 'Electrum Server Settings', then 'Resync' your wallet."
+    change_server: "Change Server"
   toast:
     insufficient_utxo: "Insufficient balance to create a new transaction"
 
@@ -2078,6 +2081,7 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+  thai: "ไทย"
 
 number_format_bottom_sheet:
   title: "Number Format"

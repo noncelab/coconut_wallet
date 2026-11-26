@@ -17,7 +17,6 @@ import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 import 'package:coconut_wallet/widgets/common/buttons/fixed_bottom_button.dart';
 
@@ -44,47 +43,23 @@ class ShowVaultNoBalanceBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconTitleDescription(
-          svgIconPath: CommonStateIconPath.bulb,
-          title: t.wallet_detail_screen.vault_intro,
-          description: t.wallet_detail_screen.vault_description,
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
-          child: Divider(height: 1, color: context.coconutColors.divider),
-        ),
-        SvgPicture.asset(
-          CommonStateIconPath.circleWarning,
-          width: 36,
-          height: 36,
-          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-        ),
-        CoconutLayout.spacing_400h,
-        Text(
-          t.wallet_detail_screen.vault_no_balance_title,
-          style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-        ),
-        CoconutLayout.spacing_100h,
-        Text(
-          t.wallet_detail_screen.vault_no_balance_description,
-          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-        ),
-        CoconutLayout.spacing_800h,
-        InlineActionButton(
-          onPressed: () async {
-            final navigator = Navigator.of(context);
-            final sheetRoute = ModalRoute.of(context);
-            navigator.pop();
-            await sheetRoute?.completed;
-            if (!navigator.mounted) return;
-            navigator.pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: walletId));
-          },
-          text: t.receive,
-        ),
-      ],
+    return _VaultGuide(
+      nextStep: IconTitleDescription(
+        svgIconPath: CommonStateIconPath.circleWarning,
+        title: t.wallet_detail_screen.vault_no_balance_title,
+        description: t.wallet_detail_screen.vault_no_balance_description,
+      ),
+      action: InlineActionButton(
+        onPressed: () async {
+          final navigator = Navigator.of(context);
+          final sheetRoute = ModalRoute.of(context);
+          navigator.pop();
+          await sheetRoute?.completed;
+          if (!navigator.mounted) return;
+          navigator.pushNamed(AppRouteNames.receiveAddress, arguments: ReceiveAddressRouteArgs(id: walletId));
+        },
+        text: t.receive,
+      ),
     );
   }
 }
@@ -95,51 +70,63 @@ class ShowVaultNoWatchOnlyWalletBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _VaultGuide(
+      nextStep: IconTitleDescription(
+        svgIconPath: FeatureWalletIconPath.walletEyes,
+        title: t.wallet_detail_screen.vault_watch_only_title,
+        description: t.wallet_detail_screen.vault_watch_only_description,
+        keepDescriptionWordsTogether: LocaleSettings.currentLocale == AppLocale.ko,
+      ),
+      action: InlineActionButton(
+        onPressed: () async {
+          final navigator = Navigator.of(context);
+          final sheetRoute = ModalRoute.of(context);
+          navigator.pop();
+          await sheetRoute?.completed;
+          if (!navigator.mounted) return;
+          WalletAddDialog.showBottomSheet(
+            navigator.context,
+            WalletAddDialogMode.watchOnlySource,
+            replaceCurrentRouteOnWalletSelected: true,
+          );
+        },
+        text: t.wallet_detail_screen.vault_connect_watch_only_wallet,
+      ),
+    );
+  }
+}
+
+class _VaultGuide extends StatelessWidget {
+  const _VaultGuide({required this.nextStep, required this.action});
+
+  final IconTitleDescription nextStep;
+  final InlineActionButton action;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconTitleDescription(
-          svgIconPath: CommonStateIconPath.bulb,
-          title: t.wallet_detail_screen.vault_intro,
-          description: t.wallet_detail_screen.vault_description,
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
-          child: Divider(height: 1, color: context.coconutColors.divider),
-        ),
-        SvgPicture.asset(
-          FeatureWalletIconPath.walletEyes,
-          width: 36,
-          height: 36,
-          colorFilter: ColorFilter.mode(context.coconutColors.iconSecondary, BlendMode.srcIn),
-        ),
-        CoconutLayout.spacing_400h,
-        Text(
-          t.wallet_detail_screen.vault_watch_only_title,
-          style: CoconutTypography.body2_14_Bold.setColor(context.coconutColors.primaryText),
-        ),
-        CoconutLayout.spacing_100h,
-        Text(
-          t.wallet_detail_screen.vault_watch_only_description,
-          style: CoconutTypography.body3_12.setColor(context.coconutColors.secondaryText),
-          textAlign: TextAlign.center,
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                IconTitleDescription(
+                  svgIconPath: CommonStateIconPath.bulb,
+                  title: t.wallet_detail_screen.vault_intro,
+                  description: t.wallet_detail_screen.vault_description,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Divider(height: 1, color: context.coconutColors.divider),
+                ),
+                nextStep,
+              ],
+            ),
+          ),
         ),
         CoconutLayout.spacing_800h,
-        InlineActionButton(
-          onPressed: () async {
-            final navigator = Navigator.of(context);
-            final sheetRoute = ModalRoute.of(context);
-            navigator.pop();
-            await sheetRoute?.completed;
-            if (!navigator.mounted) return;
-            WalletAddDialog.showBottomSheet(
-              navigator.context,
-              WalletAddDialogMode.watchOnlySource,
-              replaceCurrentRouteOnWalletSelected: true,
-            );
-          },
-          text: t.wallet_detail_screen.vault_connect_watch_only_wallet,
-        ),
+        action,
       ],
     );
   }

@@ -10,9 +10,11 @@ import 'package:coconut_wallet/widgets/common/buttons/coconut_icon_button.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import '../fixtures/thai_test_font.dart';
 import 'p2p_calculator_test.dart'
     show FakePreferenceProvider, FakeConnectivityProvider, FakePriceProvider, FakeWalletProvider;
 
@@ -39,10 +41,8 @@ Future<void> _openBill(
       ],
       child: MaterialApp(
         // 숫자 글꼴(SpaceGrotesk)에 없는 한글은 대체 글꼴로 그린다. 기기는 시스템 글꼴(iPhone Apple SD Gothic Neo 등)로
-        // 대신 그리고, 여기서는 폭이 비슷한 앱 한글 글꼴 Pretendard로 대신한다
-        theme: buildCoconutThemeData().copyWith(
-          textTheme: buildCoconutThemeData().textTheme.apply(fontFamilyFallback: const ['Pretendard']),
-        ),
+        // 대신 그리고, 여기서는 폭이 비슷한 앱 한글 글꼴 Pretendard로 대신한다. 태국 글자는 앱 글꼴에 없어 태국 글꼴로 대신한다
+        theme: withThaiFontFallback(buildCoconutThemeData(), before: const ['Pretendard']),
         builder:
             (context, child) =>
                 MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)), child: child!),
@@ -75,6 +75,7 @@ Future<void> _loadAppFonts() async {
           ..addFont(rootBundle.load('assets/fonts/$family-Bold.ttf')))
         .load();
   }
+  await loadThaiTestFont();
 }
 
 void main() {
@@ -112,7 +113,7 @@ void main() {
   }
 
   // A-C2: 폭 320 화면에서 글자를 키워도 계산서가 넘치지 않는다. 출처·시각 줄은 남은 폭 안에서 줄을 바꾸고, 계산서 글자는
-  // 1.2배까지만 커진다. 앱 글꼴로 5개 언어 모두 본다
+  // 1.2배까지만 커진다. 앱 글꼴로 모든 언어를 본다(태국어는 태국 글꼴을 대신 올린다)
   group('A-C2 with the app fonts at 320×844', () {
     setUpAll(_loadAppFonts);
 
@@ -124,28 +125,34 @@ void main() {
         (FiatCode.CHF, 90000, '100', 2.0),
         (FiatCode.JPY, 15000000, '10000', 2.0),
       ]) {
-        testWidgets('${locale.languageCode} ${fiat.code} ${(scale * 100).round()}%: the bill fits', (tester) async {
-          LocaleSettings.setLocaleSync(locale);
-          await _openBill(tester, fiat: fiat, price: price, input: input, size: const Size(320, 844), scale: scale);
-          expect(tester.takeException(), isNull);
-          final source =
-              find
-                  .descendant(
-                    of: _bill(),
-                    matching: find.byWidgetPredicate((w) => w is Text && (w.data?.contains(' · ') ?? false)),
-                  )
-                  .first;
-          final row = find.ancestor(of: source, matching: find.byType(Row)).first;
-          expect(tester.getRect(source).right, lessThanOrEqualTo(tester.getRect(row).right + 0.5));
-          await tester.pumpWidget(const SizedBox());
-          await tester.pump(const Duration(seconds: 3));
-        });
+        testWidgets(
+          '${locale.languageCode} ${fiat.code} ${(scale * 100).round()}%: the bill fits',
+          (tester) async {
+            LocaleSettings.setLocaleSync(locale);
+            await _openBill(tester, fiat: fiat, price: price, input: input, size: const Size(320, 844), scale: scale);
+            expect(tester.takeException(), isNull);
+            final source =
+                find
+                    .descendant(
+                      of: _bill(),
+                      matching: find.byWidgetPredicate((w) => w is Text && (w.data?.contains(' · ') ?? false)),
+                    )
+                    .first;
+            final row = find.ancestor(of: source, matching: find.byType(Row)).first;
+            expect(tester.getRect(source).right, lessThanOrEqualTo(tester.getRect(row).right + 0.5));
+            if (locale == AppLocale.th) expectThaiGlyphs(tester, _bill());
+            await tester.pumpWidget(const SizedBox());
+            await tester.pump(const Duration(seconds: 3));
+          },
+          skip: locale == AppLocale.th && !hasThaiTestFont,
+        );
       }
     }
   });
 
   // A-C2 리뷰(Codex P3): 키 568 화면에서는 1.2배 상한 안에서도 계산서가 화면보다 길 수 있다(es·de·en). 그때는 계산서
-  // 본문이 스크롤되어 넘치지 않고, 끝까지 내리면 공유 버튼이 화면 안에 다 들어온다
+  // 본문이 스크롤되어 넘치지 않고, 끝까지 내리면 공유 버튼이 화면 안에 다 들어온다. 닫기 버튼은 시트 머리에 고정돼
+  // 내린 뒤에도 그 자리에서 보이고 눌린다(내용은 머리 아래로 지나간다)
   group('A-C2 with the app fonts at 320×568', () {
     setUpAll(_loadAppFonts);
 
@@ -155,14 +162,19 @@ void main() {
           testWidgets(
             '${locale.languageCode} ${fiat.code} ${(scale * 100).round()}%: the bill scrolls instead of overflowing',
             (tester) async {
+              final semantics = tester.ensureSemantics();
               LocaleSettings.setLocaleSync(locale);
               await _openBill(tester, fiat: fiat, price: price, input: input, size: const Size(320, 568), scale: scale);
               expect(tester.takeException(), isNull);
               final share = find.descendant(of: _bill(), matching: find.text(t.utility.p2p_calculator.share));
-              final title = find.text(t.utility.p2p_calculator.transaction_bill).last;
               final close = find.descendant(of: _bill(), matching: find.byType(IconButton));
-              double closeToTitle() => tester.getRect(title).top - tester.getRect(close).top;
-              final closeToTitleAtTop = closeToTitle();
+              final closeAtTop = tester.getRect(close);
+              final header = find.byKey(const Key('p2p-bill-close-header'));
+              // 내리기 전: 머리는 계산서 위 빈 여백만 덮고 제목을 가리지 않는다
+              expect(
+                tester.getRect(header).bottom,
+                lessThanOrEqualTo(tester.getRect(find.text(t.utility.p2p_calculator.transaction_bill).last).top),
+              );
               await tester.ensureVisible(share);
               await tester.pumpAndSettle();
               final button = tester.getRect(
@@ -170,11 +182,32 @@ void main() {
               );
               expect(button.top, greaterThanOrEqualTo(0));
               expect(button.bottom, lessThanOrEqualTo(568));
-              // 닫기 버튼은 계산서와 함께 움직인다(위에 고정하면 내린 뒤 제목 글자 위에 겹친다)
-              expect(closeToTitle(), moreOrLessEquals(closeToTitleAtTop));
+              // 닫기 버튼은 내려도 제자리. 아이콘은 시트 색으로 칠한 머리 안에 있어 지나가는 내용과 겹치지 않는다
+              expect(tester.getRect(close), closeAtTop);
+              // 머리는 내용보다 위에 그려져(누르는 순서도 위) 내용이 그 아래로 지나간다
+              expect(header.hitTestable(), findsOneWidget);
+              final icon = tester.getRect(find.descendant(of: close, matching: find.byType(SvgPicture)));
+              expect(tester.getRect(header).top, lessThanOrEqualTo(icon.top));
+              expect(tester.getRect(header).bottom, greaterThanOrEqualTo(icon.bottom));
+              final sheet = find.ancestor(of: _bill(), matching: find.byType(Container)).first;
+              expect(
+                tester.widget<ColoredBox>(header).color,
+                (tester.widget<Container>(sheet).decoration! as BoxDecoration).color,
+              );
+              // 화면 읽기에는 "닫기" 버튼으로 읽히고, 내린 채로 눌러 닫힌다
+              expect(
+                tester.getSemantics(close),
+                containsSemantics(tooltip: t.close, isButton: true, hasTapAction: true),
+              );
+              expect(close.hitTestable(), findsOneWidget);
+              await tester.tap(close);
+              await tester.pumpAndSettle();
+              expect(find.text(t.utility.p2p_calculator.copy_all), findsNothing);
               await tester.pumpWidget(const SizedBox());
               await tester.pump(const Duration(seconds: 3));
+              semantics.dispose();
             },
+            skip: locale == AppLocale.th && !hasThaiTestFont,
           );
         }
       }

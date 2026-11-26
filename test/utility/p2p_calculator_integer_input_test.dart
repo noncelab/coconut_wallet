@@ -18,6 +18,9 @@ import 'package:provider/provider.dart';
 import 'p2p_calculator_test.dart'
     show FakePreferenceProvider, FakeConnectivityProvider, FakePriceProvider, FakeWalletProvider;
 
+// BTC·sats 입력 형식기(BtcAmountInputFormatter·SatoshiAmountInputFormatter)는 보내기·BIP21·UTXO 화면과 같이 쓰므로
+// epic3의 형식기 재작성을 옮기지 않았다. 그 재작성에 기대는 epic3 테스트(입력 전환 뒤 편집, sats·bip177 엄격 정수,
+// commaDecimal BTC 대체 소수점)는 여기에 두지 않는다.
 void main() {
   setUpAll(() async {
     LocaleSettings.setLocaleSync(AppLocale.ko);
@@ -151,145 +154,41 @@ void main() {
       });
     }
 
-    testWidgets('BTC ${preset.name} remains editable after swapping the focused fiat input', (tester) async {
-      await _pumpCalculator(tester, fiat: FiatCode.KRW);
-      NumberFormatConfig.instance.applyPreset(preset);
-      await _replaceAmount(tester, _amountField(), '173');
-      await _switchToBtcInput(tester);
-      final field = _amountField();
-      final viewModel = _viewModelOf(tester, field);
-      expect(viewModel.inputAmount, 122);
-      await tester.showKeyboard(field);
-      await tester.pumpAndSettle();
-      final controller = _editable(tester, field).controller;
-      controller.selection = TextSelection.collapsed(offset: controller.text.length);
-      tester.testTextInput.updateEditingValue(
-        TextEditingValue(
-          text: controller.text.substring(0, controller.text.length - 1),
-          selection: TextSelection.collapsed(offset: controller.text.length - 1),
-        ),
-      );
-      await tester.pump();
-      expect(viewModel.inputAmount, 120);
-      controller.selection = TextSelection(baseOffset: 2, extentOffset: controller.text.length);
-      tester.testTextInput.updateEditingValue(
-        TextEditingValue(
-          text: '0${preset.decimalSeparator}00000001',
-          selection: const TextSelection.collapsed(offset: 10),
-          composing: const TextRange(start: 2, end: 10),
-        ),
-      );
-      await tester.pump();
-      expect(viewModel.inputAmount, 1);
-      expect(controller.text, '0${preset.decimalSeparator}00000001');
-      expect(controller.selection.extentOffset, 10);
-      expect(controller.value.composing, const TextRange(start: 2, end: 10));
-      expect(tester.takeException(), isNull);
-    });
+    // 소수 0자리 통화는 소수점·부호·지수가 섞인 붙여넣기를 금액으로 바꾸지 않고 거부한다(1234.5 → 12,345로 커지지 않게).
+    for (final fiat in [FiatCode.KRW, FiatCode.JPY, FiatCode.CLP, FiatCode.VND]) {
+      testWidgets('${fiat.code} ${preset.name} rejects decimal, signed, and exponent paste', (tester) async {
+        await _pumpCalculator(tester, fiat: fiat);
+        NumberFormatConfig.instance.applyPreset(preset);
+        await tester.pump();
+        final field = _amountField();
+        final viewModel = _viewModelOf(tester, field);
 
-    testWidgets('KRW ${preset.name} rejects decimal, signed, and exponent paste', (tester) async {
-      await _pumpCalculator(tester, fiat: FiatCode.KRW);
-      NumberFormatConfig.instance.applyPreset(preset);
-      await tester.pump();
-      final field = _amountField();
-      final viewModel = _viewModelOf(tester, field);
+        await _replaceAmount(tester, field, '1000.0');
+        expect(viewModel.inputAmount, isNull);
+        expect(_textOf(tester, field), isEmpty);
 
-      await _replaceAmount(tester, field, '1000.0');
-      expect(viewModel.inputAmount, isNull);
-      expect(_textOf(tester, field), isEmpty);
+        await _replaceAmount(tester, field, '-1000');
+        expect(viewModel.inputAmount, isNull);
+        await _replaceAmount(tester, field, '1e3');
+        expect(viewModel.inputAmount, isNull);
+        await _replaceAmount(tester, field, '1000,0');
+        expect(viewModel.inputAmount, isNull);
 
-      await _replaceAmount(tester, field, '-1000');
-      expect(viewModel.inputAmount, isNull);
-      await _replaceAmount(tester, field, '1e3');
-      expect(viewModel.inputAmount, isNull);
-      await _replaceAmount(tester, field, '1000,0');
-      expect(viewModel.inputAmount, isNull);
+        await _replaceAmount(tester, field, '1000');
+        expect(viewModel.inputAmount, 1000);
+        expect(_textOf(tester, field), _grouped(1000, preset));
 
-      await _replaceAmount(tester, field, '1000');
-      expect(viewModel.inputAmount, 1000);
-      expect(_textOf(tester, field), _grouped(1000, preset));
+        await _replaceAmount(tester, field, _grouped(1000, preset));
+        expect(viewModel.inputAmount, 1000);
+        expect(_textOf(tester, field), _grouped(1000, preset));
 
-      await _replaceAmount(tester, field, _grouped(1000, preset));
-      expect(viewModel.inputAmount, 1000);
-      expect(_textOf(tester, field), _grouped(1000, preset));
-
-      await _replaceAmount(tester, field, '1000.0');
-      expect(viewModel.inputAmount, 1000);
-      expect(_textOf(tester, field), _grouped(1000, preset));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('sats ${preset.name} keeps grouped edits and rejects magnified paste', (tester) async {
-      await _pumpCalculator(tester, fiat: FiatCode.KRW, unit: BitcoinUnit.sats);
-      NumberFormatConfig.instance.applyPreset(preset);
-      await tester.pump();
-      await _switchToBtcInput(tester);
-      final field = _amountField();
-      final viewModel = _viewModelOf(tester, field);
-      expect(viewModel.inputAssetType, InputAssetType.btc);
-      expect(viewModel.currentUnit.isBasedOnSatoshi, isTrue);
-
-      await _replaceAmount(tester, field, '1000.0');
-      expect(viewModel.inputAmount, isNull, reason: '1000.0 must not become the sats value sent onward');
-      expect(_textOf(tester, field), isEmpty);
-
-      await _replaceAmount(tester, field, '-1000');
-      expect(viewModel.inputAmount, isNull);
-      await _replaceAmount(tester, field, '1e3');
-      expect(viewModel.inputAmount, isNull);
-
-      await _replaceAmount(
-        tester,
-        field,
-        const TextEditingValue(
-          text: '1000',
-          selection: TextSelection.collapsed(offset: 4),
-          composing: TextRange(start: 0, end: 4),
-        ),
-      );
-      final composingText = _textOf(tester, field);
-      final composing = _editable(tester, field).controller.value.composing;
-      expect(viewModel.inputAmount, 1000);
-      expect(composingText, _grouped(1000, preset));
-      expect(composing.isValid && !composing.isCollapsed, isTrue);
-
-      await _replaceAmount(tester, field, _grouped(1000, preset));
-      expect(viewModel.inputAmount, 1000);
-      expect(_textOf(tester, field), _grouped(1000, preset));
-
-      await _replaceAmount(tester, field, '1000.0');
-      expect(viewModel.inputAmount, 1000);
-      expect(_textOf(tester, field), _grouped(1000, preset));
-
-      if (preset == NumberFormatPreset.dotDecimal) {
-        final controller = _editable(tester, field).controller;
-        controller.selection = const TextSelection.collapsed(offset: 1);
-        await _replaceAmount(
-          tester,
-          field,
-          const TextEditingValue(text: '19,000', selection: TextSelection.collapsed(offset: 2)),
-        );
-        expect(viewModel.inputAmount, 19000);
-        expect(controller.text, '19,000');
-        expect(controller.selection.extentOffset, 2);
-      }
-      expect(tester.takeException(), isNull);
-    });
+        await _replaceAmount(tester, field, '1000.0');
+        expect(viewModel.inputAmount, 1000);
+        expect(_textOf(tester, field), _grouped(1000, preset));
+        expect(tester.takeException(), isNull);
+      });
+    }
   }
-
-  testWidgets('bip177 uses the same strict integer field', (tester) async {
-    await _pumpCalculator(tester, fiat: FiatCode.KRW, unit: BitcoinUnit.bip177);
-    await _switchToBtcInput(tester);
-    final field = _amountField();
-    final viewModel = _viewModelOf(tester, field);
-
-    await _replaceAmount(tester, field, '1000.0');
-    expect(viewModel.inputAmount, isNull);
-    await _replaceAmount(tester, field, '1000');
-    expect(viewModel.inputAmount, 1000);
-    expect(_textOf(tester, field), '1,000');
-    expect(tester.takeException(), isNull);
-  });
 
   for (final preset in [NumberFormatPreset.dotDecimal, NumberFormatPreset.commaDecimal]) {
     testWidgets('USD ${preset.name} decimal fiat still accepts a fractional amount', (tester) async {
@@ -310,31 +209,137 @@ void main() {
       expect(_textOf(tester, field), grouped);
       expect(tester.takeException(), isNull);
     });
+  }
 
-    testWidgets('BTC ${preset.name} keeps alternate-decimal and exact grouping', (tester) async {
-      await _pumpCalculator(tester, fiat: FiatCode.KRW, unit: BitcoinUnit.btc);
-      NumberFormatConfig.instance.applyPreset(preset);
-      await tester.pump();
+  // sats·BIP-177 칸은 develop처럼 digitsOnly다. develop의 SatoshiAmountInputFormatter는 숫자가 없는 입력을 그대로 돌려주고
+  // 쉼표 소수점 설정에서 '.'을 소수점으로 보고 커서를 옮겨서, 빈 칸에 기호가 남고 끝에서 친 ','가 커서를 앞으로 보냈다.
+  // 숫자 표시 설정은 화면을 띄우기 전에 바꾼다(띄운 뒤 바꾸면 한 글자씩 치는 흐름이 실제와 달라진다).
+  for (final unit in [BitcoinUnit.sats, BitcoinUnit.bip177]) {
+    for (final preset in NumberFormatPreset.values) {
+      testWidgets('${unit.name} ${preset.name} keeps an empty amount empty when a non-digit is typed', (tester) async {
+        NumberFormatConfig.instance.applyPreset(preset);
+        await _pumpCalculator(tester, fiat: FiatCode.KRW, unit: unit);
+        await _switchToBtcInput(tester);
+        final field = _amountField();
+        final viewModel = _viewModelOf(tester, field);
+        await tester.showKeyboard(field);
+        final controller = _editable(tester, field).controller;
+
+        for (final typed in [',', '.', '-', 'abc']) {
+          await _typeAtCaret(tester, controller, typed);
+          expect(controller.text, isEmpty, reason: typed);
+          expect(viewModel.inputAmount, isNull, reason: typed);
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('${unit.name} commaDecimal keeps the caret at the end after "," and appends the next digit', (
+      tester,
+    ) async {
+      NumberFormatConfig.instance.applyPreset(NumberFormatPreset.commaDecimal);
+      await _pumpCalculator(tester, fiat: FiatCode.KRW, unit: unit);
       await _switchToBtcInput(tester);
       final field = _amountField();
       final viewModel = _viewModelOf(tester, field);
-      final quarter = preset == NumberFormatPreset.dotDecimal ? '0.25' : '0,25';
+      await tester.showKeyboard(field);
+      final controller = _editable(tester, field).controller;
 
-      await _replaceAmount(tester, field, quarter);
-      expect(viewModel.inputAmount, 25000000);
-      expect(_textOf(tester, field), quarter);
-
-      if (preset == NumberFormatPreset.commaDecimal) {
-        await _replaceAmount(tester, field, '1.2345');
-        expect(viewModel.inputAmount, 123450000);
-        expect(_textOf(tester, field), '1,2345');
-        await _replaceAmount(tester, field, '1.000');
-        expect(viewModel.inputAmount, 100000000000);
-        expect(_textOf(tester, field), '1.000');
+      for (final digit in '1293456'.split('')) {
+        await _typeAtCaret(tester, controller, digit);
       }
+      expect(controller.text, '1.293.456');
+      expect(controller.selection, const TextSelection.collapsed(offset: 9));
+      expect(viewModel.inputAmount, 1293456);
+
+      await _typeAtCaret(tester, controller, ',');
+      expect(controller.text, '1.293.456');
+      expect(controller.selection, const TextSelection.collapsed(offset: 9));
+      expect(viewModel.inputAmount, 1293456);
+
+      await _typeAtCaret(tester, controller, '7');
+      expect(controller.text, '12.934.567');
+      expect(controller.selection, const TextSelection.collapsed(offset: 10));
+      expect(viewModel.inputAmount, 12934567);
       expect(tester.takeException(), isNull);
     });
   }
+
+  group('통화 소수 자리별 입력', () {
+    testWidgets('소수 3자리 통화(KWD): 3자리까지 받고 넷째 자리는 받지 않는다', (tester) async {
+      await _pumpCalculator(tester, fiat: FiatCode.KWD);
+      final field = _amountField();
+      final viewModel = _viewModelOf(tester, field);
+      await tester.showKeyboard(field);
+      final controller = _editable(tester, field).controller;
+
+      for (final char in '12.345'.split('')) {
+        await _typeAtCaret(tester, controller, char);
+      }
+      expect(controller.text, '12.345');
+      expect(viewModel.inputAmount, 12345);
+
+      await _typeAtCaret(tester, controller, '6');
+      expect(controller.text, '12.345');
+      expect(viewModel.inputAmount, 12345);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('소수 2자리 통화(THB): 2자리까지 받고 셋째 자리는 받지 않는다', (tester) async {
+      await _pumpCalculator(tester, fiat: FiatCode.THB);
+      final field = _amountField();
+      final viewModel = _viewModelOf(tester, field);
+      await tester.showKeyboard(field);
+      final controller = _editable(tester, field).controller;
+
+      for (final char in '1234.56'.split('')) {
+        await _typeAtCaret(tester, controller, char);
+      }
+      expect(controller.text, '1,234.56');
+      expect(viewModel.inputAmount, 123456);
+      await _typeAtCaret(tester, controller, '7');
+      expect(controller.text, '1,234.56');
+      expect(viewModel.inputAmount, 123456);
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final fiat in [FiatCode.KRW, FiatCode.VND]) {
+      testWidgets('소수 0자리 통화(${fiat.code})가 아래 결과 칸일 때도 소수점·부호·지수가 섞인 입력을 받지 않는다', (tester) async {
+        await _pumpCalculator(tester, fiat: fiat);
+        await _switchToBtcInput(tester);
+        final result = find.descendant(
+          of: find.byKey(const Key('p2p-result-amount')),
+          matching: find.byType(EditableText),
+        );
+        expect(result, findsOneWidget);
+        final viewModel = _viewModelOf(tester, result);
+
+        for (final pasted in ['1234.5', '-1000', '1e3', '1000,0']) {
+          await _replaceAmount(tester, result, pasted);
+          expect(viewModel.isEditingResult, isFalse, reason: pasted);
+          expect(_textOf(tester, result), isEmpty, reason: pasted);
+        }
+
+        await _replaceAmount(tester, result, '1000');
+        expect(viewModel.resultAmount, 1000);
+        await _replaceAmount(tester, result, '1234.5');
+        expect(viewModel.resultAmount, 1000);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
+}
+
+/// 컨트롤러의 지금 커서 자리에 [typed]를 넣은 것처럼 입력기 값을 보낸다(한 글자씩 치기).
+Future<void> _typeAtCaret(WidgetTester tester, TextEditingController controller, String typed) async {
+  final selection = controller.selection;
+  final start = selection.isValid ? selection.start : controller.text.length;
+  final end = selection.isValid ? selection.end : controller.text.length;
+  final text = controller.text.replaceRange(start, end, typed);
+  tester.testTextInput.updateEditingValue(
+    TextEditingValue(text: text, selection: TextSelection.collapsed(offset: start + typed.length)),
+  );
+  await tester.pump();
 }
 
 Future<void> _pumpCalculator(WidgetTester tester, {required FiatCode fiat, BitcoinUnit unit = BitcoinUnit.btc}) async {

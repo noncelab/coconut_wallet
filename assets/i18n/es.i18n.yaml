@@ -1380,7 +1380,7 @@ wallet_detail_screen:
   vault_sync_required_description: "Aún no podemos verificar el historial ni la dirección de recepción. Comprueba la conexión y la sincronización y vuelve a seleccionar la bóveda cuando termine."
   vault_select_receiving_wallet: "Seleccionar la bóveda receptora"
   vault_connect_watch_only_wallet: "Conectar una cartera para consultar la bóveda"
-  vault_watch_only_description: "Añada a la app una «cartera para consultar la bóveda (solo lectura)». Puede comprobar sus bitcoins de forma segura y en tiempo real sin encender su dispositivo dedicado cada vez."
+  vault_watch_only_description: "Añada una cartera de solo lectura.\nPodrá consultar desde la app el saldo en bitcoin de su bóveda sin exponer sus claves."
   vault_watch_only_title: "¡Mantenga su dispositivo sin conexión y consulte sus activos cómodamente en la app!"
   vault_no_balance_title: "Ahora no tiene bitcoins disponibles para enviar"
   vault_no_balance_description: "Vuelva a intentarlo después de recibir bitcoins"
@@ -1564,6 +1564,9 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "Esta transacción no es compatible."
     utxo_not_found_title: "UTXO no encontrado"
     utxo_not_found: "No se puede encontrar el UTXO utilizado en la transacción."
+    unverified_original_title: "Firma no verificada"
+    unverified_original: "No se pudo verificar la firma, así que no se puede aumentar la comisión. Puede que tu servidor haya enviado una transacción incorrecta. Cambia de servidor en 'Servidor Electrum' y luego usa 'Resincronizar'."
+    change_server: "Cambiar servidor"
   toast:
     insufficient_utxo: "Saldo insuficiente para crear una nueva transacción"
 
@@ -2078,6 +2081,7 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+  thai: "ไทย"
 
 number_format_bottom_sheet:
   title: "Formato numérico"

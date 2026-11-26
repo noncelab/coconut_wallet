@@ -2,8 +2,10 @@ import 'dart:ui' show Locale;
 
 import 'package:coconut_wallet/config/number_format_config.dart';
 import 'package:coconut_wallet/constants/app_language.dart';
+import 'package:coconut_wallet/constants/external_links.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
 import 'package:coconut_wallet/enums/number_format_preset.dart';
+import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/utils/locale_util.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,12 +38,10 @@ void main() {
       expect(getSystemLanguageCode(), isA<String>());
     });
 
-    // 한국어 로케일 테스트 (실제로는 모킹이 필요하지만 여기서는 로직만 확인)
-    test('Korean locale detection logic', () {
-      // 이 테스트는 실제 window.locale을 사용하므로
-      // 시스템 언어에 따라 결과가 달라집니다.
-      final String result = getSystemLanguageCode();
-      expect(result == AppLanguage.ko.code || result == AppLanguage.en.code, isTrue);
+    // 테스트를 돌리는 기기의 언어를 그대로 읽으므로 결과는 기기마다 다르다. 앱이 지원하는 언어 코드 중 하나인지만 본다.
+    // 기기 언어가 태국어일 때 th가 되는지는 아래 '앱 언어와 번역 locale'의 단위 테스트와 실기기 새 설치로 확인한다.
+    test('system language resolves to one of the app languages', () {
+      expect(AppLanguage.values.map((language) => language.code), contains(getSystemLanguageCode()));
     });
 
     // 시스템 언어가 한국어인지 확인하는 로직 테스트
@@ -128,15 +128,27 @@ void main() {
         (const Locale('fr', 'MC'), FiatCode.EUR), // EU 밖, 통화 협정
         (const Locale('fr', 'BL'), FiatCode.EUR), // EU 밖, 프랑스 해외 영토
         (const Locale('sq', 'XK'), FiatCode.EUR), // EU 밖, 협정 없이 사용
-        (const Locale('de', 'CH'), FiatCode.USD), // 유로를 쓰지 않는다
-        (const Locale('da', 'DK'), FiatCode.USD), // EU 회원국이지만 유로를 쓰지 않는다
-        (const Locale('en', 'IN'), FiatCode.USD),
+        (const Locale('de', 'CH'), FiatCode.CHF), // 유로를 쓰지 않는다
+        (const Locale('da', 'DK'), FiatCode.DKK), // EU 회원국이지만 유로를 쓰지 않는다
+        (const Locale('en', 'IN'), FiatCode.INR),
+        // 지원하는 통화면 그 지역의 통화로 정한다.
+        (const Locale('th', 'TH'), FiatCode.THB),
+        (const Locale('en', 'TH'), FiatCode.THB),
+        (const Locale('en', 'GB'), FiatCode.GBP),
+        (const Locale('vi', 'VN'), FiatCode.VND),
+        (const Locale('en', 'AU'), FiatCode.AUD),
+        (const Locale('en', 'LS'), FiatCode.ZAR), // 레소토: CLDR의 주 통화가 랜드
+        // 그 지역의 통화를 지원하지 않으면 USD
+        (const Locale('ar', 'EG'), FiatCode.USD), // 이집트 파운드
+        (const Locale('dz', 'BT'), FiatCode.USD), // 부탄: 주 통화는 눌트룸(인도 루피는 주 통화가 아님)
         (const Locale('en', 'US'), FiatCode.USD),
         (const Locale('ko', 'US'), FiatCode.USD), // 언어보다 지역이 먼저다
+        (const Locale('th', 'US'), FiatCode.USD),
         // 지역이 없으면 언어로 정한다.
         (const Locale('ko'), FiatCode.KRW),
         (const Locale('ja'), FiatCode.JPY),
         (const Locale('de'), FiatCode.EUR),
+        (const Locale('th'), FiatCode.THB),
         (const Locale('en'), FiatCode.USD),
         (const Locale('es'), FiatCode.USD),
       ];
@@ -145,6 +157,59 @@ void main() {
           expect(defaultFiatForLocale(locale), expected);
         });
       }
+
+      test('CoinGecko로 받는 통화는 모두 어느 지역의 기본 통화다', () {
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        final reached = {
+          for (final a in letters.split(''))
+            for (final b in letters.split('')) defaultFiatForLocale(Locale('en', '$a$b')),
+        };
+        expect(FiatCode.values.where((fiat) => !fiat.hasExchangeSource).toSet().difference(reached), isEmpty);
+      });
+    });
+
+    group('앱 언어와 번역 locale', () {
+      test('앱 언어마다 같은 언어 코드의 번역 locale이 하나씩 있다', () {
+        for (final language in AppLanguage.values) {
+          expect(resolveAppLocale(language.code).languageCode, language.code);
+        }
+        expect({for (final language in AppLanguage.values) resolveAppLocale(language.code)}, AppLocale.values.toSet());
+      });
+
+      test('언어 코드 th는 태국어, 모르는 코드는 영어다', () {
+        expect(AppLanguage.fromCode('th'), AppLanguage.th);
+        expect(resolveAppLocale('th'), AppLocale.th);
+        expect(AppLanguage.fromCode('vi'), AppLanguage.en);
+        expect(resolveAppLocale('vi'), AppLocale.en);
+      });
+
+      test('영어 어순은 en·es·de·th, 한국어 어순은 ko·ja다', () {
+        expect(
+          {for (final language in AppLanguage.values) language: language.hasEnglishWordOrder},
+          {
+            AppLanguage.ko: false,
+            AppLanguage.ja: false,
+            AppLanguage.en: true,
+            AppLanguage.es: true,
+            AppLanguage.de: true,
+            AppLanguage.th: true,
+          },
+        );
+      });
+    });
+
+    test('약관·개인정보 주소: 태국어만 영어 페이지, 다른 언어는 기본 주소다', () {
+      for (final locale in AppLocale.values) {
+        final isThai = locale == AppLocale.th;
+        expect(
+          termsOfServiceUrlFor(locale),
+          isThai ? TERMS_OF_SERVICE_URL_EN : TERMS_OF_SERVICE_URL,
+          reason: '$locale',
+        );
+        expect(privacyPolicyUrlFor(locale), isThai ? PRIVACY_POLICY_URL_EN : PRIVACY_POLICY_URL, reason: '$locale');
+      }
+      expect(TERMS_OF_SERVICE_URL_EN, 'https://www.coconut.onl/en/tos');
+      expect(PRIVACY_POLICY_URL_EN, 'https://www.coconut.onl/en/privacy');
     });
   });
 }

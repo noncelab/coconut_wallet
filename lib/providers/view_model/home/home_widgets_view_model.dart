@@ -181,7 +181,8 @@ class HomeWidgetsViewModel extends ChangeNotifier {
     final closes = _dailyCloses[fiatCode];
     final isWaitingToRetry =
         _failedClosesAtReceivedAt.containsKey(fiatCode) || _closesRetryTimers.containsKey(fiatCode);
-    final utcNow = _now().toUtc();
+    // CoinGecko는 마감된 날의 종가를 다음 날 00:35 UTC 뒤에 준다. 그 전에 받으면 새 종가가 없으므로 날짜 경계를 40분 늦춘다.
+    final utcNow = _now().toUtc().subtract(fiatCode.hasExchangeSource ? Duration.zero : const Duration(minutes: 40));
     final utcDay = DateTime.utc(utcNow.year, utcNow.month, utcNow.day);
     // 처음이거나 UTC 날짜가 바뀌었으면 받는다. 실패 뒤에는 기존 재시도 규칙(거래소: 간격 늘림, CoinGecko: 새 시세)을 따른다
     final isStale = closes != null && _closesUtcDay[fiatCode] != utcDay;

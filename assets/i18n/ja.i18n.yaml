@@ -1377,7 +1377,7 @@ wallet_detail_screen:
   vault_sync_required_description: "金庫の取引履歴と受取アドレスをまだ確認できません。接続と同期の状態を確認し、同期完了後にもう一度選択してください。"
   vault_select_receiving_wallet: "受け取り先の金庫を選択"
   vault_connect_watch_only_wallet: "金庫確認用ウォレットを接続する"
-  vault_watch_only_description: "アプリに「金庫確認用（閲覧専用）ウォレット」を登録してみましょう。専用機器を毎回起動しなくても、ビットコインが保管されていることをアプリでリアルタイムに安全に確認できます。"
+  vault_watch_only_description: "閲覧専用ウォレットを登録しましょう。\n鍵を外部に出さずに、金庫のビットコイン残高をアプリで確認できます。"
   vault_watch_only_title: "機器はオフラインのまま、資産はアプリで手軽に確認しましょう！"
   vault_no_balance_title: "今は送金できるビットコインがありません"
   vault_no_balance_description: "ビットコインを受け取ってから、もう一度ご利用ください"
@@ -1561,6 +1561,9 @@ transaction_fee_bumping_screen:
     rbf_duplicated_output: "このトランザクションはサポートされていません。"
     utxo_not_found_title: "UTXOが見つかりません"
     utxo_not_found: "トランザクションで使用されたUTXOが見つかりません。"
+    unverified_original_title: "署名を確認できません"
+    unverified_original: "このトランザクションの署名を確認できないため、手数料を上げることはできません。接続しているサーバーが誤ったトランザクションを送った可能性があります。「Electrum Server設定」で別のサーバーに変更してから、「ウォレット再同期」を行ってください。"
+    change_server: "サーバーを変更"
   toast:
     insufficient_utxo: "新しいトランザクションを作成するための残高が不足しています"
 
@@ -2075,6 +2078,7 @@ language_bottom_sheet:
   japanese: "日本語"
   spanish: "Español"
   german: "Deutsch"
+  thai: "ไทย"
 
 number_format_bottom_sheet:
   title: "数値形式"

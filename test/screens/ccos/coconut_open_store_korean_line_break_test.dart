@@ -248,7 +248,7 @@ void main() {
       expect(highlight.every((child) => child.style?.color == const Color(0xFF10161C)), isTrue);
       expect(_plain(span.toPlainText()), prefix);
     }
-    for (final locale in [AppLocale.en, AppLocale.ja, AppLocale.de]) {
+    for (final locale in [AppLocale.en, AppLocale.ja, AppLocale.de, AppLocale.th]) {
       LocaleSettings.setLocaleSync(locale);
       controller.value = 1;
       await tester.pumpWidget(

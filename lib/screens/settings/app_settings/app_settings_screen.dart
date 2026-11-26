@@ -630,6 +630,8 @@ class _AppSettingsScreen extends State<AppSettingsScreen> {
         return t.settings_screen.locales.english;
       case AppLanguage.de:
         return t.settings_screen.locales.german;
+      case AppLanguage.th:
+        return t.settings_screen.locales.thai;
     }
   }
 

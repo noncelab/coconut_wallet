@@ -3,9 +3,11 @@ import 'package:dio/dio.dart';
 
 class HistoricalBitcoinPriceService {
   final Dio _dio;
+  final DateTime Function() _now;
 
-  HistoricalBitcoinPriceService({Dio? dio})
-    : _dio =
+  HistoricalBitcoinPriceService({Dio? dio, DateTime Function()? now})
+    : _now = now ?? DateTime.now,
+      _dio =
           dio ??
           Dio(BaseOptions(connectTimeout: const Duration(seconds: 5), receiveTimeout: const Duration(seconds: 5)));
 
@@ -27,7 +29,15 @@ class HistoricalBitcoinPriceService {
       queryParameters: {'vs_currency': fiatCode.vsCurrency, 'days': 100},
     );
     final prices = response.data?['prices'];
-    return closedDailyClosesFromCoinGecko(prices is List ? prices : const []);
+    final effectiveNow = _now().toUtc().subtract(const Duration(minutes: 40));
+    final expectedMidnight =
+        DateTime.utc(effectiveNow.year, effectiveNow.month, effectiveNow.day).millisecondsSinceEpoch;
+    // 캐시 갱신 경계와 같은 날짜를 확인해, 늦게 공개된 종가를 그날 성공으로 고정하지 않는다.
+    if (prices is! List ||
+        !prices.any((point) => point is List && point.length >= 2 && point[0] == expectedMidnight && point[1] is num)) {
+      return const [];
+    }
+    return closedDailyClosesFromCoinGecko(prices);
   }
 
   /// CoinGecko market_chart 응답([ms, 가격], …)에서 마감된 날의 종가만 오래된 날부터

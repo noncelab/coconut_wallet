@@ -75,8 +75,10 @@ void main() {
     await tester.pump(const Duration(seconds: 30));
     service.stop();
     service.start();
-    await tester.pump(const Duration(seconds: 119));
-    expect(dio.requestCount, 1, reason: 'a restart does not skip the 120s backoff');
+    await tester.pump(const Duration(seconds: 89));
+    expect(dio.requestCount, 1, reason: 'the original 120s backoff has not elapsed');
+    await tester.pump(const Duration(seconds: 1));
+    expect(dio.requestCount, 2, reason: 'a restart preserves the original retry deadline');
     service.dispose();
   });
 

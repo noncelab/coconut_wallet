@@ -3,6 +3,7 @@ import 'package:coconut_wallet/enums/network_enums.dart';
 import 'package:coconut_wallet/model/node/script_status.dart';
 import 'package:coconut_wallet/model/node/transaction_processing_state.dart';
 import 'package:coconut_wallet/model/wallet/transaction_record.dart';
+import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_service.dart';
 import 'package:coconut_wallet/providers/node_provider/subscription/script_callback_util.dart';
@@ -14,6 +15,7 @@ import 'package:coconut_wallet/repository/realm/transaction_repository.dart';
 import 'package:coconut_wallet/repository/realm/utxo_repository.dart';
 import 'package:coconut_wallet/services/electrum_service.dart';
 import 'package:coconut_wallet/services/model/response/block_timestamp.dart';
+import 'package:coconut_wallet/services/model/response/electrum_response_types.dart';
 import 'package:coconut_wallet/services/model/response/fetch_transaction_response.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/providers/node_provider/state/state_manager_interface.dart';
@@ -462,6 +464,94 @@ class TransactionSyncService {
     } catch (e) {
       Logger.error('Failed to get fetch transaction responses: $e');
       rethrow;
+    }
+  }
+
+  /// 휴면 재확인용. 쉬고 있는 주소와 구멍의 거래 이력을 50개씩 병렬로 조회해, 다시 동기화할 주소를 고른다.
+  /// 받고 다 쓴 주소는 잔액이 0이라 잔액 대신 이력으로 본다. 아래 중 하나면 고른다.
+  /// - 사용 표시가 없는데 이력이 있는 주소(구멍)
+  /// - 기록에 없거나 미확정으로 기록된 거래, 또는 서버에서 미확정인 거래가 이력에 있는 주소
+  /// - 기록된 거래로 계산한 주소 잔액이 저장된 잔액과 다른 주소(다른 내 주소의 거래로 먼저 기록된 입금 등)
+  /// - 입력 없이 기록된 거래가 있어 기록으로 잔액을 셀 수 없으면, 서버 잔액을 한 번 더 물어 저장된 잔액과 다른 주소
+  /// [toResync]의 값은 그 주소 이력의 지문이다. 조회에 실패한 주소는 [failed]에 담고, 이력이 없는 것으로 보지 않는다.
+  Future<({Map<String, String> toResync, Set<String> failed})> findDormantAddressesToResync(
+    WalletItemBase walletItem,
+    List<WalletAddress> addresses,
+  ) async {
+    final addressType = walletItem.walletBase.addressType;
+    final histories = <String, List<GetTxHistoryRes>>{};
+    final failed = <String>{};
+    await _inBatches(addresses, (address) async {
+      try {
+        histories[address.address] = await _electrumService.getHistory(addressType, address.address);
+      } catch (e) {
+        failed.add(address.address);
+        Logger.error('TransactionSyncService: Error fetching history for ${address.address}: $e');
+      }
+    });
+
+    final records = _transactionRepository.getTransactionRecordMapByHashes(walletItem.id, {
+      for (final history in histories.values)
+        for (final item in history) item.txHash,
+    });
+
+    final toResync = <String, String>{};
+    final balanceUnknown = <WalletAddress>[];
+    for (final address in addresses) {
+      final history = histories[address.address];
+      if (history == null || history.isEmpty) continue;
+      final inSync = address.isUsed ? _isInSync(address, history, records) : false;
+      if (inSync == false) {
+        toResync[address.address] = _historyFingerprint(history);
+      } else if (inSync == null) {
+        balanceUnknown.add(address);
+      }
+    }
+
+    await _inBatches(balanceUnknown, (address) async {
+      try {
+        final balance = await _electrumService.getBalance(addressType, address.address);
+        if (balance.confirmed != address.confirmed || balance.unconfirmed != address.unconfirmed) {
+          toResync[address.address] = _historyFingerprint(histories[address.address]!);
+        }
+      } catch (e) {
+        failed.add(address.address);
+        Logger.error('TransactionSyncService: Error fetching balance for ${address.address}: $e');
+      }
+    });
+    return (toResync: toResync, failed: failed);
+  }
+
+  /// 이력의 거래가 모두 확정으로 기록돼 있고 기록으로 계산한 이 주소의 잔액이 저장된 잔액과 같으면 true, 다르면 false다.
+  /// 이전 거래를 받지 못해 입력 없이 기록된 거래가 있으면 이 주소에서 나간 돈을 셀 수 없어 null이다(서버 잔액으로 확인).
+  /// 그런 기록은 다시 동기화해도 다시 만들지 않으므로, 기록만 보고 고르면 실행할 때마다 같은 주소를 다시 동기화하게 된다.
+  bool? _isInSync(WalletAddress address, List<GetTxHistoryRes> history, Map<String, TransactionRecord> records) {
+    var balance = 0;
+    var inputsKnown = true;
+    for (final item in history) {
+      final record = records[item.txHash];
+      if (item.height <= 0 || record == null || record.blockHeight <= 0) return false;
+      if (record.inputAddressList.isEmpty) inputsKnown = false;
+      for (final output in record.outputAddressList) {
+        if (output.address == address.address) balance += output.amount;
+      }
+      for (final input in record.inputAddressList) {
+        if (input.address == address.address) balance -= input.amount;
+      }
+    }
+    if (!inputsKnown) return null;
+    return balance == address.total;
+  }
+
+  String _historyFingerprint(List<GetTxHistoryRes> history) =>
+      (history.map((item) => '${item.txHash}:${item.height}').toList()..sort()).join(',');
+
+  /// [items]를 50개씩 나눠, 묶음 안에서는 병렬로 처리한다.
+  Future<void> _inBatches<T>(List<T> items, Future<void> Function(T item) task) async {
+    const batchSize = 50;
+    for (var start = 0; start < items.length; start += batchSize) {
+      final end = start + batchSize < items.length ? start + batchSize : items.length;
+      await Future.wait(items.sublist(start, end).map(task));
     }
   }
 
