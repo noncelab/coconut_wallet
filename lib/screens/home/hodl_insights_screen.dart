@@ -117,6 +117,9 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
     for (final section in HodlInsightsSection.values) section: GlobalKey(),
   };
   bool _movedToInitialSection = false;
+
+  /// 이미 다 차오른 목표 막대. 목표 화면에서 돌아와 위젯이 다시 만들어져도 완료 값에서 시작한다.
+  final Set<String> _filledProgress = {};
   HodlInsightsSection? _highlighted;
   Animation<double>? _routeAnimation;
   bool _cardHeroActive = true;
@@ -250,6 +253,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                                     HodlInsightsSection.goal,
                                     child: _GoalCard(
                                       viewModel: viewModel,
+                                      filledProgress: _filledProgress,
                                       onSetGoal: () => _openSettings(context, viewModel),
                                     ),
                                   ),
@@ -1006,7 +1010,17 @@ class _OpenProgress extends StatefulWidget {
   final Curve curve;
   final Widget Function(BuildContext context, double progress) builder;
 
-  const _OpenProgress({required this.progress, required this.builder, this.curve = Curves.easeOutCubic});
+  /// 다 차오른 뒤 [filledId]를 기록하는 집합. 이미 들어 있으면 처음부터 가득 찬 상태로 시작한다.
+  final Set<String>? filled;
+  final String? filledId;
+
+  const _OpenProgress({
+    required this.progress,
+    required this.builder,
+    this.curve = Curves.easeOutCubic,
+    this.filled,
+    this.filledId,
+  });
 
   @override
   State<_OpenProgress> createState() => _OpenProgressState();
@@ -1021,6 +1035,20 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
   Timer? _start;
   bool _reduceMotion = false;
   double? _flightValue;
+
+  bool get _alreadyFilled => widget.filledId != null && (widget.filled?.contains(widget.filledId) ?? false);
+
+  @override
+  void initState() {
+    super.initState();
+    if (_alreadyFilled) {
+      _from = widget.progress;
+      _controller.value = 1;
+    }
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && widget.filledId != null) widget.filled?.add(widget.filledId!);
+    });
+  }
 
   double get _value => _from + (_to - _from) * _curve.value;
 
@@ -1037,6 +1065,10 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
       _controller.value = 1;
     }
     if (_route != null) return;
+    if (_alreadyFilled) {
+      _route = kAlwaysCompleteAnimation;
+      return;
+    }
     final route = flight?.animation ?? ModalRoute.of(context)?.animation ?? kAlwaysCompleteAnimation;
     _route = route;
     if (_reduceMotion) return;
@@ -1088,11 +1120,12 @@ class _OpenProgressState extends State<_OpenProgress> with SingleTickerProviderS
 
 class _GoalCard extends StatelessWidget {
   final HodlInsightsViewModel viewModel;
+  final Set<String> filledProgress;
 
   /// 목표가 없을 때 카드를 누르면 설정을 연다.
   final VoidCallback onSetGoal;
 
-  const _GoalCard({required this.viewModel, required this.onSetGoal});
+  const _GoalCard({required this.viewModel, required this.filledProgress, required this.onSetGoal});
 
   @override
   Widget build(BuildContext context) {
@@ -1133,6 +1166,8 @@ class _GoalCard extends StatelessWidget {
     final card = _InsightCard(
       child: _OpenProgress(
         progress: 1,
+        filled: filledProgress,
+        filledId: 'goal',
         builder:
             (context, reveal) => GoalAmountSummary(
               goal: goal,
