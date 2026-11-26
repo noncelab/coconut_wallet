@@ -1,3 +1,8 @@
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
+import 'package:coconut_wallet/ccos/open_store/coconut_open_store_navigation.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
+import 'package:coconut_wallet/widgets/features/ccos/ark/ark_handoff_popup.dart';
 import 'package:coconut_wallet/utils/text_utils.dart';
 import 'dart:math' as math;
 import 'package:coconut_wallet/app/router/app_route_names.dart';
@@ -228,6 +233,15 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
       widget.sendEntryPoint,
       widget.transactionDraftId,
       widget.selectedUtxoList,
+      arkWalletStatus: () {
+        final ark = context.read<ArkWalletProvider>();
+        return (
+          isUsable: !ArkServerConfig.isMainnetOnlyPreview,
+          isAdded: context.read<PreferenceProvider>().getCcosFeatureAvailability(ArkFeature.id).isActivated,
+          hasWallet: ark.hasWallet,
+          spendableSats: ark.balance.spendable,
+        );
+      },
     );
     _lastExcludedUtxoNonce = _viewModel.excludedUtxoNonce;
     _viewModel.addListener(_onUtxoExcludedBySync);
@@ -2732,6 +2746,44 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
   }
 
   void _applyIncomingBitcoinUri(String scannedData, int index) {
+    if (_offerArkHandoff(scannedData, index)) return;
+    _applyOnchainInput(scannedData, index);
+  }
+
+  bool _offerArkHandoff(String input, int index) {
+    final handoff = _viewModel.arkHandoffFor(input);
+    if (handoff == null) return false;
+    if (!handoff.offersBitcoin) {
+      _addressControllerList[index].text = handoff.input;
+      _viewModel.setAddressText(handoff.input, index);
+      _viewModel.validateAllFieldsOnFocusLost();
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) => _showArkHandoff(handoff, index));
+    return true;
+  }
+
+  Future<void> _showArkHandoff(SendArkHandoff handoff, int index) async {
+    if (!mounted) return;
+    final choice = await showArkHandoffPopup(context, handoff, unit: _viewModel.currentUnit);
+    if (!mounted) return;
+    if (choice == ArkHandoffChoice.proceed) {
+      final navigator = Navigator.of(context);
+      switch (handoff.kind) {
+        case SendArkHandoffKind.send:
+          ArkFeature.openWalletFrom(navigator, sendInput: handoff.input);
+        case SendArkHandoffKind.lowBalance:
+          ArkFeature.openWalletFrom(navigator);
+        case SendArkHandoffKind.addArk:
+          openCoconutOpenStoreFeature(context, ArkFeature.id);
+        case SendArkHandoffKind.createWallet:
+          ArkFeature.openWallet(context);
+      }
+    } else if (handoff.offersBitcoin) {
+      _applyOnchainInput(handoff.input, index);
+    }
+  }
+
+  void _applyOnchainInput(String scannedData, int index) {
     if (scannedData.toLowerCase().startsWith('bitcoin:')) {
       final bip21Data = parseBip21Uri(scannedData);
       _addressControllerList[index].text = bip21Data.address;
@@ -2846,10 +2898,10 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
         final shouldShowBoard = focusNode.hasFocus && _viewModel.selectedWalletItem != null && !isOwn;
         _viewModel.setShowAddressBoard(shouldShowBoard);
         if (!focusNode.hasFocus) {
-          if (_hasAddressTextChangedSinceFocus(index, controller.text) &&
-              controller.text.toLowerCase().startsWith('bitcoin:')) {
+          final changed = _hasAddressTextChangedSinceFocus(index, controller.text);
+          if (changed && controller.text.toLowerCase().startsWith('bitcoin:')) {
             _applyIncomingBitcoinUri(controller.text, index);
-          } else {
+          } else if (!(changed && _offerArkHandoff(controller.text, index))) {
             // 원래 주소로 되돌렸더라도 수정 중 무효화한 계산 결과를 복구한다.
             _viewModel.validateAllFieldsOnFocusLost();
           }

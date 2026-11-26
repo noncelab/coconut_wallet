@@ -3,13 +3,11 @@ import 'package:coconut_wallet/app/router/route_args.dart';
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
-import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/bootstrap/platform_channels.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_expiry_reminder.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_link.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
-import 'package:coconut_wallet/screens/ccos/ark/ark_send_screen.dart';
 import 'package:coconut_wallet/services/notification/local_notification_service.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/send_info_provider.dart';
@@ -80,18 +78,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
     if (!mounted || payload != LocalArkExpiryReminder.payload) return;
     if (!context.read<ArkWalletProvider>().hasWallet) return;
     final navigator = widget.navigatorKey.currentState;
-    if (navigator != null) _openArkWallet(navigator);
-  }
-
-  /// 아크 지갑 홈이 쌓여 있으면 그 화면으로 돌아가고, 없으면 새로 염
-  void _openArkWallet(NavigatorState navigator, {String? sendInput}) {
-    var found = false;
-    navigator.popUntil((route) {
-      found = route.settings.name == AnalyticsScreenNames.ccosArkWalletHome;
-      return found || route.isFirst;
-    });
-    if (!found) ArkFeature.openWallet(navigator.context);
-    if (sendInput != null) ArkSendScreen.open(navigator.context, initialInput: sendInput);
+    if (navigator != null) ArkFeature.openWalletFrom(navigator);
   }
 
   Future<void> _consumePendingBitcoinUri() async {
@@ -119,7 +106,7 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
       if (navigator == null) return;
       _recentBitcoinUri = bitcoinUri;
       _recentBitcoinUriHandledAt = DateTime.now();
-      _openArkWallet(navigator, sendInput: bitcoinUri);
+      ArkFeature.openWalletFrom(navigator, sendInput: bitcoinUri);
       return;
     }
 

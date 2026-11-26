@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/constants/dust_constants.dart';
 import 'package:coconut_wallet/core/transaction/transaction_builder.dart';
 import 'package:coconut_wallet/enums/fiat_enums.dart';
@@ -35,7 +36,13 @@ enum AddressError {
   none,
   invalid,
   invalidNetworkAddress,
-  duplicated;
+  duplicated,
+
+  /// 라이트닝·아크 결제. 온체인으로는 못 보내고 아크 지갑에서 보냄
+  arkPayment,
+
+  /// 라이트닝·아크 결제인데 이 빌드에서는 아크 지갑을 쓸 수 없음(학습용)
+  unsupportedPayment;
 
   bool get isError => this != AddressError.none;
   bool get isNotError => this == AddressError.none;
@@ -46,6 +53,10 @@ enum AddressError {
         return t.errors.address_error.invalid;
       case AddressError.duplicated:
         return t.errors.address_error.duplicated;
+      case AddressError.arkPayment:
+        return t.errors.address_error.ark_payment;
+      case AddressError.unsupportedPayment:
+        return t.errors.address_error.unsupported_payment;
       case AddressError.invalidNetworkAddress:
         {
           if (NetworkType.currentNetworkType == NetworkType.testnet) {
@@ -62,6 +73,61 @@ enum AddressError {
         return "";
     }
   }
+}
+
+/// 온체인 보내기에서 본 아크 지갑 상태
+typedef SendArkWalletStatus = ({bool isUsable, bool isAdded, bool hasWallet, int spendableSats});
+
+const SendArkWalletStatus _noArkWallet = (isUsable: true, isAdded: false, hasWallet: false, spendableSats: 0);
+
+/// 라이트닝·아크 결제를 받았을 때 할 일
+enum SendArkHandoffKind {
+  /// 아크 지갑에서 보냄
+  send,
+
+  /// 잔액이 모자람. 아크 지갑을 열어 채우기
+  lowBalance,
+
+  /// 아크를 추가하지 않음. 오픈 스토어 아크 상세로
+  addArk,
+
+  /// 추가했지만 지갑이 없음. 지갑 만들기로
+  createWallet,
+}
+
+/// 온체인 보내기에 들어온 라이트닝·아크 결제를 아크 지갑으로 넘길 때 띄울 팝업
+class SendArkHandoff {
+  const SendArkHandoff({
+    required this.kind,
+    required this.input,
+    this.bitcoinAddress,
+    this.bitcoinAmountSats,
+    this.arkAmountSats,
+    this.arkBalanceSats,
+    this.showsAmounts = false,
+    this.isInvoice = false,
+  });
+
+  final SendArkHandoffKind kind;
+
+  /// 아크 보내기에 그대로 넘길 원래 값
+  final String input;
+
+  /// 비트코인 주소도 들어 있으면 비트코인으로 보내기와 고르기
+  final String? bitcoinAddress;
+  final int? bitcoinAmountSats;
+  final int? arkAmountSats;
+
+  /// 잔액이 모자랄 때 보여 줄 아크 잔액
+  final int? arkBalanceSats;
+
+  /// 두 길의 금액이 달라 금액을 함께 보여 줌
+  final bool showsAmounts;
+
+  /// 만료가 있는 라이트닝 인보이스
+  final bool isInvoice;
+
+  bool get offersBitcoin => bitcoinAddress != null;
 }
 
 enum AmountError {
@@ -305,12 +371,64 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     return _isMaxMode && _recipientList[index].amount == '0';
   }
 
+  final SendArkWalletStatus Function() _arkWalletStatus;
+
   bool isOwnAddress(String address) {
     for (WalletItemBase walletItem in _walletProvider.walletItemList) {
       if (_walletProvider.containsAddress(walletItem.id, address)) return true;
     }
     return false;
   }
+
+  /// 라이트닝·아크 결제면 띄울 팝업을 돌려준다. 받는 사람이 여럿이거나, 온체인으로 보낼 수 있거나, 아크 지갑을 쓸 수 없는 빌드면 null
+  SendArkHandoff? arkHandoffFor(String input) => SendViewModel.arkHandoff(
+    input,
+    NetworkType.currentNetworkType,
+    isBatchMode: isBatchMode,
+    ark: _arkWalletStatus(),
+  );
+
+  @visibleForTesting
+  static SendArkHandoff? arkHandoff(
+    String input,
+    NetworkType network, {
+    required bool isBatchMode,
+    required SendArkWalletStatus ark,
+  }) {
+    final request = ArkPaymentRequest.parse(input, network);
+    if (!request.isPayable || !request.hasArkOrLightning || isBatchMode || !ark.isUsable) return null;
+    final bitcoinAmount = request.kind == ArkPaymentRequestKind.bip321 ? request.amountSats : null;
+    final arkAmount = request.invoiceAmountSats ?? bitcoinAmount;
+    final isInvoice = request.lightningInvoice != null;
+    final lowBalance = ark.hasWallet && isInvoice && arkAmount != null && ark.spendableSats < arkAmount;
+    final kind =
+        !ark.isAdded
+            ? SendArkHandoffKind.addArk
+            : !ark.hasWallet
+            ? SendArkHandoffKind.createWallet
+            : lowBalance
+            ? SendArkHandoffKind.lowBalance
+            : SendArkHandoffKind.send;
+    if (kind != SendArkHandoffKind.send && request.bitcoinAddress != null) return null;
+    return SendArkHandoff(
+      kind: kind,
+      input: request.raw,
+      bitcoinAddress: request.bitcoinAddress,
+      bitcoinAmountSats: bitcoinAmount,
+      arkAmountSats: arkAmount,
+      arkBalanceSats: lowBalance ? ark.spendableSats : null,
+      showsAmounts: request.bitcoinAddress != null && bitcoinAmount != null && arkAmount != bitcoinAmount,
+      isInvoice: isInvoice,
+    );
+  }
+
+  @visibleForTesting
+  static bool isArkOnlyPayment(String input, NetworkType network) {
+    final request = ArkPaymentRequest.parse(input, network);
+    return request.isPayable && request.hasArkOrLightning && request.bitcoinAddress == null;
+  }
+
+  static SendArkWalletStatus _noArkWalletStatus() => _noArkWallet;
 
   SendViewModel(
     this._walletProvider,
@@ -326,8 +444,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     int? walletId,
     SendEntryPoint sendEntryPoint,
     this._transactionDraftId,
-    List<UtxoState>? selectedUtxoList,
-  ) {
+    List<UtxoState>? selectedUtxoList, {
+    SendArkWalletStatus Function() arkWalletStatus = _noArkWalletStatus,
+  }) : _arkWalletStatus = arkWalletStatus {
     _sendInfoProvider.clear();
     _sendInfoProvider.setSendEntryPoint(sendEntryPoint);
     _currentUnit = _preferenceProvider.currentUnit;
@@ -1067,6 +1186,14 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
 
   bool validateAddress(String address, int recipientIndex) {
     if (!_isValidRecipientIndex(recipientIndex, 'validateAddress')) return false;
+
+    if (isArkOnlyPayment(address, NetworkType.currentNetworkType)) {
+      _setAddressError(
+        _arkWalletStatus().isUsable ? AddressError.arkPayment : AddressError.unsupportedPayment,
+        recipientIndex,
+      );
+      return false;
+    }
 
     AddressValidationError? error = AddressValidator.validateAddress(address, NetworkType.currentNetworkType);
 

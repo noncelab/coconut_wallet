@@ -1,3 +1,4 @@
+import 'package:coconut_wallet/analytics/analytics_screen_names.dart';
 import 'package:coconut_wallet/app/router/feature_entry_routes.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_registry.dart';
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
@@ -8,6 +9,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_home_widget.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
+import 'package:coconut_wallet/screens/ccos/ark/ark_send_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_home_screen.dart';
 import 'package:coconut_wallet/screens/ccos/ark/ark_wallet_entrance.dart';
 import 'package:flutter/material.dart';
@@ -63,6 +65,17 @@ class ArkFeature {
       wallet.hasWallet
           ? CcosFeatureStatus(inUse: true, removeBlockedReason: t.ark_wallet.remove_blocked)
           : const CcosFeatureStatus();
+
+  /// 아크 지갑 홈이 쌓여 있으면 그 화면으로 돌아가고, 없으면 새로 염. [sendInput]이 있으면 그 값으로 보내기까지
+  static void openWalletFrom(NavigatorState navigator, {String? sendInput}) {
+    var found = false;
+    navigator.popUntil((route) {
+      found = route.settings.name == AnalyticsScreenNames.ccosArkWalletHome;
+      return found || route.isFirst;
+    });
+    if (!found) openWallet(navigator.context);
+    if (sendInput != null) ArkSendScreen.open(navigator.context, initialInput: sendInput);
+  }
 
   static void openWallet(BuildContext context) {
     final navigator = Navigator.of(context);
