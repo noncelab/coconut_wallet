@@ -2179,6 +2179,7 @@ ccos:
     add: "Hinzufügen"
     added: "Hinzugefügt"
     applied: "Aktiv"
+    mainnet_only: "Nur Mainnet"
     open: "Öffnen"
     category:
       theme: "Theme"
@@ -2227,6 +2228,7 @@ wallet_selection_grid: "Zusammen anzeigen"
 
 ark_wallet:
   remove_blocked: "Lösche zuerst dein Ark Wallet, um das zu entfernen"
+  store_mainnet_only: "In Coconut Wallet (Mainnet) hinzufügen"
   welcome_line: "Schnelle Bitcoin-Zahlungen, nie bei einem Server verwahrt"
   create_new: "Neues Ark Wallet erstellen"
   restore: "Wallet wiederherstellen"

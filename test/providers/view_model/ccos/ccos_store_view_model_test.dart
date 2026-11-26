@@ -1,4 +1,6 @@
 import 'package:coconut_wallet/ccos/ccos_feature_status.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
 import 'package:coconut_wallet/ccos/features/coconut_theme/coconut_theme_feature.dart';
 import 'package:coconut_wallet/design_system/theme/coconut_theme_data.dart';
 import 'package:coconut_wallet/localization/strings.g.dart';
@@ -22,6 +24,19 @@ void main() {
 
   test('a feature never added is notAdded', () {
     expect(viewModel.stateOf(CoconutThemeFeature.id), CcosStoreItemState.notAdded);
+  });
+
+  test('ark in a regtest build without a server is mainnet only with a notice', () {
+    ArkServerConfig.isConfiguredOverride = false;
+    ArkServerConfig.isRegtestOverride = true;
+    addTearDown(() {
+      ArkServerConfig.isConfiguredOverride = null;
+      ArkServerConfig.isRegtestOverride = null;
+    });
+
+    expect(viewModel.stateOf(ArkFeature.id), CcosStoreItemState.unavailable);
+    expect(viewModel.unavailableNoticeOf(ArkFeature.id), t.ark_wallet.store_mainnet_only);
+    expect(viewModel.unavailableNoticeOf(CoconutThemeFeature.id), isNull);
   });
 
   test('an added feature the registry reports in use is applied', () {

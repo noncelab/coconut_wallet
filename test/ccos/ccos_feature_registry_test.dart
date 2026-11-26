@@ -14,6 +14,7 @@ void main() {
   tearDown(() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
     ArkServerConfig.isConfiguredOverride = null;
+    ArkServerConfig.isRegtestOverride = null;
   });
 
   group('CcosFeatureRegistrySource', () {
@@ -87,8 +88,25 @@ void main() {
       }
     });
 
+    for (final (configured, regtest, listed, addable) in [
+      (true, true, true, true),
+      (false, true, true, false),
+      (false, false, false, false),
+      (true, false, true, true),
+    ]) {
+      test('ark with server=$configured regtest=$regtest is listed=$listed addable=$addable', () {
+        ArkServerConfig.isConfiguredOverride = configured;
+        ArkServerConfig.isRegtestOverride = regtest;
+
+        final listing = CcosFeatureRegistrySource.findListingById(ArkFeature.id);
+        expect(listing != null, listed);
+        if (listing != null) expect(listing.isUnavailable, !addable);
+      });
+    }
+
     test('ark is hidden without an ark server', () {
       ArkServerConfig.isConfiguredOverride = false;
+      ArkServerConfig.isRegtestOverride = false;
 
       expect(CcosFeatureRegistrySource.allListings.map((listing) => listing.id), isNot(contains(ArkFeature.id)));
       expect(CcosFeatureRegistrySource.findListingById(ArkFeature.id), isNull);

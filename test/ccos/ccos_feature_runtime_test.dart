@@ -12,7 +12,11 @@ import 'package:mockito/annotations.dart';
 @GenerateMocks([SharedPreferences])
 import 'ccos_feature_runtime_test.mocks.dart';
 
-CcosFeatureListing _listing({required CcosListingPriceType priceType, String id = 'test-feature'}) {
+CcosFeatureListing _listing({
+  required CcosListingPriceType priceType,
+  String id = 'test-feature',
+  String? Function()? unavailableNotice,
+}) {
   return CcosFeatureListing(
     id: id,
     category: CcosFeatureCategory.theme,
@@ -28,6 +32,7 @@ CcosFeatureListing _listing({required CcosListingPriceType priceType, String id 
     subtitle: 'Test subtitle',
     iconPath: 'test.svg',
     creatorStory: const CcosCreatorStory(paragraphs: ['a', 'b', 'c'], belief: 'Test belief'),
+    unavailableNotice: unavailableNotice ?? () => null,
   );
 }
 
@@ -49,6 +54,16 @@ void main() {
       expect(activated.isEntitled, isTrue);
       expect(activated.isAvailable, isTrue);
       expect(activated.isVisible, isTrue);
+    });
+
+    test('a feature this build cannot add stays off even if it was saved as added', () {
+      final listing = _listing(priceType: CcosListingPriceType.free, unavailableNotice: () => 'mainnet only');
+
+      final resolved = resolver.resolve(listing: listing, activatedFeatureIds: {listing.id}, entitlements: const {});
+
+      expect(resolved.isActivated, isFalse);
+      expect(resolved.isAvailable, isFalse);
+      expect(resolved.isVisible, isFalse);
     });
 
     test('1회 구매 기능은 일치하는 entitlement가 있어야 사용 가능하다', () {

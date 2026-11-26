@@ -78,6 +78,7 @@ class CcosFeatureListing {
     required this.iconPath,
     required this.creatorStory,
     this.isListed = _alwaysListed,
+    this.unavailableNotice = _noNotice,
     this.homeShortcut,
     this.homeWidget,
     this.addedToast,
@@ -106,6 +107,9 @@ class CcosFeatureListing {
   /// 이 빌드에서 스토어·검색에 보일지
   final bool Function() isListed;
 
+  /// 이 빌드에서 추가할 수 없는 이유. 값이 있으면 스토어에서 보기만 가능
+  final String? Function() unavailableNotice;
+
   /// 켜면 기능이 홈 바로가기의 이름·아이콘·실행을 제공한다
   final CcosHomeShortcut? homeShortcut;
 
@@ -127,7 +131,11 @@ class CcosFeatureListing {
 
   bool get requiresEntitlement => priceType != CcosListingPriceType.free;
 
+  bool get isUnavailable => unavailableNotice() != null;
+
   static bool _alwaysListed() => true;
+
+  static String? _noNotice() => null;
 }
 
 /// 실제로 런타임에서 조회/활성화/구매 상태를 판단할 수 있는 기능만 등록합니다.

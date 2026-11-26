@@ -2171,6 +2171,7 @@ ccos:
     add: "追加"
     added: "追加済み"
     applied: "使用中"
+    mainnet_only: "メインネット専用"
     open: "開く"
     category:
       theme: "テーマ"
@@ -2219,6 +2220,7 @@ wallet_selection_grid: "まとめて表示"
 
 ark_wallet:
   remove_blocked: "Arkウォレットを削除すると取り除けます"
+  store_mainnet_only: "メインネットのココナッツウォレットで追加できます"
   welcome_line: "サーバーに預けずにすばやくやり取りするビットコイン"
   create_new: "新しいArkウォレットを作成"
   restore: "ウォレットを復元"

@@ -4,7 +4,7 @@ import 'package:coconut_wallet/localization/strings.g.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:flutter/foundation.dart';
 
-enum CcosStoreItemState { notAdded, added, applied }
+enum CcosStoreItemState { notAdded, added, applied, unavailable }
 
 class CcosStoreRemoval {
   const CcosStoreRemoval({required this.removed, this.toast});
@@ -32,9 +32,12 @@ class CcosStoreViewModel extends ChangeNotifier {
   CcosFeatureStatus _statusOf(String featureId) => _statuses.statusOf(featureId, isActivated: _isActivated(featureId));
 
   CcosStoreItemState stateOf(String featureId) {
+    if (listingOf(featureId)?.isUnavailable ?? false) return CcosStoreItemState.unavailable;
     if (_statusOf(featureId).inUse) return CcosStoreItemState.applied;
     return _isActivated(featureId) ? CcosStoreItemState.added : CcosStoreItemState.notAdded;
   }
+
+  String? unavailableNoticeOf(String featureId) => listingOf(featureId)?.unavailableNotice();
 
   String? removeBlockedReasonOf(String featureId) => _statusOf(featureId).removeBlockedReason;
 

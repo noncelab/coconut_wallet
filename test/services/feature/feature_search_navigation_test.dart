@@ -32,6 +32,7 @@ import 'package:coconut_wallet/widgets/common/buttons/button_group.dart';
 import 'package:coconut_wallet/widgets/common/bottom_sheet/selectable_settings_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,9 +104,12 @@ void main() {
   final navigator = GlobalKey<NavigatorState>();
   const captureKey = ValueKey('search-destination-capture');
 
+  tearDown(() => ArkServerConfig.isRegtestOverride = null);
+
   setUp(() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
     NetworkType.setNetworkType(NetworkType.regtest);
+    ArkServerConfig.isRegtestOverride = false;
     preferences = _Preferences();
     auth = _Auth();
     wallets = [WalletMock.createSingleSigWalletItem(id: 1), WalletMock.createSingleSigWalletItem(id: 2)];

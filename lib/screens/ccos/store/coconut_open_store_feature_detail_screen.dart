@@ -124,6 +124,16 @@ class _CoconutOpenStoreFeatureDetailViewState extends State<_CoconutOpenStoreFea
               padding: EdgeInsets.only(top: topInset + _barHeight + 8, bottom: 40),
               children: [
                 _inset(_buildHeader(context, viewModel, listing, state)),
+                if (viewModel.unavailableNoticeOf(featureId) case final notice?) ...[
+                  CoconutLayout.spacing_400h,
+                  _inset(
+                    Text(
+                      notice,
+                      key: const ValueKey('ccos-detail-unavailable-notice'),
+                      style: CoconutTypography.body3_12.setColor(colors.secondaryText),
+                    ),
+                  ),
+                ],
                 _inset(_divider(context)),
                 _inset(_sectionLabel(context, t.ccos.store.feature_section)),
                 if (listing.screenshots.isNotEmpty) ...[
@@ -136,7 +146,7 @@ class _CoconutOpenStoreFeatureDetailViewState extends State<_CoconutOpenStoreFea
                 _inset(_divider(context)),
                 _inset(_sectionLabel(context, t.ccos.store.creator_section)),
                 _inset(CcosStoreCreatorStory(story: listing.creatorStory)),
-                if (state != CcosStoreItemState.notAdded) ...[
+                if (state == CcosStoreItemState.added || state == CcosStoreItemState.applied) ...[
                   _inset(_divider(context)),
                   _inset(_buildRemove(context, viewModel)),
                 ],
@@ -312,7 +322,8 @@ class _CoconutOpenStoreFeatureDetailViewState extends State<_CoconutOpenStoreFea
       mainAxisSize: MainAxisSize.min,
       children: [
         CcosStoreActionButton(key: actionKey, state: state, onAdd: () => _add(context, viewModel)),
-        if (state != CcosStoreItemState.notAdded && listing.isSelectableTheme) ...[
+        if ((state == CcosStoreItemState.added || state == CcosStoreItemState.applied) &&
+            listing.isSelectableTheme) ...[
           CoconutLayout.spacing_200w,
           ShrinkAnimationButton(
             key: actionKey == null ? null : const ValueKey('ccos-detail-open'),

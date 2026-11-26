@@ -5,7 +5,7 @@ import 'package:coconut_wallet/providers/view_model/ccos/ccos_store_view_model.d
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:flutter/material.dart';
 
-/// 추가 전이면 누를 수 있는 "추가", 추가 뒤에는 같은 모양의 상태 표시
+/// 추가 전이면 누를 수 있는 "추가", 추가 뒤나 추가할 수 없을 때는 같은 모양의 상태 표시
 class CcosStoreActionButton extends StatelessWidget {
   const CcosStoreActionButton({super.key, required this.state, required this.onAdd, this.onSurface = false});
 
@@ -20,6 +20,7 @@ class CcosStoreActionButton extends StatelessWidget {
       CcosStoreItemState.notAdded => t.ccos.store.add,
       CcosStoreItemState.added => t.ccos.store.added,
       CcosStoreItemState.applied => t.ccos.store.applied,
+      CcosStoreItemState.unavailable => t.ccos.store.mainnet_only,
     };
     final text = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

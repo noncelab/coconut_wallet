@@ -2180,6 +2180,7 @@ ccos:
     add: "추가"
     added: "추가됨"
     applied: "사용 중"
+    mainnet_only: "메인넷 전용"
     open: "열기"
     category:
       theme: "테마"
@@ -2228,6 +2229,7 @@ wallet_selection_grid: "모아 보기"
 
 ark_wallet:
   remove_blocked: "아크 지갑을 지운 뒤 제거할 수 있어요"
+  store_mainnet_only: "코코넛 월렛(메인넷)에서 추가할 수 있어요"
   welcome_line: "서버에 맡기지 않고 빠르게 주고받는 비트코인"
   create_new: "새 아크 지갑 만들기"
   restore: "지갑 복원하기"

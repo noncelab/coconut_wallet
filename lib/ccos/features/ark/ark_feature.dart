@@ -45,7 +45,8 @@ class ArkFeature {
           ),
       ],
       creatorStory: CcosCreatorStory(paragraphs: copy.creatorParagraphs, belief: copy.belief),
-      isListed: () => ArkServerConfig.isConfigured,
+      isListed: () => ArkServerConfig.isConfigured || ArkServerConfig.isMainnetOnlyPreview,
+      unavailableNotice: () => ArkServerConfig.isMainnetOnlyPreview ? t.ark_wallet.store_mainnet_only : null,
       thumbnailImagePath: 'assets/images/ccos/ark_illustration.png',
       homeShortcut: CcosHomeShortcut(
         id: 'ark_wallet',

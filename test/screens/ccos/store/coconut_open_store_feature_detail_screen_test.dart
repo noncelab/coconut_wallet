@@ -58,7 +58,10 @@ Future<FakeStorePreferences> _pump(
 
 void main() {
   setUp(() => ArkServerConfig.isConfiguredOverride = true);
-  tearDown(() => ArkServerConfig.isConfiguredOverride = null);
+  tearDown(() {
+    ArkServerConfig.isConfiguredOverride = null;
+    ArkServerConfig.isRegtestOverride = null;
+  });
 
   tearDown(() => LocaleSettings.setLocaleSync(AppLocale.ko));
 
@@ -364,8 +367,26 @@ void main() {
     expect(tester.widget<AnimatedOpacity>(find.byKey(const ValueKey('ccos-detail-top-fade'))).opacity, 1);
   });
 
+  testWidgets('mainnet-only ark shows the notice and cannot be added or removed', (tester) async {
+    LocaleSettings.setLocaleSync(AppLocale.ko);
+    ArkServerConfig.isConfiguredOverride = false;
+    ArkServerConfig.isRegtestOverride = true;
+    final preferences = await _pump(tester, ArkFeature.id);
+
+    expect(find.text(t.ccos.store.mainnet_only), findsWidgets);
+    expect(find.text(t.ark_wallet.store_mainnet_only), findsOneWidget);
+    expect(find.text(t.ccos.store.add), findsNothing);
+    expect(find.byKey(const ValueKey('ccos-detail-remove')), findsNothing);
+    expect(find.text(ArkFeature.listing.description), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('ccos-detail-action')));
+    await tester.pumpAndSettle();
+    expect(preferences.activated, isEmpty);
+  });
+
   testWidgets('detail for a hidden listing closes', (tester) async {
     ArkServerConfig.isConfiguredOverride = false;
+    ArkServerConfig.isRegtestOverride = false;
     final preferences = FakeStorePreferences();
     await tester.pumpWidget(
       MultiProvider(

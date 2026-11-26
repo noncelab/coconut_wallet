@@ -185,7 +185,7 @@ class CcosFeatureAvailabilityResolver {
     required Set<String> activatedFeatureIds,
     required Map<String, CcosFeatureEntitlement> entitlements,
   }) {
-    final isActivated = activatedFeatureIds.contains(listing.id);
+    final isActivated = activatedFeatureIds.contains(listing.id) && !listing.isUnavailable;
     final entitlement = entitlements[listing.id];
     final isEntitled = switch (listing.priceType) {
       CcosListingPriceType.free => true,
