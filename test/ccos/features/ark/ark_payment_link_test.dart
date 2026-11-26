@@ -14,9 +14,8 @@ void main() {
   bool opens(String uri, {bool hasArkWallet = true}) =>
       opensInArkWallet(uri, NetworkType.regtest, hasArkWallet: hasArkWallet);
 
-  test('links with an Ark address open in the Ark wallet, with or without an on-chain address', () {
+  test('a link with only an Ark address opens in the Ark wallet', () {
     expect(opens('bitcoin:?ark=$_ark'), isTrue);
-    expect(opens('bitcoin:$_bitcoin?ark=$_ark&lightning=$_invoice'), isTrue);
   });
 
   test('a Lightning-only link opens in the Ark wallet', () {
@@ -25,9 +24,11 @@ void main() {
     expect(opens('lightning:$_invoice', hasArkWallet: false), isFalse);
   });
 
-  test('links with an on-chain address and no Ark address stay with Coconut send', () {
+  test('links with an on-chain address open Coconut send, where the user picks how to pay', () {
     expect(opens('bitcoin:$_bitcoin'), isFalse);
     expect(opens('bitcoin:$_bitcoin?lightning=$_invoice'), isFalse);
+    expect(opens('bitcoin:$_bitcoin?ark=$_ark'), isFalse);
+    expect(opens('bitcoin:$_bitcoin?ark=$_ark&lightning=$_invoice'), isFalse);
   });
 
   test('without an Ark wallet nothing opens there', () {
