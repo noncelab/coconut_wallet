@@ -26,7 +26,10 @@ void main() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
     ArkServerConfig.isConfiguredOverride = true;
   });
-  tearDown(() => ArkServerConfig.isConfiguredOverride = null);
+  tearDown(() {
+    ArkServerConfig.isConfiguredOverride = null;
+    ArkServerConfig.isRegtestOverride = null;
+  });
 
   test('the ark listing offers its home widget', () {
     final definition = ArkFeature.listing.homeWidget!.definition();
@@ -79,6 +82,15 @@ void main() {
     await pump(tester, await fakeArkWalletProvider());
 
     expect(find.text(t.ark_wallet.widget_create), findsOneWidget);
+  });
+
+  testWidgets('in a regtest build without a server it says mainnet only', (tester) async {
+    ArkServerConfig.isConfiguredOverride = false;
+    ArkServerConfig.isRegtestOverride = true;
+    await pump(tester, await fakeArkWalletProvider());
+
+    expect(find.text(t.ccos.store.mainnet_only), findsOneWidget);
+    expect(find.text(t.ark_wallet.widget_create), findsNothing);
   });
 
   testWidgets('with a wallet it shows the balance and opens the wallet', (tester) async {

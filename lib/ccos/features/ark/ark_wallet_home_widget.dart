@@ -1,6 +1,7 @@
 import 'package:coconut_design_system/coconut_design_system.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_feature_copy.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_server_config.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/constants/icon_path.dart';
 import 'package:coconut_wallet/design_system/context/coconut_theme_context_extension.dart';
@@ -12,7 +13,7 @@ import 'package:coconut_wallet/widgets/features/home/widgets/home_widget_parts.d
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// 아크 지갑 잔액. 지갑이 없으면 만들기 안내
+/// 아크 지갑 잔액. 지갑이 없으면 만들기 안내, 학습용 빌드는 메인넷 전용
 class ArkWalletHomeWidget extends HomeItemDefinition {
   ArkWalletHomeWidget()
     : super(
@@ -46,6 +47,8 @@ class ArkWalletHomeWidget extends HomeItemDefinition {
           Text(
             wallet.hasWallet
                 ? unit.displayBitcoinAmount(wallet.balance.total, withUnit: true)
+                : ArkServerConfig.isMainnetOnlyPreview
+                ? t.ccos.store.mainnet_only
                 : t.ark_wallet.widget_create,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
