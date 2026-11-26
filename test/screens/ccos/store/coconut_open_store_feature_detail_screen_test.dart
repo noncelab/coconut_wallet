@@ -183,8 +183,19 @@ void main() {
     expect(find.byType(ThemeBottomSheet), findsOneWidget);
   });
 
-  testWidgets('ark has no open action', (tester) async {
+  testWidgets('added ark can be opened like its home shortcut', (tester) async {
     LocaleSettings.setLocaleSync(AppLocale.ko);
+    await _pump(tester, ArkFeature.id, activated: {ArkFeature.id});
+    expect(find.byKey(const ValueKey('ccos-detail-open')), findsOneWidget);
+  });
+
+  testWidgets('ark not added or mainnet only has no open action', (tester) async {
+    LocaleSettings.setLocaleSync(AppLocale.ko);
+    await _pump(tester, ArkFeature.id);
+    expect(find.byKey(const ValueKey('ccos-detail-open')), findsNothing);
+
+    ArkServerConfig.isConfiguredOverride = false;
+    ArkServerConfig.isRegtestOverride = true;
     await _pump(tester, ArkFeature.id, activated: {ArkFeature.id});
     expect(find.byKey(const ValueKey('ccos-detail-open')), findsNothing);
   });

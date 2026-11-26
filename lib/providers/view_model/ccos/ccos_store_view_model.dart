@@ -37,6 +37,14 @@ class CcosStoreViewModel extends ChangeNotifier {
     return _isActivated(featureId) ? CcosStoreItemState.added : CcosStoreItemState.notAdded;
   }
 
+  /// 추가한 뒤 바로 열 곳이 있는지. 테마는 테마 설정, 홈 바로가기가 있는 기능은 그 바로가기
+  bool canOpen(String featureId) {
+    final state = stateOf(featureId);
+    if (state != CcosStoreItemState.added && state != CcosStoreItemState.applied) return false;
+    final listing = listingOf(featureId);
+    return listing != null && (listing.isSelectableTheme || listing.homeShortcut != null);
+  }
+
   String? unavailableNoticeOf(String featureId) => listingOf(featureId)?.unavailableNotice();
 
   String? removeBlockedReasonOf(String featureId) => _statusOf(featureId).removeBlockedReason;

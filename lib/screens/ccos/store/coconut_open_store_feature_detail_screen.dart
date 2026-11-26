@@ -322,13 +322,19 @@ class _CoconutOpenStoreFeatureDetailViewState extends State<_CoconutOpenStoreFea
       mainAxisSize: MainAxisSize.min,
       children: [
         CcosStoreActionButton(key: actionKey, state: state, onAdd: () => _add(context, viewModel)),
-        if ((state == CcosStoreItemState.added || state == CcosStoreItemState.applied) &&
-            listing.isSelectableTheme) ...[
+        if (viewModel.canOpen(featureId)) ...[
           CoconutLayout.spacing_200w,
           ShrinkAnimationButton(
             key: actionKey == null ? null : const ValueKey('ccos-detail-open'),
             onPressed:
-                () => AppSettingsScreen.open(context, AppSettingsTarget.theme, highlightTheme: listing.linkedVariant),
+                () =>
+                    listing.isSelectableTheme
+                        ? AppSettingsScreen.open(
+                          context,
+                          AppSettingsTarget.theme,
+                          highlightTheme: listing.linkedVariant,
+                        )
+                        : listing.homeShortcut!.launch(context),
             defaultColor: colors.surfaceButton,
             pressedOverlayColor: colors.surfacePressOverlay,
             borderRadius: 16,
