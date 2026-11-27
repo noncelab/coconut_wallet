@@ -25,6 +25,9 @@ class UtxoState extends Utxo {
 
   bool get isLocked => status == UtxoStatus.locked && blockHeight != 0;
 
+  /// 이 UTXO가 들어 있는 주소의 순번. 파생 경로의 마지막 숫자다. (예: m/84'/0'/0'/0/5 → 5)
+  int get addressIndex => int.parse(derivationPath.split('/').last);
+
   UtxoState({
     required String transactionHash,
     required int index,
