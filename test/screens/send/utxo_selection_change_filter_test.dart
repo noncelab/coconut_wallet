@@ -95,6 +95,7 @@ void main() {
     List<UtxoState> utxos, {
     required bool showChangeFilter,
     List<UtxoTag> tags = const [],
+    int? minimumSelectableUtxoAmount,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 844);
@@ -115,6 +116,7 @@ void main() {
             currentUnit: BitcoinUnit.btc,
             selectedUtxoList: const [],
             showChangeFilter: showChangeFilter,
+            minimumSelectableUtxoAmount: minimumSelectableUtxoAmount,
           ),
         ),
       ),
@@ -211,5 +213,74 @@ void main() {
     expect(cardChip(lockedChange), findsOneWidget);
     expect(cardChip(receive), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  // UTXO 나누기는 1000 sats 미만 UTXO를 고를 수 없게 한 채로 이 화면을 엽니다.
+  group('최소 선택 금액이 1000 sats인 화면(UTXO 나누기)', () {
+    const minimumAmount = 1000;
+    final dustChange = _utxo(4, 600, isChange: true);
+
+    Finder card(UtxoState utxo) =>
+        find.byWidgetPredicate((widget) => widget is UtxoSelectionCard && widget.utxo.utxoId == utxo.utxoId);
+
+    Finder cardChip(UtxoState utxo) => find.descendant(of: card(utxo), matching: find.text(t.change));
+
+    List<String> selectedUtxoIds(WidgetTester tester) =>
+        viewModelOf(tester).selectedUtxoList.map((utxo) => utxo.utxoId).toList();
+
+    testWidgets('1000 sats 이상인 잔돈이 있으면 잔돈 칩이 보이고, 누르면 잔돈 UTXO만 남는다', (tester) async {
+      await pump(
+        tester,
+        [receive, change, dustChange, lockedChange],
+        showChangeFilter: true,
+        minimumSelectableUtxoAmount: minimumAmount,
+      );
+
+      expect(filterChip(t.change), findsOneWidget);
+
+      await tester.tap(filterChip(t.change));
+      await tester.pumpAndSettle();
+
+      expect(shownUtxoIds(tester), [change.utxoId, dustChange.utxoId, lockedChange.utxoId]);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('잔돈 필터의 전체 선택·해제는 1000 sats 이상인 잔돈에만 적용되고, 필터 밖에서 고른 UTXO는 남는다', (tester) async {
+      await pump(
+        tester,
+        [receive, change, dustChange, lockedChange],
+        showChangeFilter: true,
+        minimumSelectableUtxoAmount: minimumAmount,
+      );
+
+      await tester.tap(card(receive));
+      await tester.pumpAndSettle();
+      expect(selectedUtxoIds(tester), [receive.utxoId]);
+
+      await tester.tap(filterChip(t.change));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(t.select_all));
+      await tester.pumpAndSettle();
+
+      expect(selectedUtxoIds(tester), [receive.utxoId, change.utxoId]);
+      expect(viewModelOf(tester).selectedUtxoAmountSum, receive.amount + change.amount);
+
+      await tester.tap(find.text(t.unselect_all));
+      await tester.pumpAndSettle();
+
+      expect(selectedUtxoIds(tester), [receive.utxoId]);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('잔돈이 1000 sats 미만뿐이면 잔돈 칩은 숨기고, 카드의 잔돈 표시는 남긴다', (tester) async {
+      await pump(tester, [receive, dustChange], showChangeFilter: true, minimumSelectableUtxoAmount: minimumAmount);
+
+      expect(filterChip(t.change), findsNothing);
+      expect(filterChip(t.all), findsNothing);
+      expect(find.byType(UtxoSelectionCard), findsNWidgets(2));
+      expect(cardChip(dustChange), findsOneWidget);
+      expect(cardChip(receive), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

@@ -1330,6 +1330,7 @@ class _UtxoSplitScreenState extends State<UtxoSplitScreen> {
                 currentUnit: viewModel.currentUnit,
                 scrollController: scrollController,
                 minimumSelectableUtxoAmount: 1000,
+                showChangeFilter: true,
                 backgroundColor: context.coconutColors.surfaceBottomSheet,
               ),
             ),
