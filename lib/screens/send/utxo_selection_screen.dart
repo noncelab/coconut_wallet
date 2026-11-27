@@ -313,12 +313,12 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
 
   void _selectAll() {
     _removeUtxoOrderDropdown();
-    _viewModel.selectTaggedUtxo();
+    _viewModel.selectFilteredUtxo();
   }
 
   void _deselectAll() {
     _removeUtxoOrderDropdown();
-    _viewModel.deselectTaggedUtxo();
+    _viewModel.deselectFilteredUtxo();
   }
 
   void _toggleSelection(UtxoState utxo) {

@@ -94,11 +94,11 @@ void main() {
       expectConsistent(viewModel);
     });
 
-    test('selectTaggedUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO만 뺀다', () {
+    test('selectFilteredUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO만 뺀다', () {
       final viewModel = createViewModel();
 
       viewModel.setSelectedUtxoFilter(UtxoFilter.tag(tag.id));
-      viewModel.selectTaggedUtxo();
+      viewModel.selectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([taggedLarge, taggedSmall]));
       expectConsistent(viewModel);
@@ -121,11 +121,11 @@ void main() {
       expectConsistent(viewModel);
     });
 
-    test('selectTaggedUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO와 1000 sats 미만 UTXO를 뺀다', () {
+    test('selectFilteredUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO와 1000 sats 미만 UTXO를 뺀다', () {
       final viewModel = createViewModel(minimumSelectableUtxoAmount: 1000);
 
       viewModel.setSelectedUtxoFilter(UtxoFilter.tag(tag.id));
-      viewModel.selectTaggedUtxo();
+      viewModel.selectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([taggedLarge]));
       expectConsistent(viewModel);
@@ -229,7 +229,7 @@ void main() {
 
       viewModel.toggleUtxoSelection(receive);
       viewModel.setSelectedUtxoFilter(UtxoFilter.change);
-      viewModel.selectTaggedUtxo();
+      viewModel.selectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([receive, changeLarge, changeSmall]));
       expectConsistent(viewModel);
@@ -241,7 +241,7 @@ void main() {
       viewModel.toggleUtxoSelection(receive);
       viewModel.toggleUtxoSelection(changeLarge);
       viewModel.setSelectedUtxoFilter(UtxoFilter.change);
-      viewModel.deselectTaggedUtxo();
+      viewModel.deselectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([receive]));
       expectConsistent(viewModel);
@@ -279,7 +279,7 @@ void main() {
       final viewModel = createChangeViewModel(mixed);
 
       viewModel.setSelectedUtxoFilter(UtxoFilter.change);
-      viewModel.selectTaggedUtxo();
+      viewModel.selectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([changeLarge, changeSmall]));
       expect(viewModel.selectedUtxoAmountSum, 20600);
@@ -290,7 +290,7 @@ void main() {
       final viewModel = createChangeViewModel(mixed, minimumSelectableUtxoAmount: 1000);
 
       viewModel.setSelectedUtxoFilter(UtxoFilter.change);
-      viewModel.selectTaggedUtxo();
+      viewModel.selectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([changeLarge]));
       expectConsistent(viewModel);

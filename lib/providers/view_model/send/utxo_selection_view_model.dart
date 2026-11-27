@@ -158,14 +158,14 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     _clearUtxoList();
   }
 
-  void selectTaggedUtxo() {
+  void selectFilteredUtxo() {
     setSelectedUtxoList([
       ..._selectedUtxoList,
       ...filteredUtxoList.where((utxo) => _isSelectable(utxo) && !_selectedUtxoIdSet.contains(utxo.utxoId)),
     ]);
   }
 
-  void deselectTaggedUtxo() {
+  void deselectFilteredUtxo() {
     final filteredIds = filteredUtxoList.map((utxo) => utxo.utxoId).toSet();
     setSelectedUtxoList(_selectedUtxoList.where((utxo) => !filteredIds.contains(utxo.utxoId)).toList());
   }
