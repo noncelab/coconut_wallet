@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_payment_link.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,6 +10,8 @@ const _invoice =
     'lnbcrt300u1p4dtlwusp5nptqcasatxvy082yctgkamwtewxfdnuh3eemk48utk2cp6zz9umspp50rc6tq4889yrpqt5tlmssthes5qxrfzh3qh93fqm8h00j3sav27sdqqxqy9gcqcqzgq9qyysgqcjnlnm5mwfsf09uvnjraxzwj04c2l9gtduntevk95pec3vvkglv9wqu57rnw3mz8t37add2fsrs44llju7ncaty67ay3d2x9kayxxcsqertrwr';
 
 void main() {
+  setUp(() => ArkPaymentRequest.clock = () => DateTime.utc(2026, 10, 19, 12));
+  tearDown(() => ArkPaymentRequest.clock = DateTime.now);
   setUpAll(() => NetworkType.setNetworkType(NetworkType.regtest));
 
   bool opens(String uri, {bool hasArkWallet = true}) =>

@@ -1,4 +1,5 @@
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/providers/view_model/send/send_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,8 +14,15 @@ const SendArkWalletStatus _ready = (isUsable: true, isAdded: true, hasWallet: tr
 SendArkHandoff? _handoff(String input, {SendArkWalletStatus ark = _ready, bool isBatchMode = false}) =>
     SendViewModel.arkHandoff(input, NetworkType.regtest, isBatchMode: isBatchMode, ark: ark);
 
+final _beforeExpiry = DateTime.utc(2026, 10, 19, 12);
+final _afterExpiry = DateTime.utc(2026, 10, 21, 12);
+
 void main() {
-  setUp(() => NetworkType.setNetworkType(NetworkType.regtest));
+  setUp(() {
+    NetworkType.setNetworkType(NetworkType.regtest);
+    ArkPaymentRequest.clock = () => _beforeExpiry;
+  });
+  tearDown(() => ArkPaymentRequest.clock = DateTime.now);
 
   group('arkHandoff', () {
     test('a lightning invoice goes to the Ark wallet without a bitcoin choice', () {
@@ -102,17 +110,31 @@ void main() {
     });
   });
 
-  group('isArkOnlyPayment', () {
-    test('lightning and Ark payments are not on-chain addresses', () {
-      expect(SendViewModel.isArkOnlyPayment(_invoice, NetworkType.regtest), isTrue);
-      expect(SendViewModel.isArkOnlyPayment('alice@example.com', NetworkType.regtest), isTrue);
-      expect(SendViewModel.isArkOnlyPayment(_ark, NetworkType.regtest), isTrue);
+  group('offchainPaymentError', () {
+    AddressError? error(String input) => SendViewModel.offchainPaymentError(input, NetworkType.regtest);
+
+    test('lightning and Ark payments cannot be sent on-chain', () {
+      expect(error(_invoice), AddressError.offchainPayment);
+      expect(error('lightning:$_invoice'), AddressError.offchainPayment);
+      expect(error('alice@example.com'), AddressError.offchainPayment);
+      expect(error(_ark), AddressError.offchainPayment);
+      expect(error('bitcoin:?lightning=$_invoice'), AddressError.offchainPayment);
+    });
+
+    test('expired, other-network and unsupported lightning get the same error', () {
+      expect(error(_invoice.replaceFirst('lnbcrt', 'lnbc')), AddressError.offchainPayment);
+      expect(error('lno1qcp4256ypq'), AddressError.offchainPayment);
+      expect(error('lnurl1dp68gurn8ghj7'), AddressError.offchainPayment);
+
+      ArkPaymentRequest.clock = () => _afterExpiry;
+      expect(error(_invoice), AddressError.offchainPayment);
+      expect(_handoff(_invoice), isNull);
     });
 
     test('a bitcoin address, or a URI that also has one, is checked as on-chain', () {
-      expect(SendViewModel.isArkOnlyPayment(_bitcoin, NetworkType.regtest), isFalse);
-      expect(SendViewModel.isArkOnlyPayment('bitcoin:$_bitcoin?lightning=$_invoice', NetworkType.regtest), isFalse);
-      expect(SendViewModel.isArkOnlyPayment('hello', NetworkType.regtest), isFalse);
+      expect(error(_bitcoin), isNull);
+      expect(error('bitcoin:$_bitcoin?lightning=$_invoice'), isNull);
+      expect(error('hello'), isNull);
     });
   });
 }

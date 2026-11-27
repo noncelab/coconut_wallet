@@ -1790,8 +1790,7 @@ errors:
     not_for_mainnet: "Not a mainnet address"
     not_for_regtest: "Please check the address format.\n(Native SegWit supported)"
     duplicated: "Address has already been added"
-    ark_payment: "Pay this from your Ark wallet"
-    unsupported_payment: "Unsupported payment"
+    offchain_payment: "Can't send from an on-chain wallet"
   pin_check_error:
     trial_count: "You can try $count more times"
     failed: "No more attempts allowed\nPlease close the app"
@@ -2299,6 +2298,7 @@ ark_wallet:
   available(amount): "$amount available"
   problem_onchain: "On-chain sends are not available yet"
   problem_network: "This is for another network"
+  problem_expired: "This invoice has expired"
   problem_unsupported: "This format is not supported"
   problem_unknown: "Not an Ark address or Lightning invoice"
   problem_balance: "Not enough balance"

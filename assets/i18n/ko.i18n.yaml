@@ -1796,8 +1796,7 @@ errors:
     not_for_mainnet: "메인넷 주소가 아니에요."
     not_for_regtest: "주소 형식을 확인해 주세요.(Native Segwit 지원)"
     duplicated: "이미 입력한 주소예요"
-    ark_payment: "아크 지갑에서 보낼 수 있어요"
-    unsupported_payment: "지원하지 않는 결제예요"
+    offchain_payment: "온체인 지갑에서 보낼 수 없어요"
   pin_check_error:
     trial_count: "$count번 다시 시도할 수 있어요"
     failed: "더 이상 시도할 수 없어요\n앱을 종료해 주세요"
@@ -2305,6 +2304,7 @@ ark_wallet:
   available(amount): "$amount 보낼 수 있어요"
   problem_onchain: "온체인 보내기는 아직 안 돼요"
   problem_network: "다른 네트워크의 주소예요"
+  problem_expired: "만료된 인보이스예요"
   problem_unsupported: "지원하지 않는 형식이에요"
   problem_unknown: "아크 주소나 라이트닝 인보이스가 아니에요"
   problem_balance: "잔액이 부족해요"

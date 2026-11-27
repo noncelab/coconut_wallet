@@ -1790,8 +1790,7 @@ errors:
     not_for_mainnet: "No es una dirección de red principal (Mainnet)"  
     not_for_regtest: "No es una dirección de red de registro"
     duplicated: "La dirección ya ha sido agregada"
-    ark_payment: "Págalo desde tu billetera Ark"
-    unsupported_payment: "Pago no compatible"
+    offchain_payment: "No se puede enviar on-chain"
   pin_check_error:
     trial_count: "Puedes intentar $count veces más"
     failed: "No se permiten más intentos\nPor favor, cierra la aplicación"
@@ -2299,6 +2298,7 @@ ark_wallet:
   available(amount): "$amount disponible"
   problem_onchain: "Los envíos on-chain aún no están disponibles"
   problem_network: "Es de otra red"
+  problem_expired: "Factura caducada"
   problem_unsupported: "Formato no compatible"
   problem_unknown: "No es una dirección Ark ni una factura Lightning"
   problem_balance: "Saldo insuficiente"

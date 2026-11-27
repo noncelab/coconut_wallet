@@ -41,6 +41,8 @@ Future<void> settle(WidgetTester tester) async {
 }
 
 void main() {
+  setUp(() => ArkPaymentRequest.clock = () => DateTime.utc(2026, 10, 19, 12));
+  tearDown(() => ArkPaymentRequest.clock = DateTime.now);
   setUp(() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
     NetworkType.setNetworkType(NetworkType.regtest);
@@ -103,6 +105,7 @@ void main() {
   });
 
   testWidgets('an invoice description shows as the Lightning memo on confirm and result', (tester) async {
+    ArkPaymentRequest.clock = () => DateTime.utc(2017, 6, 1, 11);
     NetworkType.setNetworkType(NetworkType.mainnet);
     await pump(
       tester,

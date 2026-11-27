@@ -1729,8 +1729,7 @@ errors:
     not_for_mainnet: "Keine Mainnet-Adresse"
     not_for_regtest: "Bitte überprüfen Sie das Adressformat.\n(Native SegWit unterstützt)"
     duplicated: "Adresse wurde bereits hinzugefügt"
-    ark_payment: "Mit der Ark-Wallet bezahlen"
-    unsupported_payment: "Zahlung nicht unterstützt"
+    offchain_payment: "Nicht per On-Chain-Wallet sendbar"
   pin_check_error:
     trial_count: "Sie können es noch $count Mal versuchen"
     failed: "Keine weiteren Versuche erlaubt\nBitte schließen Sie die App"
@@ -2304,6 +2303,7 @@ ark_wallet:
   available(amount): "$amount verfügbar"
   problem_onchain: "On-Chain-Senden ist noch nicht möglich"
   problem_network: "Adresse eines anderen Netzwerks"
+  problem_expired: "Rechnung abgelaufen"
   problem_unsupported: "Format wird nicht unterstützt"
   problem_unknown: "Keine Ark-Adresse oder Lightning-Rechnung"
   problem_balance: "Guthaben reicht nicht"

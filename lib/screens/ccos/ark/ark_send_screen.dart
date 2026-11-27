@@ -92,6 +92,7 @@ class _ArkSendViewState extends State<_ArkSendView> {
     null => null,
     ArkSendProblem.onchainNotYet => t.ark_wallet.problem_onchain,
     ArkSendProblem.wrongNetwork => t.ark_wallet.problem_network,
+    ArkSendProblem.expiredInvoice => t.ark_wallet.problem_expired,
     ArkSendProblem.unsupported => t.ark_wallet.problem_unsupported,
     ArkSendProblem.unknown => t.ark_wallet.problem_unknown,
     ArkSendProblem.notEnoughBalance => t.ark_wallet.problem_balance,
@@ -133,6 +134,7 @@ class _ArkSendViewState extends State<_ArkSendView> {
                 suffixIconAsset: CommonActionIconPath.scan,
                 suffixIconColor: colors.primaryText,
                 suffixIconSize: 18,
+                isError: viewModel.hasInputProblem,
               ),
               if (rail != null) ...[
                 CoconutLayout.spacing_200h,

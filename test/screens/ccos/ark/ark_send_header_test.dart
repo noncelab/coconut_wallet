@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:bark_bitcoin/bark_bitcoin.dart' as bark;
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/ccos/features/ark/ark_payment_request.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_balance.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_movement.dart';
 import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
@@ -52,6 +53,8 @@ ArkMovement _pending(int id, {String status = 'pending'}) => ArkMovement.fromBar
 );
 
 void main() {
+  setUp(() => ArkPaymentRequest.clock = () => DateTime.utc(2026, 10, 19, 12));
+  tearDown(() => ArkPaymentRequest.clock = DateTime.now);
   setUp(() {
     LocaleSettings.setLocaleSync(AppLocale.ko);
     NetworkType.setNetworkType(NetworkType.regtest);

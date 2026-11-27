@@ -1787,8 +1787,7 @@ errors:
     not_for_mainnet: "メインネットアドレスではありません"
     not_for_regtest: "アドレス形式を確認してください。\n（Native SegWit 対応）"
     duplicated: "アドレスは既に追加されています"
-    ark_payment: "アークウォレットで支払えます"
-    unsupported_payment: "対応していない支払いです"
+    offchain_payment: "オンチェーンウォレットでは送れません"
   pin_check_error:
     trial_count: "あと$count回試行できます"
     failed: "これ以上試行できません\nアプリを閉じてください"
@@ -2296,6 +2295,7 @@ ark_wallet:
   available(amount): "$amount 送れます"
   problem_onchain: "オンチェーン送金はまだ使えません"
   problem_network: "別のネットワークのアドレスです"
+  problem_expired: "期限切れのインボイスです"
   problem_unsupported: "対応していない形式です"
   problem_unknown: "ArkアドレスでもLightningインボイスでもありません"
   problem_balance: "残高が足りません"

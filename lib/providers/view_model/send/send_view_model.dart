@@ -38,11 +38,8 @@ enum AddressError {
   invalidNetworkAddress,
   duplicated,
 
-  /// 라이트닝·아크 결제. 온체인으로는 못 보내고 아크 지갑에서 보냄
-  arkPayment,
-
-  /// 라이트닝·아크 결제인데 이 빌드에서는 아크 지갑을 쓸 수 없음(학습용)
-  unsupportedPayment;
+  /// 라이트닝 인보이스·라이트닝 주소·아크 주소. 온체인으로 못 보냄
+  offchainPayment;
 
   bool get isError => this != AddressError.none;
   bool get isNotError => this == AddressError.none;
@@ -53,10 +50,8 @@ enum AddressError {
         return t.errors.address_error.invalid;
       case AddressError.duplicated:
         return t.errors.address_error.duplicated;
-      case AddressError.arkPayment:
-        return t.errors.address_error.ark_payment;
-      case AddressError.unsupportedPayment:
-        return t.errors.address_error.unsupported_payment;
+      case AddressError.offchainPayment:
+        return t.errors.address_error.offchain_payment;
       case AddressError.invalidNetworkAddress:
         {
           if (NetworkType.currentNetworkType == NetworkType.testnet) {
@@ -422,11 +417,22 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
     );
   }
 
+  /// 온체인으로 못 보내는 라이트닝·아크 값이면 그 오류. 온체인 주소로 검사할 값이면 null
   @visibleForTesting
-  static bool isArkOnlyPayment(String input, NetworkType network) {
+  static AddressError? offchainPaymentError(String input, NetworkType network) {
     final request = ArkPaymentRequest.parse(input, network);
-    return request.isPayable && request.hasArkOrLightning && request.bitcoinAddress == null;
+    if (request.bitcoinAddress != null) return null;
+    final isOffchain = request.hasArkOrLightning || _offchainProblems.contains(request.problem);
+    return isOffchain ? AddressError.offchainPayment : null;
   }
+
+  static const _offchainProblems = {
+    ArkPaymentRequestProblem.invoiceExpired,
+    ArkPaymentRequestProblem.invoiceNetwork,
+    ArkPaymentRequestProblem.arkNetwork,
+    ArkPaymentRequestProblem.bolt12,
+    ArkPaymentRequestProblem.lnurl,
+  };
 
   static SendArkWalletStatus _noArkWalletStatus() => _noArkWallet;
 
@@ -1187,11 +1193,9 @@ class SendViewModel extends ChangeNotifier with FeeRateMixin {
   bool validateAddress(String address, int recipientIndex) {
     if (!_isValidRecipientIndex(recipientIndex, 'validateAddress')) return false;
 
-    if (isArkOnlyPayment(address, NetworkType.currentNetworkType)) {
-      _setAddressError(
-        _arkWalletStatus().isUsable ? AddressError.arkPayment : AddressError.unsupportedPayment,
-        recipientIndex,
-      );
+    final offchainError = offchainPaymentError(address, NetworkType.currentNetworkType);
+    if (offchainError != null) {
+      _setAddressError(offchainError, recipientIndex);
       return false;
     }
 

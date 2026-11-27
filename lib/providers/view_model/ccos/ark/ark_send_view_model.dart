@@ -6,7 +6,7 @@ import 'package:coconut_wallet/ccos/features/ark/ark_wallet_provider.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 
-enum ArkSendProblem { unknown, onchainNotYet, wrongNetwork, unsupported, notEnoughBalance, feeFailed }
+enum ArkSendProblem { unknown, onchainNotYet, wrongNetwork, expiredInvoice, unsupported, notEnoughBalance, feeFailed }
 
 /// 아크 지갑 보내기. 받는 곳 → (필요하면) 금액 → 최종 확인
 class ArkSendViewModel extends ChangeNotifier {
@@ -60,6 +60,12 @@ class ArkSendViewModel extends ChangeNotifier {
   int? get amountSats => invoiceHasAmount ? _request!.invoiceAmountSats : _enteredAmount;
   int? get total => amountSats == null || _fee == null ? null : amountSats! + _fee!;
 
+  /// 받는 주소 칸에서 생긴 문제
+  bool get hasInputProblem => switch (problem) {
+    ArkSendProblem.notEnoughBalance || ArkSendProblem.feeFailed || null => false,
+    _ => true,
+  };
+
   ArkSendProblem? get problem {
     final request = _request;
     if (request == null || _input.trim().isEmpty) return null;
@@ -67,6 +73,8 @@ class ArkSendViewModel extends ChangeNotifier {
     switch (request.problem) {
       case ArkPaymentRequestProblem.invoiceNetwork || ArkPaymentRequestProblem.arkNetwork:
         return ArkSendProblem.wrongNetwork;
+      case ArkPaymentRequestProblem.invoiceExpired:
+        return ArkSendProblem.expiredInvoice;
       case ArkPaymentRequestProblem.bolt12 ||
           ArkPaymentRequestProblem.lnurl ||
           ArkPaymentRequestProblem.requiredParameter:

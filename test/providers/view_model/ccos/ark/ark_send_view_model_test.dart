@@ -26,6 +26,8 @@ ArkBalance _spendable(int sats) => ArkBalance(
 );
 
 void main() {
+  setUp(() => ArkPaymentRequest.clock = () => DateTime.utc(2026, 10, 19, 12));
+  tearDown(() => ArkPaymentRequest.clock = DateTime.now);
   TestWidgetsFlutterBinding.ensureInitialized();
   late FakeArkBackend backend;
   late ArkWalletProvider wallet;
@@ -74,6 +76,7 @@ void main() {
     await viewModel.setAmount(60000);
 
     expect(viewModel.problem, ArkSendProblem.notEnoughBalance);
+    expect(viewModel.hasInputProblem, isFalse);
     expect(viewModel.canContinue, isFalse);
   });
 
@@ -81,7 +84,14 @@ void main() {
     viewModel.setInput('bcrt1q7kcrvjzszlxme7fgs2euvv6lkgf99jdu8zjnus');
 
     expect(viewModel.problem, ArkSendProblem.onchainNotYet);
+    expect(viewModel.hasInputProblem, isTrue);
     expect(viewModel.canContinue, isFalse);
+  });
+
+  test('a valid destination is not an input problem', () {
+    viewModel.setInput(_ark);
+
+    expect(viewModel.hasInputProblem, isFalse);
   });
 
   test('sending passes the destination and amount', () async {
@@ -107,6 +117,7 @@ void main() {
     });
 
     test('an invoice description is the Lightning memo, not my own memo', () {
+      ArkPaymentRequest.clock = () => DateTime.utc(2017, 6, 1, 11);
       final mainnet = ArkSendViewModel(wallet, network: NetworkType.mainnet, feeDelay: Duration.zero)
         ..setInput(_described);
       addTearDown(mainnet.dispose);

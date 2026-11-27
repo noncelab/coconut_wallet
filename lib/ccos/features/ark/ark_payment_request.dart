@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:coconut_lib/coconut_lib.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
 import 'package:coconut_wallet/utils/balance_format_util.dart';
@@ -29,6 +31,7 @@ enum ArkPaymentRequestProblem {
   bolt12,
   lnurl,
   invoiceNetwork,
+  invoiceExpired,
   arkNetwork,
 
   /// A BIP21 `req-` parameter Coconut doesn't understand; [ArkPaymentRequest.problemDetail] names it.
@@ -58,6 +61,7 @@ class ArkPaymentRequest {
     this.lightningAddress,
     this.amountSats,
     this.invoiceAmountSats,
+    this.invoiceExpiresAt,
     this.problem,
     this.problemDetail,
     this.message,
@@ -75,6 +79,9 @@ class ArkPaymentRequest {
 
   /// The amount encoded in [lightningInvoice]; null for an amountless invoice.
   final int? invoiceAmountSats;
+
+  /// [lightningInvoice] 만료 시각. 읽지 못하면 null
+  final DateTime? invoiceExpiresAt;
 
   /// Why it can't be paid, for [ArkPaymentRequestKind.unsupported] and [ArkPaymentRequestKind.unknown].
   final ArkPaymentRequestProblem? problem;
@@ -103,6 +110,11 @@ class ArkPaymentRequest {
     if (lightningAddress != null) ArkPaymentOption(ArkPaymentRail.lightningAddress, lightningAddress!),
     if (bitcoinAddress != null) ArkPaymentOption(ArkPaymentRail.onchain, bitcoinAddress!),
   ];
+
+  @visibleForTesting
+  static DateTime Function() clock = DateTime.now;
+
+  static bool _isExpired(DateTime? expiresAt) => expiresAt != null && !clock().isBefore(expiresAt);
 
   static ArkPaymentRequest parse(String input, NetworkType network) {
     final raw = input.trim();
@@ -209,6 +221,32 @@ class ArkPaymentRequest {
 
   /// The amount of a BOLT11 invoice in sats (rounded up from msat), or null when amountless or
   /// malformed. Only the human-readable part is read; bark checks the rest when paying.
+  static const _bech32 = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+
+  /// BOLT11 만든 시각 + 만료 시간(`x`, 없으면 3600초). 읽지 못하면 null
+  static DateTime? bolt11ExpiresAt(String invoice) {
+    final lower = invoice.toLowerCase();
+    final data = lower.substring(lower.lastIndexOf('1') + 1);
+    final values = [for (final char in data.split('')) _bech32.indexOf(char)];
+    const timestampLength = 7;
+    const signatureAndChecksumLength = 104 + 6;
+    if (values.contains(-1) || values.length < timestampLength + signatureAndChecksumLength) return null;
+    int number(Iterable<int> words) => words.fold(0, (sum, word) => sum * 32 + word);
+    final created = number(values.take(timestampLength));
+    var expirySeconds = 3600;
+    var index = timestampLength;
+    final end = values.length - signatureAndChecksumLength;
+    while (index + 3 <= end) {
+      final type = values[index];
+      final length = values[index + 1] * 32 + values[index + 2];
+      final start = index + 3;
+      if (start + length > end) return null;
+      if (_bech32[type] == 'x') expirySeconds = number(values.sublist(start, start + length));
+      index = start + length;
+    }
+    return DateTime.fromMillisecondsSinceEpoch((created + expirySeconds) * 1000, isUtc: true);
+  }
+
   static int? bolt11AmountSats(String invoice) {
     final lower = invoice.toLowerCase();
     final prefix = _invoicePrefixes.where(lower.startsWith).firstOrNull;
@@ -257,6 +295,8 @@ class ArkPaymentRequest {
   static ArkPaymentRequest _parseInvoice(String raw, String invoice, NetworkType network) {
     final prefix = _invoicePrefixes.firstWhere(invoice.startsWith);
     if (prefix != invoicePrefixFor(network)) return _unsupported(raw, ArkPaymentRequestProblem.invoiceNetwork);
+    final expiresAt = bolt11ExpiresAt(invoice);
+    if (_isExpired(expiresAt)) return _unsupported(raw, ArkPaymentRequestProblem.invoiceExpired);
     final amount = bolt11AmountSats(invoice);
     return ArkPaymentRequest._(
       kind: ArkPaymentRequestKind.lightningInvoice,
@@ -264,6 +304,7 @@ class ArkPaymentRequest {
       lightningInvoice: invoice,
       amountSats: amount,
       invoiceAmountSats: amount,
+      invoiceExpiresAt: expiresAt,
     );
   }
 
@@ -321,10 +362,16 @@ class ArkPaymentRequest {
 
     String? invoice;
     int? invoiceAmount;
+    DateTime? invoiceExpiresAt;
+    var invoiceExpired = false;
     final lightning = params['lightning']?.trim().toLowerCase();
     if (lightning != null && _looksLikeBolt11(lightning) && lightning.startsWith(invoicePrefixFor(network))) {
-      invoice = lightning;
-      invoiceAmount = bolt11AmountSats(lightning);
+      invoiceExpiresAt = bolt11ExpiresAt(lightning);
+      invoiceExpired = _isExpired(invoiceExpiresAt);
+      if (!invoiceExpired) {
+        invoice = lightning;
+        invoiceAmount = bolt11AmountSats(lightning);
+      }
     }
 
     int? amount;
@@ -336,7 +383,10 @@ class ArkPaymentRequest {
     }
 
     if (bitcoinAddress == null && arkAddress == null && invoice == null) {
-      return _unsupported(raw, ArkPaymentRequestProblem.noMethod);
+      return _unsupported(
+        raw,
+        invoiceExpired ? ArkPaymentRequestProblem.invoiceExpired : ArkPaymentRequestProblem.noMethod,
+      );
     }
     return ArkPaymentRequest._(
       kind: ArkPaymentRequestKind.bip321,
@@ -346,6 +396,7 @@ class ArkPaymentRequest {
       lightningInvoice: invoice,
       amountSats: amount ?? invoiceAmount,
       invoiceAmountSats: invoiceAmount,
+      invoiceExpiresAt: invoice == null ? null : invoiceExpiresAt,
       message:
           [
             params['message'],

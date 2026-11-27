@@ -11,6 +11,8 @@ const _invoice =
 void main() {
   final regtest = NetworkType.regtest;
   setUpAll(() => NetworkType.setNetworkType(NetworkType.regtest));
+  setUp(() => ArkPaymentRequest.clock = () => DateTime.utc(2026, 10, 19, 12));
+  tearDown(() => ArkPaymentRequest.clock = DateTime.now);
 
   ArkPaymentRequest parse(String input) => ArkPaymentRequest.parse(input, regtest);
 
@@ -158,6 +160,7 @@ void main() {
     });
 
     test('comes from the invoice description when the URI has none', () {
+      ArkPaymentRequest.clock = () => DateTime.utc(2017, 6, 1, 11);
       const described =
           'lnbc1pvjluezsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zygspp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdpl2pkx2ctnv5sxxmmwwd5kgetjypeh2ursdae8g6twvus8g6rfwvs8qun0dfjkxaq9qrsgq357wnc5r2ueh7ck6q93dj32dlqnls087fxdwk8qakdyafkq3yap9us6v52vjjsrvywa6rt52cm9r9zqt8r2t7mlcwspyetp5h2tztugp9lfyql';
       expect(ArkPaymentRequest.bolt11Description(described), 'Please consider supporting this project');
@@ -167,6 +170,37 @@ void main() {
     test('is empty for an invoice without a description', () {
       expect(parse(_invoice).memo, isNull);
       expect(parse(_ark).memo, isNull);
+    });
+  });
+
+  group('invoice expiry', () {
+    test('reads the creation time plus its x field', () {
+      expect(ArkPaymentRequest.bolt11ExpiresAt(_invoice), DateTime.utc(2026, 10, 21, 11, 24, 12));
+    });
+
+    test('a short or malformed invoice has no known expiry', () {
+      expect(ArkPaymentRequest.bolt11ExpiresAt('lnbcrt10u1pqqqqqq'), isNull);
+    });
+
+    test('an expired invoice cannot be paid', () {
+      ArkPaymentRequest.clock = () => DateTime.utc(2026, 10, 21, 11, 24, 12);
+
+      final request = parse(_invoice);
+      expect(request.isPayable, isFalse);
+      expect(request.problem, ArkPaymentRequestProblem.invoiceExpired);
+    });
+
+    test('a bitcoin URI drops an expired invoice and keeps its address', () {
+      ArkPaymentRequest.clock = () => DateTime.utc(2026, 10, 22);
+
+      final withAddress = parse('bitcoin:$_bitcoin?lightning=$_invoice');
+      expect(withAddress.lightningInvoice, isNull);
+      expect(withAddress.bitcoinAddress, _bitcoin);
+      expect(parse('bitcoin:?lightning=$_invoice').problem, ArkPaymentRequestProblem.invoiceExpired);
+    });
+
+    test('a valid invoice carries its expiry', () {
+      expect(parse(_invoice).invoiceExpiresAt, DateTime.utc(2026, 10, 21, 11, 24, 12));
     });
   });
 }
