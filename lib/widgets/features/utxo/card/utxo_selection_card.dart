@@ -86,6 +86,20 @@ class UtxoSelectionCard extends StatelessWidget {
                   ),
                   Row(
                     children: [
+                      // 주소 순번(파생 경로의 마지막 숫자)을 날짜 앞에 보여 준다.
+                      Text(
+                        '${utxo.addressIndex}',
+                        key: const ValueKey('utxo_selection_card_address_index'),
+                        style: CoconutTypography.body3_12_Number.setColor(
+                          isLocked ? dimmedTextColor : colors.secondaryText,
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        color: isLocked ? dimmedTextColor : colors.secondaryText,
+                        width: 1,
+                        height: 10,
+                      ),
                       Text(
                         dateString[0],
                         style: CoconutTypography.body3_12_Number.setColor(
