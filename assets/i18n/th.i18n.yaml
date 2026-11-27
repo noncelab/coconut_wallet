@@ -901,6 +901,28 @@ wallet_balance_history_screen:
   flow_count: "${count} ครั้ง"
   flow_summary: "${count} ครั้ง · ${amount}"
   no_wallets: "ไม่มีกระเป๋าที่จะแสดง ณ เวลานี้"
+balance_by_wallet_screen:
+  all_wallets_balance: "ยอดคงเหลือกระเป๋าทั้งหมด"
+  selected_wallets_balance: "ยอดคงเหลือกระเป๋าที่เลือก"
+  wallet_count: "${count} กระเป๋า"
+  selected_count: "เลือก ${selected} / ${total}"
+  period_change: "การเปลี่ยนแปลง ${period}"
+  share_trend: "แนวโน้มสัดส่วน"
+  balance_trend: "การเปลี่ยนแปลงยอดคงเหลือ"
+  selected_basis: "ตามกระเป๋าที่เลือก"
+  long_press_hint: "กดค้างเพื่อดูยอดคงเหลือรายวัน"
+  wallet_list: "รายการกระเป๋า"
+  wallet_list_count: "${count}"
+  sort_balance: "เรียงตามยอดคงเหลือ"
+  sort_change: "เรียงตามการเปลี่ยนแปลง"
+  excluded_scope: "ไม่รวม ${names} · คำนวณสัดส่วนจากกระเป๋าที่เหลือ"
+  first_transaction: "ธุรกรรมแรก ${date} · ยอดก่อนหน้า 0"
+  add_wallet_guide: "เพิ่มกระเป๋าอีก\nเพื่อเปรียบเทียบสัดส่วน"
+  empty_wallets: "ไม่มีกระเป๋าให้แสดง"
+  tag_hot: "HOT"
+  tag_watch_only: "WATCH-ONLY"
+  tag_vault: "โวลต์"
+  tag_multisig: "มัลติซิก"
 
 # lib/screens/review
 negative_feedback_screen:

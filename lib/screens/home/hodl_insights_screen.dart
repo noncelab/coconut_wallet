@@ -11,6 +11,7 @@ import 'package:coconut_wallet/providers/view_model/home/hodl_insights_view_mode
 import 'package:coconut_wallet/providers/view_model/home/home_widgets_view_model.dart';
 import 'package:coconut_wallet/repository/shared_preference/shared_prefs_repository.dart';
 import 'package:coconut_wallet/screens/home/widget_configure_sheet.dart';
+import 'package:coconut_wallet/screens/home/balance_by_wallet_screen.dart';
 import 'package:coconut_wallet/screens/home/goal_amount_screen.dart';
 import 'package:coconut_wallet/screens/home/wallet_balance_history_screen.dart';
 import 'package:coconut_wallet/widgets/features/home/widgets/goal_amount_views.dart';
@@ -265,20 +266,7 @@ class _HodlInsightsScreenState extends State<HodlInsightsScreen> {
                                 _section(
                                   HodlInsightsSection.balanceByWallet,
                                   title: _SectionTitle(t.home_widgets.balance_by_wallet, top: 10),
-                                  child: SizedBox(
-                                    height: 200,
-                                    child: _OpenProgress(
-                                      progress: 1,
-                                      builder:
-                                          (context, reveal) => BalanceByWalletView(
-                                            key: const Key('hodl-insights-balance-by-wallet'),
-                                            shares: viewModel.balanceShares(t.home_widgets.others),
-                                            total: _btcAmount(viewModel, viewModel.balance),
-                                            amountText: (sats) => _btcNumber(viewModel, sats),
-                                            reveal: reveal,
-                                          ),
-                                    ),
-                                  ),
+                                  child: _BalanceByWalletCard(viewModel: viewModel, filledProgress: _filledProgress),
                                 ),
                               ],
                             ),
@@ -1190,6 +1178,41 @@ class _GoalCard extends StatelessWidget {
               ? card
               : Hero(tag: goalAmountHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: card),
     );
+  }
+}
+
+/// 지갑별 잔액 카드. 누르면 지갑별 잔액 상세로 이어진다. 전환은 목표 수량 카드와 같다.
+class _BalanceByWalletCard extends StatelessWidget {
+  final HodlInsightsViewModel viewModel;
+  final Set<String> filledProgress;
+
+  const _BalanceByWalletCard({required this.viewModel, required this.filledProgress});
+
+  @override
+  Widget build(BuildContext context) {
+    // 홈 위젯에서 열었으면 이미 그 카드의 Hero 안에 있다. 그 태그로 상세 화면에 이어진다.
+    final ancestorHero = context.findAncestorWidgetOfExactType<Hero>();
+    final heroTag = ancestorHero?.tag ?? balanceByWalletHeroTag;
+    final card = SizedBox(
+      height: 200,
+      child: _OpenProgress(
+        progress: 1,
+        filled: filledProgress,
+        filledId: 'balanceByWallet',
+        builder:
+            (context, reveal) => BalanceByWalletView(
+              key: const Key('hodl-insights-balance-by-wallet'),
+              shares: viewModel.balanceShares(t.home_widgets.others),
+              total: _btcAmount(viewModel, viewModel.balance),
+              amountText: (sats) => _btcNumber(viewModel, sats),
+              reveal: reveal,
+              onPressed: () => BalanceByWalletScreen.open(context, viewModel, heroTag: heroTag),
+            ),
+      ),
+    );
+    return ancestorHero != null
+        ? card
+        : Hero(tag: balanceByWalletHeroTag, flightShuttleBuilder: walletBalanceHistoryFlight, child: card);
   }
 }
 

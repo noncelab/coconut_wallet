@@ -827,6 +827,28 @@ wallet_balance_history_screen:
   flow_count: "${count}件"
   flow_summary: "${count}件 · ${amount}"
   no_wallets: "この時点で表示できるウォレットはありません"
+balance_by_wallet_screen:
+  all_wallets_balance: "全ウォレットの残高"
+  selected_wallets_balance: "選択したウォレットの残高"
+  wallet_count: "ウォレット${count}個"
+  selected_count: "${selected} / ${total}個を選択"
+  period_change: "${period}の変化"
+  share_trend: "割合の推移"
+  balance_trend: "残高の変化"
+  selected_basis: "選択したウォレット基準"
+  long_press_hint: "長押しで日付ごとの残高を表示"
+  wallet_list: "ウォレット一覧"
+  wallet_list_count: "${count}個"
+  sort_balance: "残高順"
+  sort_change: "変化量順"
+  excluded_scope: "${names}を除外 · 残りのウォレット合計で割合を計算"
+  first_transaction: "${date} 初取引 · それ以前の残高は0"
+  add_wallet_guide: "ウォレットを追加すると\n割合を比較できます"
+  empty_wallets: "表示するウォレットがありません"
+  tag_hot: "HOT"
+  tag_watch_only: "WATCH-ONLY"
+  tag_vault: "ボルト"
+  tag_multisig: "マルチシグ"
 
 wallet_connect_screen:
   guide_bitbox02:

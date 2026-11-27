@@ -956,6 +956,28 @@ wallet_balance_history_screen:
   flow_count: "${count} Tx"
   flow_summary: "${count} Tx · ${amount}"
   no_wallets: "Zu diesem Zeitpunkt sind keine Wallets vorhanden"
+balance_by_wallet_screen:
+  all_wallets_balance: "Gesamtguthaben aller Wallets"
+  selected_wallets_balance: "Guthaben der gewählten Wallets"
+  wallet_count: "${count} Wallets"
+  selected_count: "${selected} / ${total} ausgewählt"
+  period_change: "Änderung (${period})"
+  share_trend: "Anteilsverlauf"
+  balance_trend: "Guthabenänderung"
+  selected_basis: "Basis: gewählte Wallets"
+  long_press_hint: "Lange drücken für das Guthaben je Datum"
+  wallet_list: "Wallets"
+  wallet_list_count: "${count}"
+  sort_balance: "Nach Guthaben"
+  sort_change: "Nach Änderung"
+  excluded_scope: "${names} ausgeschlossen · Anteile der übrigen Wallets"
+  first_transaction: "Erste Transaktion ${date} · Guthaben davor 0"
+  add_wallet_guide: "Füge weitere Wallets hinzu,\num Anteile zu vergleichen"
+  empty_wallets: "Keine Wallets vorhanden"
+  tag_hot: "HOT"
+  tag_watch_only: "WATCH-ONLY"
+  tag_vault: "Vault"
+  tag_multisig: "Multisig"
 
 # lib/screens/review
 negative_feedback_screen:

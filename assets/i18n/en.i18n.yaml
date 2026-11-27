@@ -828,6 +828,28 @@ wallet_balance_history_screen:
   flow_count: "${count} tx"
   flow_summary: "${count} tx · ${amount}"
   no_wallets: "No wallets to show at this point"
+balance_by_wallet_screen:
+  all_wallets_balance: "All wallets balance"
+  selected_wallets_balance: "Selected wallets balance"
+  wallet_count: "${count} wallets"
+  selected_count: "${selected} / ${total} selected"
+  period_change: "${period} change"
+  share_trend: "Share trend"
+  balance_trend: "Balance change"
+  selected_basis: "Selected wallets"
+  long_press_hint: "Long press to see balances by date"
+  wallet_list: "Wallets"
+  wallet_list_count: "${count}"
+  sort_balance: "By balance"
+  sort_change: "By change"
+  excluded_scope: "${names} excluded · shares use the remaining wallets"
+  first_transaction: "First transaction ${date} · balance before was 0"
+  add_wallet_guide: "Add more wallets\nto compare their shares"
+  empty_wallets: "No wallets to show"
+  tag_hot: "HOT"
+  tag_watch_only: "WATCH-ONLY"
+  tag_vault: "Vault"
+  tag_multisig: "Multisig"
 
 wallet_connect_screen:
   guide_bitbox02:

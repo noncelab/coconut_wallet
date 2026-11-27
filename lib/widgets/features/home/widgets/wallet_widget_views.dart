@@ -450,6 +450,9 @@ class BalanceByWalletView extends StatelessWidget {
   /// 도넛이 차오른 정도(0~1). 호들 인사이트에서 화면을 열 때 차오르게 한다.
   final double reveal;
 
+  /// 도넛 지름 상한. 지갑이 많은 상세 화면에서 범례 가로 폭을 지키려고 쓴다. 없으면 높이에 맞춘다(홈 위젯 기존 동작).
+  final double? maxDonutDiameter;
+
   const BalanceByWalletView({
     super.key,
     required this.shares,
@@ -457,6 +460,7 @@ class BalanceByWalletView extends StatelessWidget {
     required this.amountText,
     this.onPressed,
     this.reveal = 1,
+    this.maxDonutDiameter,
   });
 
   /// 배경을 지정한 지갑은 배경 색, 아니면 아이콘 색. 잔액 변화의 기간별 요약 막대와 같은 기준이다.
@@ -483,41 +487,44 @@ class BalanceByWalletView extends StatelessWidget {
       onPressed: onPressed,
       child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: CustomPaint(
-                painter: _DonutPainter(
-                  [for (final share in shares) share.balance.toDouble()],
-                  shareColors,
-                  colors.surfaceMuted,
-                  borders: shareBorders,
-                  strokeRatio: _strokeRatio,
-                  reveal: reveal,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final numberStyle = CoconutTypography.body1_16_NumberBold.copyWith(
-                      color: colors.primaryText,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    );
-                    final number = measureHomeTextSize(context, total.number, numberStyle);
-                    final width = number.width;
-                    final height = number.height;
-                    final hole = math.max(0.0, constraints.biggest.shortestSide * (1 - 2 * _strokeRatio) - 8);
-                    final diagonal = math.sqrt(width * width + height * height);
-                    final scale = diagonal <= hole || diagonal == 0 ? 1.0 : hole / diagonal;
-                    return Center(
-                      child: SizedBox(
-                        width: width * scale,
-                        height: height * scale,
-                        child: FittedBox(
-                          child: Text(total.number, key: const Key('balance-by-wallet-total'), style: numberStyle),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxDonutDiameter ?? double.infinity),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: CustomPaint(
+                  painter: _DonutPainter(
+                    [for (final share in shares) share.balance.toDouble()],
+                    shareColors,
+                    colors.surfaceMuted,
+                    borders: shareBorders,
+                    strokeRatio: _strokeRatio,
+                    reveal: reveal,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final numberStyle = CoconutTypography.body1_16_NumberBold.copyWith(
+                        color: colors.primaryText,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      );
+                      final number = measureHomeTextSize(context, total.number, numberStyle);
+                      final width = number.width;
+                      final height = number.height;
+                      final hole = math.max(0.0, constraints.biggest.shortestSide * (1 - 2 * _strokeRatio) - 8);
+                      final diagonal = math.sqrt(width * width + height * height);
+                      final scale = diagonal <= hole || diagonal == 0 ? 1.0 : hole / diagonal;
+                      return Center(
+                        child: SizedBox(
+                          width: width * scale,
+                          height: height * scale,
+                          child: FittedBox(
+                            child: Text(total.number, key: const Key('balance-by-wallet-total'), style: numberStyle),
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),

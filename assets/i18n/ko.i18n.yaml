@@ -956,6 +956,28 @@ wallet_balance_history_screen:
   flow_count: "${count}회"
   flow_summary: "${count}회 · ${amount}"
   no_wallets: "이 시점에 표시할 지갑이 없어요"
+balance_by_wallet_screen:
+  all_wallets_balance: "전체 지갑 잔액"
+  selected_wallets_balance: "선택한 지갑 잔액"
+  wallet_count: "${count}개 지갑"
+  selected_count: "${selected} / ${total}개 선택"
+  period_change: "${period} 변화"
+  share_trend: "비중 추이"
+  balance_trend: "잔액 변화"
+  selected_basis: "선택 지갑 기준"
+  long_press_hint: "길게 눌러 날짜별 잔액 확인"
+  wallet_list: "지갑 목록"
+  wallet_list_count: "${count}개"
+  sort_balance: "잔액 순"
+  sort_change: "변화량 순"
+  excluded_scope: "${names} 제외 · 남은 지갑 합계로 비중 계산"
+  first_transaction: "${date} 첫 거래 · 이전 잔액 0"
+  add_wallet_guide: "지갑을 더 추가하면\n비중을 비교할 수 있어요"
+  empty_wallets: "표시할 지갑이 없어요"
+  tag_hot: "HOT"
+  tag_watch_only: "WATCH-ONLY"
+  tag_vault: "금고"
+  tag_multisig: "다중서명"
 
 # lib/screens/review
 negative_feedback_screen:

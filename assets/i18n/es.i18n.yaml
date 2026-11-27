@@ -957,6 +957,28 @@ wallet_balance_history_screen:
   flow_count: "${count} tx"
   flow_summary: "${count} tx · ${amount}"
   no_wallets: "No hay carteras para mostrar en este momento"
+balance_by_wallet_screen:
+  all_wallets_balance: "Saldo de todas las carteras"
+  selected_wallets_balance: "Saldo de las carteras seleccionadas"
+  wallet_count: "${count} carteras"
+  selected_count: "${selected} / ${total} seleccionadas"
+  period_change: "Cambio en ${period}"
+  share_trend: "Evolución de la proporción"
+  balance_trend: "Cambio de saldo"
+  selected_basis: "Carteras seleccionadas"
+  long_press_hint: "Mantén pulsado para ver el saldo por fecha"
+  wallet_list: "Carteras"
+  wallet_list_count: "${count}"
+  sort_balance: "Por saldo"
+  sort_change: "Por cambio"
+  excluded_scope: "Sin ${names} · proporciones sobre las carteras restantes"
+  first_transaction: "Primera transacción ${date} · saldo anterior 0"
+  add_wallet_guide: "Añade más carteras\npara comparar sus proporciones"
+  empty_wallets: "No hay carteras para mostrar"
+  tag_hot: "HOT"
+  tag_watch_only: "WATCH-ONLY"
+  tag_vault: "Bóveda"
+  tag_multisig: "Multifirma"
 
 # lib/screens/review
 negative_feedback_screen:
