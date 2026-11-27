@@ -80,6 +80,17 @@ void main() {
     expect(viewModel.canContinue, isFalse);
   });
 
+  test('clearing the amount after a failed fee estimate clears the failure', () async {
+    backend.sendFeeError = StateError('server down');
+    viewModel.setInput(_ark);
+    await viewModel.setAmount(1000);
+    expect(viewModel.problem, ArkSendProblem.feeFailed);
+
+    await viewModel.setAmount(null);
+
+    expect(viewModel.problem, isNull);
+  });
+
   test('an on-chain address alone is refused for now', () {
     viewModel.setInput('bcrt1q7kcrvjzszlxme7fgs2euvv6lkgf99jdu8zjnus');
 

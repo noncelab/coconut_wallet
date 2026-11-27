@@ -222,6 +222,7 @@ class FakeArkBackend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements Ark
   List<ArkMovement> movements = [];
   String address = 'tark1fakeaddress';
   int sendFee = 0;
+  Object? sendFeeError;
   Object? sendError;
   int syncCount = 0;
   final List<(ArkPaymentRail, String, int)> sent = [];
@@ -255,7 +256,10 @@ class FakeArkBackend with FakeArkVtxos, FakeArkMoves, FakeArkExit implements Ark
   }
 
   @override
-  Future<int> estimateSendFee(String fingerprint, ArkPaymentRail rail, int amountSats) async => sendFee;
+  Future<int> estimateSendFee(String fingerprint, ArkPaymentRail rail, int amountSats) async {
+    if (sendFeeError != null) throw sendFeeError!;
+    return sendFee;
+  }
 
   @override
   Future<int?> send(

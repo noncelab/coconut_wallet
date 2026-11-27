@@ -152,6 +152,7 @@ class ArkSendViewModel extends ChangeNotifier {
   Future<void> setAmount(int? amountSats) {
     _enteredAmount = amountSats == null || amountSats <= 0 ? null : amountSats;
     _fee = null;
+    _feeFailed = false;
     notifyListeners();
     return _scheduleFee();
   }
