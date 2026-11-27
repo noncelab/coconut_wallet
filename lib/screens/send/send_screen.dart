@@ -846,6 +846,7 @@ class _SendScreenState extends State<SendScreen> with SingleTickerProviderStateM
             scrollController: scrollController,
             backgroundColor: context.coconutColors.surfaceBottomSheet,
             showSkipButton: false,
+            showChangeFilter: true,
           ),
     );
     if (result != null) {

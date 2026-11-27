@@ -23,6 +23,9 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   /// 이 값보다 작은 금액의 UTXO를 선택할 수 없게 합니다. null이면 제한 없음.
   int? minimumSelectableUtxoAmount;
 
+  /// true이면 고를 수 있는 잔돈이 있을 때 잔돈 필터 칩을 보여줍니다.
+  bool isChangeFilterEnabled = false;
+
   final List<UtxoState> _confirmedUtxoList = [];
   List<UtxoState> _selectedUtxoList = [];
   final Set<String> _selectedUtxoIdSet = {};
@@ -38,6 +41,7 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   List<UtxoTag> _utxoTagList = [];
   UtxoFilter selectedUtxoFilter = UtxoFilter.all; // 선택된 태그, default: 전체
   final Map<String, List<UtxoTag>> _utxoTagMap = {};
+  bool _hasChangeUtxo = false;
 
   int? _cachedSelectedUtxoAmountSum; // 계산식 수행 반복을 방지하기 위해 추가
 
@@ -74,6 +78,10 @@ class UtxoSelectionViewModel extends ChangeNotifier {
       });
       _sortConfirmedUtxoList(utxoOrder);
       _initUtxoTagMap();
+      _hasChangeUtxo = _confirmedUtxoList.any((utxo) => utxo.isChange && _isSelectable(utxo));
+      if (selectedUtxoFilter == UtxoFilter.change && !_hasChangeUtxo) {
+        selectedUtxoFilter = UtxoFilter.all;
+      }
       _updateFilteredUtxoList();
 
       _utxoTagList = _tagProvider.getUtxoTagList(_walletId);
@@ -101,7 +109,9 @@ class UtxoSelectionViewModel extends ChangeNotifier {
   FeeInfo? get customFeeInfo => _customFeeInfo;
   bool get isInitialized => _isInitialized;
   bool get hasLoadError => _hasLoadError;
-  bool get isUtxoTagListEmpty => _utxoTagList.isEmpty;
+  bool get hasChangeUtxo => _hasChangeUtxo;
+  bool get showChangeFilter => isChangeFilterEnabled && _hasChangeUtxo;
+  bool get isFilterBarVisible => _utxoTagList.isNotEmpty || showChangeFilter;
   bool get isNetworkOn => _isNetworkOn == true;
   List<UtxoState> get filteredUtxoList => _filteredUtxoList;
 
@@ -148,12 +158,16 @@ class UtxoSelectionViewModel extends ChangeNotifier {
     _clearUtxoList();
   }
 
-  void selectTaggedUtxo() {
-    setSelectedUtxoList(filteredUtxoList.where(_isSelectable).toList());
+  void selectFilteredUtxo() {
+    setSelectedUtxoList([
+      ..._selectedUtxoList,
+      ...filteredUtxoList.where((utxo) => _isSelectable(utxo) && !_selectedUtxoIdSet.contains(utxo.utxoId)),
+    ]);
   }
 
-  void deselectTaggedUtxo() {
-    _clearUtxoList();
+  void deselectFilteredUtxo() {
+    final filteredIds = filteredUtxoList.map((utxo) => utxo.utxoId).toSet();
+    setSelectedUtxoList(_selectedUtxoList.where((utxo) => !filteredIds.contains(utxo.utxoId)).toList());
   }
 
   void setSelectedUtxoList(List<UtxoState> utxoList) {

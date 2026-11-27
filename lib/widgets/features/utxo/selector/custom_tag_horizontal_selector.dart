@@ -8,10 +8,13 @@ import 'package:flutter/material.dart';
 /// [CustomTagHorizontalSelector] : 태그 목록을 보여주고 선택할 수 있는 위젯 (가로)
 /// [tags] : 표시할 태그 목록
 /// [onSelectedFilter]: 필터 선택시 호출되는 콜백
+/// [showDefaultTags] : 기본 필터(잠금, 잔돈) 표시 여부
+/// [showChangeFilter] : [showDefaultTags]가 false여도 잔돈 필터만 따로 표시할지 여부
 class CustomTagHorizontalSelector extends StatefulWidget {
   final List<UtxoTag> tags;
   final UtxoFilter selectedFilter;
   final bool showDefaultTags;
+  final bool showChangeFilter;
   final ValueChanged<UtxoFilter> onSelectedFilter;
   final ScrollPhysics? scrollPhysics;
   const CustomTagHorizontalSelector({
@@ -20,6 +23,7 @@ class CustomTagHorizontalSelector extends StatefulWidget {
     required this.selectedFilter,
     required this.onSelectedFilter,
     this.showDefaultTags = true,
+    this.showChangeFilter = false,
     this.scrollPhysics = const AlwaysScrollableScrollPhysics(),
   });
 
@@ -30,13 +34,11 @@ class CustomTagHorizontalSelector extends StatefulWidget {
 class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelector> {
   @override
   Widget build(BuildContext context) {
-    final items = <({UtxoFilter filter, String text, bool isFixedTag})>[
-      (filter: UtxoFilter.all, text: t.all, isFixedTag: true),
-      if (widget.showDefaultTags) ...[
-        (filter: UtxoFilter.locked, text: t.utxo_detail_screen.utxo_locked, isFixedTag: true),
-        (filter: UtxoFilter.change, text: t.change, isFixedTag: true),
-      ],
-      for (final tag in widget.tags) (filter: UtxoFilter.tag(tag.id), text: '#${tag.name}', isFixedTag: false),
+    final items = <({UtxoFilter filter, String text})>[
+      (filter: UtxoFilter.all, text: t.all),
+      if (widget.showDefaultTags) (filter: UtxoFilter.locked, text: t.utxo_detail_screen.utxo_locked),
+      if (widget.showDefaultTags || widget.showChangeFilter) (filter: UtxoFilter.change, text: t.change),
+      for (final tag in widget.tags) (filter: UtxoFilter.tag(tag.id), text: '#${tag.name}'),
     ];
 
     return SizedBox(
@@ -55,9 +57,9 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
                 onTap: () {
                   widget.onSelectedFilter.call(item.filter);
                 },
-                child: _tagSelectorChip(item.text, widget.selectedFilter == item.filter, item.isFixedTag),
+                child: _tagSelectorChip(item.text, widget.selectedFilter == item.filter),
               ),
-              if (index == items.length) CoconutLayout.spacing_400w,
+              if (index == items.length - 1) CoconutLayout.spacing_400w,
             ],
           );
         },
@@ -65,29 +67,25 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
     );
   }
 
-  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
+  Widget _tagSelectorChip(String name, bool isSelected) {
     final colors = context.coconutColors;
     final bgColor = isSelected ? colors.chipSelectedBackground : colors.chipUnselectedBackground;
     final textColor = isSelected ? colors.chipSelectedText : colors.chipUnselectedText;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       margin: const EdgeInsets.only(right: 4),
       height: 32,
+      alignment: Alignment.center,
       decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)),
-      child: FittedBox(
-        child: Text(
-          name,
-          style: CoconutTypography.body3_12_Number.copyWith(
-            color: textColor,
-            height: 1.3,
-            fontWeight:
-                isFixedTag
-                    ? FontWeight.w400
-                    : isSelected
-                    ? FontWeight.w700
-                    : FontWeight.w400,
-          ),
+      child: Text(
+        name,
+        maxLines: 1,
+        textHeightBehavior: const TextHeightBehavior(leadingDistribution: TextLeadingDistribution.even),
+        style: CoconutTypography.body3_12.copyWith(
+          color: textColor,
+          height: 1.3,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
         ),
       ),
     );

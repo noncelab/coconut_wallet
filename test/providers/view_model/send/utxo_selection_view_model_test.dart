@@ -37,13 +37,13 @@ class _PreferenceProvider extends Fake implements PreferenceProvider {
   UtxoOrder get utxoSortOrder => UtxoOrder.byAmountDesc;
 }
 
-UtxoState _utxo(int index, int amount, {UtxoStatus status = UtxoStatus.unspent}) => UtxoState(
+UtxoState _utxo(int index, int amount, {UtxoStatus status = UtxoStatus.unspent, bool isChange = false}) => UtxoState(
   transactionHash: index.toRadixString(16).padLeft(64, '0'),
   index: 0,
   amount: amount,
   blockHeight: 100,
   to: 'bcrt1qh22yl57ys0vaaln9nfp4zczj2fshjnl6gnsh66',
-  derivationPath: "m/84'/1'/0'/0/$index",
+  derivationPath: "m/84'/1'/0'/${isChange ? 1 : 0}/$index",
   timestamp: DateTime(2026, 1, 1).add(Duration(minutes: index)),
   status: status,
 );
@@ -94,11 +94,11 @@ void main() {
       expectConsistent(viewModel);
     });
 
-    test('selectTaggedUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO만 뺀다', () {
+    test('selectFilteredUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO만 뺀다', () {
       final viewModel = createViewModel();
 
       viewModel.setSelectedUtxoFilter(UtxoFilter.tag(tag.id));
-      viewModel.selectTaggedUtxo();
+      viewModel.selectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([taggedLarge, taggedSmall]));
       expectConsistent(viewModel);
@@ -121,11 +121,11 @@ void main() {
       expectConsistent(viewModel);
     });
 
-    test('selectTaggedUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO와 1000 sats 미만 UTXO를 뺀다', () {
+    test('selectFilteredUtxo는 태그가 붙은 UTXO 중 잠긴 UTXO와 1000 sats 미만 UTXO를 뺀다', () {
       final viewModel = createViewModel(minimumSelectableUtxoAmount: 1000);
 
       viewModel.setSelectedUtxoFilter(UtxoFilter.tag(tag.id));
-      viewModel.selectTaggedUtxo();
+      viewModel.selectFilteredUtxo();
 
       expect(ids(viewModel.selectedUtxoList), ids([taggedLarge]));
       expectConsistent(viewModel);
@@ -166,6 +166,145 @@ void main() {
       viewModel.deselectAllUtxo();
       expect(viewModel.selectedUtxoList, isEmpty);
       expect(viewModel.selectedUtxoAmountSum, 0);
+      expectConsistent(viewModel);
+    });
+  });
+
+  group('잔돈 필터', () {
+    final receive = _utxo(11, 50000);
+    final receiveLocked = _utxo(12, 10000, status: UtxoStatus.locked);
+    final changeLarge = _utxo(13, 20000, isChange: true);
+    final changeSmall = _utxo(14, 600, isChange: true);
+    final changeLocked = _utxo(15, 40000, isChange: true, status: UtxoStatus.locked);
+    final changeOutgoing = _utxo(16, 70000, isChange: true, status: UtxoStatus.outgoing);
+
+    UtxoSelectionViewModel createChangeViewModel(List<UtxoState> utxos, {int? minimumSelectableUtxoAmount}) {
+      final viewModel = UtxoSelectionViewModel(
+        _WalletProvider(utxos),
+        _UtxoTagProvider({}),
+        _PreferenceProvider(),
+        true,
+        _walletId,
+      )..minimumSelectableUtxoAmount = minimumSelectableUtxoAmount;
+      viewModel.initialize([]);
+      return viewModel;
+    }
+
+    final mixed = [receive, receiveLocked, changeLarge, changeSmall, changeLocked, changeOutgoing];
+
+    test('hasChangeUtxo는 목록에 잔돈 UTXO가 있을 때만 true다', () {
+      expect(createChangeViewModel(mixed).hasChangeUtxo, isTrue);
+      expect(createChangeViewModel([receive, receiveLocked]).hasChangeUtxo, isFalse);
+      // 보내는 중인 잔돈은 선택 목록에 나오지 않으므로 잔돈이 없는 것으로 본다
+      expect(createChangeViewModel([receive, changeOutgoing]).hasChangeUtxo, isFalse);
+    });
+
+    test('잔돈 필터를 켠 화면에서만, 고를 수 있는 잔돈이 있을 때 잔돈 칩과 필터 줄이 보인다', () {
+      final enabled = createChangeViewModel(mixed)..isChangeFilterEnabled = true;
+      expect(enabled.showChangeFilter, isTrue);
+      expect(enabled.isFilterBarVisible, isTrue);
+
+      final disabled = createChangeViewModel(mixed);
+      expect(disabled.showChangeFilter, isFalse);
+      expect(disabled.isFilterBarVisible, isFalse);
+
+      final noChange = createChangeViewModel([receive, changeLocked])..isChangeFilterEnabled = true;
+      expect(noChange.showChangeFilter, isFalse);
+      expect(noChange.isFilterBarVisible, isFalse);
+    });
+
+    test('태그가 있으면 잔돈 필터가 꺼져 있어도 필터 줄이 보인다', () {
+      final viewModel = createViewModel();
+      expect(viewModel.showChangeFilter, isFalse);
+      expect(viewModel.isFilterBarVisible, isTrue);
+    });
+
+    test('고를 수 있는 잔돈이 없으면 hasChangeUtxo는 false다', () {
+      expect(createChangeViewModel([receive, changeLocked]).hasChangeUtxo, isFalse);
+      expect(createChangeViewModel([receive, changeSmall], minimumSelectableUtxoAmount: 1000).hasChangeUtxo, isFalse);
+    });
+
+    test('잔돈 필터에서 전체 선택해도 필터 밖에서 고른 UTXO는 남는다', () {
+      final viewModel = createChangeViewModel(mixed);
+
+      viewModel.toggleUtxoSelection(receive);
+      viewModel.setSelectedUtxoFilter(UtxoFilter.change);
+      viewModel.selectFilteredUtxo();
+
+      expect(ids(viewModel.selectedUtxoList), ids([receive, changeLarge, changeSmall]));
+      expectConsistent(viewModel);
+    });
+
+    test('잔돈 필터에서 전체 해제하면 보이는 잔돈만 풀리고 필터 밖 선택은 남는다', () {
+      final viewModel = createChangeViewModel(mixed);
+
+      viewModel.toggleUtxoSelection(receive);
+      viewModel.toggleUtxoSelection(changeLarge);
+      viewModel.setSelectedUtxoFilter(UtxoFilter.change);
+      viewModel.deselectFilteredUtxo();
+
+      expect(ids(viewModel.selectedUtxoList), ids([receive]));
+      expectConsistent(viewModel);
+    });
+
+    test('다시 읽을 때 고를 수 있는 잔돈이 없으면 잔돈 필터는 전체로 돌아간다', () {
+      final utxos = List<UtxoState>.of(mixed);
+      final viewModel = UtxoSelectionViewModel(
+        _WalletProvider(utxos),
+        _UtxoTagProvider({}),
+        _PreferenceProvider(),
+        true,
+        _walletId,
+      )..initialize([]);
+
+      viewModel.setSelectedUtxoFilter(UtxoFilter.change);
+      utxos.removeWhere((utxo) => utxo == changeLarge || utxo == changeSmall);
+      viewModel.reload([]);
+
+      expect(viewModel.hasChangeUtxo, isFalse);
+      expect(viewModel.selectedUtxoFilter, UtxoFilter.all);
+      expect(ids(viewModel.filteredUtxoList), ids([receive, receiveLocked, changeLocked]));
+    });
+
+    test('잔돈 필터를 고르면 잔돈 주소의 UTXO만 남고, 잠긴 잔돈은 뒤에 온다', () {
+      final viewModel = createChangeViewModel(mixed);
+
+      viewModel.setSelectedUtxoFilter(UtxoFilter.change);
+
+      expect(viewModel.filteredUtxoList, [changeLarge, changeSmall, changeLocked]);
+      expect(viewModel.filteredUtxoList.every((utxo) => utxo.isChange), isTrue);
+    });
+
+    test('잔돈 필터에서 전체 선택하면 잠기지 않은 잔돈 UTXO만 선택된다', () {
+      final viewModel = createChangeViewModel(mixed);
+
+      viewModel.setSelectedUtxoFilter(UtxoFilter.change);
+      viewModel.selectFilteredUtxo();
+
+      expect(ids(viewModel.selectedUtxoList), ids([changeLarge, changeSmall]));
+      expect(viewModel.selectedUtxoAmountSum, 20600);
+      expectConsistent(viewModel);
+    });
+
+    test('최소 금액이 1000이면 잔돈 필터의 전체 선택에서 1000 sats 미만 잔돈을 뺀다', () {
+      final viewModel = createChangeViewModel(mixed, minimumSelectableUtxoAmount: 1000);
+
+      viewModel.setSelectedUtxoFilter(UtxoFilter.change);
+      viewModel.selectFilteredUtxo();
+
+      expect(ids(viewModel.selectedUtxoList), ids([changeLarge]));
+      expectConsistent(viewModel);
+    });
+
+    test('잔돈 필터를 바꿔도 이미 선택한 UTXO는 유지되고, 전체로 돌아오면 모두 다시 보인다', () {
+      final viewModel = createChangeViewModel(mixed);
+
+      viewModel.toggleUtxoSelection(receive);
+      viewModel.setSelectedUtxoFilter(UtxoFilter.change);
+      expect(ids(viewModel.selectedUtxoList), ids([receive]));
+
+      viewModel.setSelectedUtxoFilter(UtxoFilter.all);
+      expect(ids(viewModel.filteredUtxoList), ids([receive, receiveLocked, changeLarge, changeSmall, changeLocked]));
       expectConsistent(viewModel);
     });
   });
