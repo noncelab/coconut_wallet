@@ -18,6 +18,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
   final VoidCallback onUnselectAll;
   final VoidCallback onToggleOrderDropdown;
   final Color? backgroundColor;
+  final double bottomPadding;
 
   const SelectedUtxoAmountHeader({
     super.key,
@@ -30,6 +31,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
     required this.onUnselectAll,
     required this.onToggleOrderDropdown,
     this.backgroundColor,
+    this.bottomPadding = 12,
   });
 
   @override
@@ -44,7 +46,7 @@ class SelectedUtxoAmountHeader extends StatelessWidget {
 
     return Container(
       color: backgroundColor ?? colors.background,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
       child: Column(
         children: [
           _buildTotalRow(context, utxoSumText, unitText),

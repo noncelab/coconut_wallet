@@ -15,6 +15,7 @@ import 'package:coconut_wallet/providers/view_model/send/utxo_selection_view_mod
 import 'package:coconut_wallet/providers/wallet_provider.dart';
 import 'package:coconut_wallet/screens/send/utxo_selection_screen.dart';
 import 'package:coconut_wallet/widgets/features/utxo/card/utxo_selection_card.dart';
+import 'package:coconut_wallet/widgets/features/utxo/selector/custom_tag_horizontal_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -127,10 +128,13 @@ void main() {
   List<String> shownUtxoIds(WidgetTester tester) =>
       tester.widgetList<UtxoSelectionCard>(find.byType(UtxoSelectionCard)).map((card) => card.utxo.utxoId).toList();
 
+  Finder filterChip(String text) =>
+      find.descendant(of: find.byType(CustomTagHorizontalSelector), matching: find.text(text));
+
   testWidgets('잔돈 필터를 켜지 않은 화면에는 잔돈 칩이 보이지 않는다', (tester) async {
     await pump(tester, [receive, change], showChangeFilter: false);
 
-    expect(find.text(t.change), findsNothing);
+    expect(filterChip(t.change), findsNothing);
     expect(find.byType(UtxoSelectionCard), findsNWidgets(2));
     expect(tester.takeException(), isNull);
   });
@@ -138,12 +142,12 @@ void main() {
   testWidgets('태그가 없어도 잔돈 UTXO가 있으면 잔돈 칩이 보이고, 누르면 잔돈 UTXO만 남는다', (tester) async {
     await pump(tester, [receive, change, lockedChange], showChangeFilter: true);
 
-    expect(find.text(t.all), findsOneWidget);
-    expect(find.text(t.change), findsOneWidget);
-    expect(find.text(t.utxo_detail_screen.utxo_locked), findsNothing);
+    expect(filterChip(t.all), findsOneWidget);
+    expect(filterChip(t.change), findsOneWidget);
+    expect(filterChip(t.utxo_detail_screen.utxo_locked), findsNothing);
     expect(find.byType(UtxoSelectionCard), findsNWidgets(3));
 
-    await tester.tap(find.text(t.change));
+    await tester.tap(filterChip(t.change));
     await tester.pumpAndSettle();
 
     expect(viewModelOf(tester).selectedUtxoFilter, UtxoFilter.change);
@@ -154,7 +158,7 @@ void main() {
   testWidgets('잔돈 필터에서 전체 선택하면 잠기지 않은 잔돈 UTXO만 선택된다', (tester) async {
     await pump(tester, [receive, change, lockedChange], showChangeFilter: true);
 
-    await tester.tap(find.text(t.change));
+    await tester.tap(filterChip(t.change));
     await tester.pumpAndSettle();
     await tester.tap(find.text(t.select_all));
     await tester.pumpAndSettle();
@@ -163,7 +167,7 @@ void main() {
     expect(viewModel.selectedUtxoList.map((utxo) => utxo.utxoId), [change.utxoId]);
     expect(viewModel.selectedUtxoAmountSum, change.amount);
 
-    await tester.tap(find.text(t.all));
+    await tester.tap(filterChip(t.all));
     await tester.pumpAndSettle();
 
     expect(find.byType(UtxoSelectionCard), findsNWidgets(3));
@@ -174,8 +178,8 @@ void main() {
   testWidgets('잔돈 UTXO가 없으면 잔돈 필터를 켜도 칩이 보이지 않는다', (tester) async {
     await pump(tester, [receive], showChangeFilter: true);
 
-    expect(find.text(t.change), findsNothing);
-    expect(find.text(t.all), findsNothing);
+    expect(filterChip(t.change), findsNothing);
+    expect(filterChip(t.all), findsNothing);
     expect(find.byType(UtxoSelectionCard), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -188,10 +192,24 @@ void main() {
       tags: const [UtxoTag(id: 'tag-1', walletId: _walletId, name: 'cold', colorIndex: 0)],
     );
 
-    final allLeft = tester.getTopLeft(find.text(t.all)).dx;
-    final changeLeft = tester.getTopLeft(find.text(t.change)).dx;
-    final tagLeft = tester.getTopLeft(find.text('#cold')).dx;
+    final allLeft = tester.getTopLeft(filterChip(t.all)).dx;
+    final changeLeft = tester.getTopLeft(filterChip(t.change)).dx;
+    final tagLeft = tester.getTopLeft(filterChip('#cold')).dx;
     expect(allLeft < changeLeft && changeLeft < tagLeft, isTrue);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('잔돈 UTXO 카드에는 태그 줄 맨 앞에 잔돈 칩이 붙는다', (tester) async {
+    await pump(tester, [receive, change, lockedChange], showChangeFilter: true);
+
+    Finder cardChip(UtxoState utxo) => find.descendant(
+      of: find.byWidgetPredicate((widget) => widget is UtxoSelectionCard && widget.utxo.utxoId == utxo.utxoId),
+      matching: find.text(t.change),
+    );
+
+    expect(cardChip(change), findsOneWidget);
+    expect(cardChip(lockedChange), findsOneWidget);
+    expect(cardChip(receive), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

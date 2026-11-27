@@ -34,12 +34,11 @@ class CustomTagHorizontalSelector extends StatefulWidget {
 class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelector> {
   @override
   Widget build(BuildContext context) {
-    final items = <({UtxoFilter filter, String text, bool isFixedTag})>[
-      (filter: UtxoFilter.all, text: t.all, isFixedTag: true),
-      if (widget.showDefaultTags) (filter: UtxoFilter.locked, text: t.utxo_detail_screen.utxo_locked, isFixedTag: true),
-      if (widget.showDefaultTags || widget.showChangeFilter)
-        (filter: UtxoFilter.change, text: t.change, isFixedTag: true),
-      for (final tag in widget.tags) (filter: UtxoFilter.tag(tag.id), text: '#${tag.name}', isFixedTag: false),
+    final items = <({UtxoFilter filter, String text})>[
+      (filter: UtxoFilter.all, text: t.all),
+      if (widget.showDefaultTags) (filter: UtxoFilter.locked, text: t.utxo_detail_screen.utxo_locked),
+      if (widget.showDefaultTags || widget.showChangeFilter) (filter: UtxoFilter.change, text: t.change),
+      for (final tag in widget.tags) (filter: UtxoFilter.tag(tag.id), text: '#${tag.name}'),
     ];
 
     return SizedBox(
@@ -58,9 +57,9 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
                 onTap: () {
                   widget.onSelectedFilter.call(item.filter);
                 },
-                child: _tagSelectorChip(item.text, widget.selectedFilter == item.filter, item.isFixedTag),
+                child: _tagSelectorChip(item.text, widget.selectedFilter == item.filter),
               ),
-              if (index == items.length) CoconutLayout.spacing_400w,
+              if (index == items.length - 1) CoconutLayout.spacing_400w,
             ],
           );
         },
@@ -68,29 +67,25 @@ class _CustomTagHorizontalSelectorState extends State<CustomTagHorizontalSelecto
     );
   }
 
-  Widget _tagSelectorChip(String name, bool isSelected, bool isFixedTag) {
+  Widget _tagSelectorChip(String name, bool isSelected) {
     final colors = context.coconutColors;
     final bgColor = isSelected ? colors.chipSelectedBackground : colors.chipUnselectedBackground;
     final textColor = isSelected ? colors.chipSelectedText : colors.chipUnselectedText;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       margin: const EdgeInsets.only(right: 4),
       height: 32,
+      alignment: Alignment.center,
       decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(16)),
-      child: FittedBox(
-        child: Text(
-          name,
-          style: CoconutTypography.body3_12_Number.copyWith(
-            color: textColor,
-            height: 1.3,
-            fontWeight:
-                isFixedTag
-                    ? FontWeight.w400
-                    : isSelected
-                    ? FontWeight.w700
-                    : FontWeight.w400,
-          ),
+      child: Text(
+        name,
+        maxLines: 1,
+        textHeightBehavior: const TextHeightBehavior(leadingDistribution: TextLeadingDistribution.even),
+        style: CoconutTypography.body3_12.copyWith(
+          color: textColor,
+          height: 1.3,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
         ),
       ),
     );

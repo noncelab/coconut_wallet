@@ -213,4 +213,35 @@ void main() {
       expect(find.text('2개에 적용'), findsOneWidget);
     });
   });
+
+  testWidgets('the selected chip is bold whether it is a default filter or a tag', (tester) async {
+    var selected = UtxoFilter.all;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildCoconutThemeData(),
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder:
+                (context, setState) => CustomTagHorizontalSelector(
+                  tags: const [UtxoTag(id: 'savings', walletId: 1, name: 'Savings', colorIndex: 0)],
+                  showDefaultTags: false,
+                  showChangeFilter: true,
+                  selectedFilter: selected,
+                  onSelectedFilter: (value) => setState(() => selected = value),
+                ),
+          ),
+        ),
+      ),
+    );
+    FontWeight? weight(String text) => tester.widget<Text>(find.text(text)).style!.fontWeight;
+
+    expect(weight(t.all), FontWeight.w700);
+    expect(weight(t.change), FontWeight.w400);
+
+    await tester.tap(find.text(t.change));
+    await tester.pump();
+    expect(weight(t.change), FontWeight.w700);
+    expect(weight(t.all), FontWeight.w400);
+    expect(weight('#Savings'), FontWeight.w400);
+  });
 }

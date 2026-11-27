@@ -172,50 +172,40 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
                                   });
                                 },
                                 backgroundColor: resolvedBackgroundColor,
+                                bottomPadding: viewModel.isFilterBarVisible ? 4 : 12,
                               ),
-                              _buildUtxoTagList(viewModel),
                               Expanded(
-                                child:
-                                    viewModel.hasLoadError
-                                        ? _buildEmptyState(viewModel)
-                                        : viewModel.isInitialized
-                                        ? Stack(
-                                          children: [
-                                            Container(color: resolvedBackgroundColor, child: _buildUtxoList(viewModel)),
-                                            Positioned(
-                                              top: 0,
-                                              left: 0,
-                                              right: 0,
-                                              child: IgnorePointer(
-                                                child: Container(
-                                                  height: 16,
-                                                  decoration: BoxDecoration(
-                                                    gradient: LinearGradient(
-                                                      begin: Alignment.topCenter,
-                                                      end: Alignment.bottomCenter,
-                                                      colors: [
-                                                        resolvedBackgroundColor,
-                                                        resolvedBackgroundColor.withValues(alpha: 0),
-                                                      ],
-                                                    ),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child:
+                                          viewModel.hasLoadError
+                                              ? _buildEmptyState(viewModel)
+                                              : viewModel.isInitialized
+                                              ? Stack(
+                                                children: [
+                                                  Container(
+                                                    color: resolvedBackgroundColor,
+                                                    child: _buildUtxoList(viewModel),
                                                   ),
-                                                ),
-                                              ),
-                                            ),
-                                            FixedBottomButton(
-                                              onButtonClicked: () {
-                                                vibrateLight();
-                                                Navigator.pop(context, _viewModel.selectedUtxoList);
-                                              },
-                                              text: t.done,
-                                              isActive: _viewModel.hasSelectionChanged,
-                                              showSurroundings: true,
-                                              horizontalPadding: 16,
-                                              surroundingsColor: context.coconutColors.bottomActionBarBackground,
-                                            ),
-                                          ],
-                                        )
-                                        : const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero)),
+                                                  FixedBottomButton(
+                                                    onButtonClicked: () {
+                                                      vibrateLight();
+                                                      Navigator.pop(context, _viewModel.selectedUtxoList);
+                                                    },
+                                                    text: t.done,
+                                                    isActive: _viewModel.hasSelectionChanged,
+                                                    showSurroundings: true,
+                                                    horizontalPadding: 16,
+                                                    surroundingsColor: context.coconutColors.bottomActionBarBackground,
+                                                  ),
+                                                ],
+                                              )
+                                              : const Center(child: InlineLoadingIndicator(padding: EdgeInsets.zero)),
+                                    ),
+                                    _buildUtxoTagList(viewModel, resolvedBackgroundColor),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -246,13 +236,16 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
       _hasScrollController = widget.scrollController == null;
       _scrollController = widget.scrollController ?? ScrollController();
 
-      _viewModel = UtxoSelectionViewModel(
-        Provider.of<WalletProvider>(context, listen: false),
-        Provider.of<UtxoTagProvider>(context, listen: false),
-        Provider.of<PreferenceProvider>(context, listen: false),
-        Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
-        widget.walletId,
-      )..minimumSelectableUtxoAmount = widget.minimumSelectableUtxoAmount;
+      _viewModel =
+          UtxoSelectionViewModel(
+              Provider.of<WalletProvider>(context, listen: false),
+              Provider.of<UtxoTagProvider>(context, listen: false),
+              Provider.of<PreferenceProvider>(context, listen: false),
+              Provider.of<ConnectivityProvider>(context, listen: false).isInternetOn,
+              widget.walletId,
+            )
+            ..minimumSelectableUtxoAmount = widget.minimumSelectableUtxoAmount
+            ..isChangeFilterEnabled = widget.showChangeFilter;
 
       _scrollController.addListener(() {
         if (_isOrderDropdownVisible) {
@@ -377,18 +370,43 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return Container();
   }
 
-  Widget _buildUtxoTagList(UtxoSelectionViewModel viewModel) {
-    // 잔돈 UTXO가 없으면 칩을 숨기되, 이미 잔돈 필터가 선택된 상태라면 선택 표시가 사라지지 않게 유지
-    final showChangeFilter =
-        widget.showChangeFilter && (viewModel.hasChangeUtxo || viewModel.selectedUtxoFilter == UtxoFilter.change);
-    return Visibility(
-      visible: !viewModel.isUtxoTagListEmpty || showChangeFilter,
+  Widget _buildUtxoTagList(UtxoSelectionViewModel viewModel, Color backgroundColor) {
+    if (!viewModel.isFilterBarVisible) {
+      return Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        child: IgnorePointer(
+          child: Container(
+            height: 16,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [backgroundColor, backgroundColor.withValues(alpha: 0)],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
       child: Container(
-        margin: const EdgeInsets.only(left: 4, bottom: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0, 0.75],
+            colors: [backgroundColor, backgroundColor.withValues(alpha: 0)],
+          ),
+        ),
         child: CustomTagHorizontalSelector(
           tags: viewModel.utxoTagList,
           showDefaultTags: false,
-          showChangeFilter: showChangeFilter,
+          showChangeFilter: viewModel.showChangeFilter,
           selectedFilter: viewModel.selectedUtxoFilter,
           onSelectedFilter: viewModel.setSelectedUtxoFilter,
         ),
@@ -480,7 +498,7 @@ class _UtxoSelectionScreenState extends State<UtxoSelectionScreen> {
     return ListView.separated(
       key: ValueKey(viewModel.selectedUtxoFilter),
       controller: _scrollController,
-      padding: const EdgeInsets.only(top: 10, bottom: 100, left: 16, right: 16),
+      padding: EdgeInsets.only(top: viewModel.isFilterBarVisible ? 48 : 10, bottom: 100, left: 16, right: 16),
       itemCount: filteredUtxoList.length,
       separatorBuilder: (context, index) => const SizedBox(height: 0),
       itemBuilder: (context, index) {

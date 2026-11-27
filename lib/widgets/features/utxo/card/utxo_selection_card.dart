@@ -107,25 +107,38 @@ class UtxoSelectionCard extends StatelessWidget {
                     ],
                   ),
                   Visibility(
-                    visible: utxoTags?.isNotEmpty == true,
+                    visible: utxoTags?.isNotEmpty == true || utxo.isChange,
                     child: Container(
                       margin: const EdgeInsets.only(top: 4),
                       child: Wrap(
                         spacing: 4,
                         runSpacing: 4,
-                        children: List.generate(utxoTags?.length ?? 0, (index) {
-                          Color foregroundColor = tagColorPalette[utxoTags?[index].colorIndex ?? 0];
-                          return IntrinsicWidth(
-                            child: CoconutChip(
-                              minWidth: chipMinWidth,
-                              color: CoconutColors.backgroundColorPaletteDark[utxoTags?[index].colorIndex ?? 0],
-                              borderColor: foregroundColor,
-                              label: '#${utxoTags?[index].name ?? ''}',
-                              labelSize: chipLabelSize,
-                              labelColor: foregroundColor,
+                        children: [
+                          if (utxo.isChange)
+                            IntrinsicWidth(
+                              child: CoconutChip(
+                                minWidth: chipMinWidth,
+                                color: colors.surfaceInfoChip,
+                                borderColor: colors.surfaceInfoChip,
+                                label: t.change,
+                                labelSize: chipLabelSize,
+                                labelColor: colors.primaryText,
+                              ),
                             ),
-                          );
-                        }),
+                          ...List.generate(utxoTags?.length ?? 0, (index) {
+                            Color foregroundColor = tagColorPalette[utxoTags?[index].colorIndex ?? 0];
+                            return IntrinsicWidth(
+                              child: CoconutChip(
+                                minWidth: chipMinWidth,
+                                color: CoconutColors.backgroundColorPaletteDark[utxoTags?[index].colorIndex ?? 0],
+                                borderColor: foregroundColor,
+                                label: '#${utxoTags?[index].name ?? ''}',
+                                labelSize: chipLabelSize,
+                                labelColor: foregroundColor,
+                              ),
+                            );
+                          }),
+                        ],
                       ),
                     ),
                   ),
