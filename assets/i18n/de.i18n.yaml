@@ -2304,6 +2304,7 @@ ark_wallet:
   problem_onchain: "On-Chain-Senden ist noch nicht möglich"
   problem_network: "Adresse eines anderen Netzwerks"
   problem_expired: "Rechnung abgelaufen"
+  invoice_expires_in(n): "Läuft in $n Min. ab"
   problem_unsupported: "Format wird nicht unterstützt"
   problem_unknown: "Keine Ark-Adresse oder Lightning-Rechnung"
   problem_balance: "Guthaben reicht nicht"

@@ -2299,6 +2299,7 @@ ark_wallet:
   problem_onchain: "On-chain sends are not available yet"
   problem_network: "This is for another network"
   problem_expired: "This invoice has expired"
+  invoice_expires_in(n): "Expires in $n min"
   problem_unsupported: "This format is not supported"
   problem_unknown: "Not an Ark address or Lightning invoice"
   problem_balance: "Not enough balance"

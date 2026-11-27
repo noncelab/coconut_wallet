@@ -200,7 +200,15 @@ class _ArkSendViewState extends State<_ArkSendView> {
             ],
           ),
           FixedBottomButton(
-            subWidget: problem == null ? null : arkMoveProblemText(context, problem),
+            subWidget: switch ((problem, viewModel.invoiceMinutesLeft)) {
+              (final String problem, _) => arkMoveProblemText(context, problem),
+              (null, final int minutes) => arkMoveProblemText(
+                context,
+                t.ark_wallet.invoice_expires_in(n: minutes),
+                color: colors.warning,
+              ),
+              _ => null,
+            },
             text: t.next,
             isActive: viewModel.canContinue,
             onButtonClicked: () => ArkSendConfirmScreen.open(context, viewModel),

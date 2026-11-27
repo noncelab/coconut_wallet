@@ -2296,6 +2296,7 @@ ark_wallet:
   problem_onchain: "オンチェーン送金はまだ使えません"
   problem_network: "別のネットワークのアドレスです"
   problem_expired: "期限切れのインボイスです"
+  invoice_expires_in(n): "あと$n分で期限切れ"
   problem_unsupported: "対応していない形式です"
   problem_unknown: "ArkアドレスでもLightningインボイスでもありません"
   problem_balance: "残高が足りません"

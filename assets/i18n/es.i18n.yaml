@@ -2299,6 +2299,7 @@ ark_wallet:
   problem_onchain: "Los envíos on-chain aún no están disponibles"
   problem_network: "Es de otra red"
   problem_expired: "Factura caducada"
+  invoice_expires_in(n): "Caduca en $n min"
   problem_unsupported: "Formato no compatible"
   problem_unknown: "No es una dirección Ark ni una factura Lightning"
   problem_balance: "Saldo insuficiente"

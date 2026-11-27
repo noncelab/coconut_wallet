@@ -114,7 +114,7 @@ class ArkPaymentRequest {
   @visibleForTesting
   static DateTime Function() clock = DateTime.now;
 
-  static bool _isExpired(DateTime? expiresAt) => expiresAt != null && !clock().isBefore(expiresAt);
+  static bool isExpired(DateTime? expiresAt) => expiresAt != null && !clock().isBefore(expiresAt);
 
   static ArkPaymentRequest parse(String input, NetworkType network) {
     final raw = input.trim();
@@ -296,7 +296,7 @@ class ArkPaymentRequest {
     final prefix = _invoicePrefixes.firstWhere(invoice.startsWith);
     if (prefix != invoicePrefixFor(network)) return _unsupported(raw, ArkPaymentRequestProblem.invoiceNetwork);
     final expiresAt = bolt11ExpiresAt(invoice);
-    if (_isExpired(expiresAt)) return _unsupported(raw, ArkPaymentRequestProblem.invoiceExpired);
+    if (isExpired(expiresAt)) return _unsupported(raw, ArkPaymentRequestProblem.invoiceExpired);
     final amount = bolt11AmountSats(invoice);
     return ArkPaymentRequest._(
       kind: ArkPaymentRequestKind.lightningInvoice,
@@ -367,7 +367,7 @@ class ArkPaymentRequest {
     final lightning = params['lightning']?.trim().toLowerCase();
     if (lightning != null && _looksLikeBolt11(lightning) && lightning.startsWith(invoicePrefixFor(network))) {
       invoiceExpiresAt = bolt11ExpiresAt(lightning);
-      invoiceExpired = _isExpired(invoiceExpiresAt);
+      invoiceExpired = isExpired(invoiceExpiresAt);
       if (!invoiceExpired) {
         invoice = lightning;
         invoiceAmount = bolt11AmountSats(lightning);

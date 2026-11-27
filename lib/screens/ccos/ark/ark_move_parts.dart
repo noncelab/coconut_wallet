@@ -181,10 +181,10 @@ Future<bool> authenticateArkMove(BuildContext context) =>
     AppGuard.runWithoutPrivacyScreen(() => FlutterHotWalletAuthenticator(context).authenticate());
 
 /// 보내기 화면과 같이 다음 버튼 위에 띄우는 오류 문구
-Widget arkMoveProblemText(BuildContext context, String message) => Text(
+Widget arkMoveProblemText(BuildContext context, String message, {Color? color}) => Text(
   TextUtils.preventLineBreakInsideWords(message),
   textAlign: TextAlign.center,
-  style: CoconutTypography.body3_12.setColor(context.coconutColors.dangerText),
+  style: CoconutTypography.body3_12.setColor(color ?? context.coconutColors.dangerText),
 );
 
 /// 보내기 화면과 같은 수수료율 표시, 예: 2.0 sat/vB

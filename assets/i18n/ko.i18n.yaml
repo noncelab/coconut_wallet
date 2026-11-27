@@ -2305,6 +2305,7 @@ ark_wallet:
   problem_onchain: "온체인 보내기는 아직 안 돼요"
   problem_network: "다른 네트워크의 주소예요"
   problem_expired: "만료된 인보이스예요"
+  invoice_expires_in(n): "$n분 뒤 만료돼요"
   problem_unsupported: "지원하지 않는 형식이에요"
   problem_unknown: "아크 주소나 라이트닝 인보이스가 아니에요"
   problem_balance: "잔액이 부족해요"

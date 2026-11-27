@@ -136,4 +136,41 @@ void main() {
       expect(wallet.memoOf(result.movementId!), 'Rent');
     });
   });
+
+  group('invoice expiry', () {
+    final expiresAt = DateTime.utc(2026, 10, 21, 11, 24, 12);
+    void at(Duration beforeExpiry) => ArkPaymentRequest.clock = () => expiresAt.subtract(beforeExpiry);
+
+    test('says how many minutes are left once expiry is near', () {
+      at(const Duration(minutes: 3, seconds: 30));
+      viewModel.setInput(_invoice);
+
+      expect(viewModel.problem, isNull);
+      expect(viewModel.invoiceMinutesLeft, 4);
+    });
+
+    test('stays quiet while expiry is far away', () {
+      at(const Duration(minutes: 30));
+      viewModel.setInput(_invoice);
+
+      expect(viewModel.invoiceMinutesLeft, isNull);
+    });
+
+    test('an invoice that expires while the screen is open becomes expired', () async {
+      at(const Duration(seconds: 1));
+      viewModel.setInput(_invoice);
+      var notified = 0;
+      void listener() => notified++;
+      viewModel.addListener(listener);
+      addTearDown(() => viewModel.removeListener(listener));
+      at(Duration.zero);
+
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+
+      expect(notified, greaterThan(0));
+      expect(viewModel.problem, ArkSendProblem.expiredInvoice);
+      expect(viewModel.invoiceMinutesLeft, isNull);
+      expect(viewModel.canContinue, isFalse);
+    });
+  });
 }

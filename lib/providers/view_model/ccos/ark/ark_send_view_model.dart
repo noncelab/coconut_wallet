@@ -25,7 +25,11 @@ class ArkSendViewModel extends ChangeNotifier {
   bool _isEstimating = false;
   bool _feeFailed = false;
   Timer? _feeTimer;
+  Timer? _expiryTimer;
   String? _memo;
+
+  /// 만료가 이만큼 남으면 남은 시간을 알림
+  static const expiryWarningWindow = Duration(minutes: 10);
 
   String get input => _input;
 
@@ -60,6 +64,17 @@ class ArkSendViewModel extends ChangeNotifier {
   int? get amountSats => invoiceHasAmount ? _request!.invoiceAmountSats : _enteredAmount;
   int? get total => amountSats == null || _fee == null ? null : amountSats! + _fee!;
 
+  DateTime? get _invoiceExpiresAt => rail == ArkPaymentRail.lightningInvoice ? _request?.invoiceExpiresAt : null;
+
+  /// 인보이스 만료까지 남은 분(올림). 만료가 [expiryWarningWindow] 안으로 다가왔고 다른 문제가 없을 때만
+  int? get invoiceMinutesLeft {
+    final expiresAt = _invoiceExpiresAt;
+    if (expiresAt == null || problem != null) return null;
+    final left = expiresAt.difference(ArkPaymentRequest.clock());
+    if (left > expiryWarningWindow) return null;
+    return (left.inSeconds / 60).ceil();
+  }
+
   /// 받는 주소 칸에서 생긴 문제
   bool get hasInputProblem => switch (problem) {
     ArkSendProblem.notEnoughBalance || ArkSendProblem.feeFailed || null => false,
@@ -85,6 +100,7 @@ class ArkSendViewModel extends ChangeNotifier {
         return ArkSendProblem.unknown;
     }
     if (_option == null) return ArkSendProblem.unknown;
+    if (ArkPaymentRequest.isExpired(_invoiceExpiresAt)) return ArkSendProblem.expiredInvoice;
     final amount = amountSats;
     if (amount != null && amount + (_fee ?? 0) > _wallet.balance.spendable) return ArkSendProblem.notEnoughBalance;
     if (_feeFailed) return ArkSendProblem.feeFailed;
@@ -101,8 +117,36 @@ class ArkSendViewModel extends ChangeNotifier {
     _fee = null;
     _feeFailed = false;
     _memo = null;
+    _watchExpiry();
     notifyListeners();
     if (amountSats != null) _scheduleFee();
+  }
+
+  /// 화면이 지켜보는 동안만 1초마다 만료를 확인
+  void _watchExpiry() {
+    _expiryTimer?.cancel();
+    _expiryTimer = null;
+    if (!hasListeners || _invoiceExpiresAt == null || ArkPaymentRequest.isExpired(_invoiceExpiresAt)) return;
+    _expiryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final expired = ArkPaymentRequest.isExpired(_invoiceExpiresAt);
+      if (expired || invoiceMinutesLeft != null) notifyListeners();
+      if (expired) timer.cancel();
+    });
+  }
+
+  @override
+  void addListener(VoidCallback listener) {
+    super.addListener(listener);
+    if (_expiryTimer == null) _watchExpiry();
+  }
+
+  @override
+  void removeListener(VoidCallback listener) {
+    super.removeListener(listener);
+    if (!hasListeners) {
+      _expiryTimer?.cancel();
+      _expiryTimer = null;
+    }
   }
 
   Future<void> setAmount(int? amountSats) {
@@ -144,6 +188,7 @@ class ArkSendViewModel extends ChangeNotifier {
   @override
   void dispose() {
     _feeTimer?.cancel();
+    _expiryTimer?.cancel();
     super.dispose();
   }
 }
