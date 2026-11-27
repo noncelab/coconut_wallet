@@ -30,6 +30,8 @@ final realmAllSchemas = [
   RealmTransactionMemo.schema,
   RealmWalletPreferences.schema,
   RealmTransactionDraft.schema,
+  RealmPayjoinSession.schema,
+  RealmPayjoinSeenInput.schema,
 ];
 
 @RealmModel()
@@ -290,4 +292,35 @@ class _RealmTransactionDraft {
   late String? bitcoinUnit;
   late List<String> selectedUtxoIds;
   late String? txWaitingForSign;
+}
+
+/// A BIP 77 payjoin session: payjoin's own event log, replayed to resume the
+/// session, plus small values the wallet keeps beside it.
+@RealmModel()
+class _RealmPayjoinSession {
+  @PrimaryKey()
+  late String id;
+  @Indexed()
+  late int walletId;
+
+  /// "send" or "receive".
+  late String role;
+  late List<String> events;
+  @Indexed()
+  bool isClosed = false;
+  late DateTime createdAt;
+
+  /// JSON object of string values, see [PayjoinEventStore.writeValue].
+  String valuesJson = '{}';
+}
+
+/// An outpoint a sender has offered this wallet as a payjoin input.
+///
+/// A receiver refuses an Original that reuses one (BIP 78): a sender could
+/// otherwise replay inputs across sessions to learn which coins the receiver
+/// contributes.
+@RealmModel()
+class _RealmPayjoinSeenInput {
+  @PrimaryKey()
+  late String outpoint;
 }
