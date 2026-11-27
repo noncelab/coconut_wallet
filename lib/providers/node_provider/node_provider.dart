@@ -2,6 +2,7 @@ import 'package:coconut_wallet/analytics/analytics_wallet_type.dart';
 import 'dart:async';
 
 import 'package:coconut_lib/coconut_lib.dart';
+import 'package:coconut_wallet/utils/connection_diagnostics.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 import 'package:coconut_wallet/analytics/wallet_add_analytics.dart';
 import 'package:coconut_wallet/analytics/wallet_sync_analytics.dart';
@@ -241,8 +242,8 @@ class NodeProvider extends ChangeNotifier {
     this._analyticsService, {
     IsolateManager? isolateManager,
     bool Function(int walletId)? hasTransactionHistory,
-  }) : _isolateManager = isolateManager ?? IsolateManager(),
-       _hasTransactionHistory = hasTransactionHistory {
+  })  : _isolateManager = isolateManager ?? IsolateManager(),
+        _hasTransactionHistory = hasTransactionHistory {
     Logger.log('NodeProvider: initialized with $host:$port, ssl=$ssl, networkType=$_networkType');
 
     _knownWalletIds = _walletItemListNotifier.value.map((wallet) => wallet.id).toSet();
@@ -880,14 +881,27 @@ class NodeProvider extends ChangeNotifier {
 
   Future<Result<bool>> checkServerConnection(ElectrumServer electrumServer) async {
     final electrumService = ElectrumService();
+    final stopwatch = Stopwatch()..start();
+    var stage = 'connect';
+    ConnectionDiagnostics.log(
+      'checkServerConnection start ${electrumServer.host}:${electrumServer.port} ssl=${electrumServer.ssl}',
+    );
 
     try {
       await _establishSocketConnection(electrumService, electrumServer);
+      stage = 'server.version';
+      ConnectionDiagnostics.log('checkServerConnection connected ${stopwatch.elapsedMilliseconds}ms');
       await _verifyProtocolCommunication(electrumService);
 
+      ConnectionDiagnostics.log('checkServerConnection ok ${stopwatch.elapsedMilliseconds}ms');
       Logger.log('NodeProvider: 서버 연결 테스트 성공 - ${electrumServer.host}:${electrumServer.port}');
       return Result.success(true);
     } catch (e) {
+      ConnectionDiagnostics.log(
+        'checkServerConnection failed stage=$stage ${stopwatch.elapsedMilliseconds}ms: '
+        '${ConnectionDiagnostics.describe(e)}',
+      );
+      unawaited(ConnectionDiagnostics.run(electrumServer.host, electrumServer.port));
       Logger.error('NodeProvider: 서버 연결 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       await electrumService.close();
       if (electrumService.lastConnectionFailedDueToUntrustedCertificate) {
@@ -944,6 +958,7 @@ class NodeProvider extends ChangeNotifier {
       await _establishSocketConnection(electrumService, electrumServer);
       final features = await electrumService.serverFeatures().timeout(const Duration(seconds: 5));
       final genesisHash = features.genesisHash;
+      ConnectionDiagnostics.log('verifyChainCompatibility genesis=$genesisHash network=$_networkType');
 
       if (isBuildNetworkGenesisMismatch(buildNetworkType: _networkType, genesisHash: genesisHash)) {
         Logger.error(
@@ -968,6 +983,7 @@ class NodeProvider extends ChangeNotifier {
 
       return Result.success(true);
     } catch (e) {
+      ConnectionDiagnostics.log('verifyChainCompatibility failed: ${ConnectionDiagnostics.describe(e)}');
       Logger.error('NodeProvider: 체인 확인 실패 - ${electrumServer.host}:${electrumServer.port}: $e');
       return Result.failure(ErrorCodes.networkError);
     } finally {

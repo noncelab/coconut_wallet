@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:coconut_wallet/utils/certificate_util.dart';
+import 'package:coconut_wallet/utils/connection_diagnostics.dart';
 import 'package:coconut_wallet/utils/logger.dart';
 
 abstract class SocketFactory {
@@ -18,9 +19,23 @@ abstract class SocketFactory {
 
 class DefaultSocketFactory implements SocketFactory {
   @override
-  Future<Socket> createSocket(String host, int port, {Duration timeout = const Duration(seconds: 3)}) {
+  Future<Socket> createSocket(String host, int port, {Duration timeout = const Duration(seconds: 3)}) async {
     Logger.log('SocketFactory: Creating socket to $host:$port, timeout: $timeout}');
-    return Socket.connect(host, port, timeout: timeout);
+    final stopwatch = Stopwatch()..start();
+    try {
+      final socket = await Socket.connect(host, port, timeout: timeout);
+      ConnectionDiagnostics.log(
+        'createSocket ok ${stopwatch.elapsedMilliseconds}ms $host:$port '
+        'local=${socket.address.address} remote=${socket.remoteAddress.address}',
+      );
+      return socket;
+    } catch (e) {
+      ConnectionDiagnostics.log(
+        'createSocket failed ${stopwatch.elapsedMilliseconds}ms $host:$port timeout=$timeout: '
+        '${ConnectionDiagnostics.describe(e)}',
+      );
+      rethrow;
+    }
   }
 
   @override
