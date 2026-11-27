@@ -13,8 +13,12 @@ import 'package:coconut_wallet/model/wallet/wallet_address.dart';
 import 'package:coconut_wallet/model/wallet/wallet_item_base.dart';
 import 'package:coconut_wallet/providers/preferences/preference_provider.dart';
 import 'package:coconut_wallet/providers/wallet_provider.dart';
+import 'package:coconut_wallet/enums/wallet_enums.dart';
 import 'package:coconut_wallet/screens/send/select_wallet_bottom_sheet.dart';
+import 'package:coconut_wallet/services/payjoin/payjoin_receiver.dart' show payjoinUriWithAmount;
+import 'package:coconut_wallet/services/payjoin/payjoin_session_manager.dart';
 import 'package:coconut_wallet/utils/address_util.dart';
+import 'package:coconut_wallet/widgets/features/payjoin/payjoin_receive_status.dart';
 import 'package:coconut_wallet/widgets/features/qr/input_and_share_overlay.dart';
 import 'package:coconut_wallet/widgets/common/buttons/shrink_animation_button.dart';
 import 'package:coconut_wallet/widgets/common/icon/coconut_logo_icon.dart';
@@ -61,8 +65,114 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
 
   String get qrData {
     if (_receiveAddress == null) return '';
+    final pjUri = _payjoinUri;
+    if (pjUri != null) return payjoinUriWithAmount(pjUri, _enteredReceiveAmountSats);
     if (_enteredReceiveAmountSats == null) return _receiveAddress!.address;
     return buildBip21UriFromWalletAddress(_receiveAddress!, amount: _enteredReceiveAmountSats);
+  }
+
+  String? _payjoinSessionId;
+  String? _payjoinUri;
+  bool _payjoinStarting = false;
+
+  /// Payjoin receiving needs a single-signature wallet that can sign its
+  /// added input right away.
+  bool get _canPayjoin {
+    final wallet = _selectedWalletItem;
+    return wallet != null &&
+        wallet.walletType == WalletType.singleSignature &&
+        wallet.hasLocalKey &&
+        wallet.hotWalletMetadata?.enterPassphraseWhenSigning == false;
+  }
+
+  void _resumePayjoinSession() {
+    final id = context.read<PayjoinSessionManager>().openReceiveSession(selectedWalletId, receiveAddress);
+    _payjoinSessionId = id;
+    _payjoinUri = id == null ? null : context.read<PayjoinSessionManager>().pjUri(id);
+  }
+
+  Future<void> _setPayjoin(bool on) async {
+    final manager = context.read<PayjoinSessionManager>();
+    if (!on) {
+      final id = _payjoinSessionId;
+      setState(() {
+        _payjoinSessionId = null;
+        _payjoinUri = null;
+      });
+      if (id != null) await manager.cancelReceive(id);
+      return;
+    }
+    setState(() => _payjoinStarting = true);
+    try {
+      final id = await manager.startReceive(walletId: selectedWalletId, address: receiveAddress);
+      if (!mounted) return;
+      setState(() {
+        _payjoinSessionId = id;
+        _payjoinUri = manager.pjUri(id);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      CoconutToast.showToast(context: context, isVisibleIcon: true, text: t.payjoin.receive_unavailable);
+    } finally {
+      if (mounted) setState(() => _payjoinStarting = false);
+    }
+  }
+
+  Widget _buildPayjoinToggle() {
+    final colors = context.coconutColors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 26),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CoconutLayout.spacing_400h,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t.payjoin.receive_title, style: CoconutTypography.body1_16_Bold.setColor(colors.primaryText)),
+                    Text(
+                      t.payjoin.receive_description,
+                      style: CoconutTypography.body3_12.setColor(colors.secondaryTextStrong),
+                    ),
+                  ],
+                ),
+              ),
+              CoconutLayout.spacing_200w,
+              CoconutSwitch(
+                key: const ValueKey('payjoin-receive-switch'),
+                scale: 0.7,
+                isOn: _payjoinSessionId != null || _payjoinStarting,
+                activeTrackColor: colors.switchActiveTrack,
+                activeThumbColor: colors.switchActiveThumb,
+                inactiveTrackColor: colors.switchInactiveTrack,
+                inactiveThumbColor: colors.switchInactiveThumb,
+                onChanged: (isOn) => _payjoinStarting ? null : _setPayjoin(isOn),
+              ),
+            ],
+          ),
+          if (_payjoinSessionId != null)
+            Consumer<PayjoinSessionManager>(
+              builder: (context, manager, _) {
+                final status = payjoinReceiveStatusText(
+                  manager.receiveProgress(_payjoinSessionId!),
+                  hasError: manager.receiveError(_payjoinSessionId!) != null,
+                );
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    status,
+                    key: const ValueKey('payjoin-receive-status'),
+                    style: CoconutTypography.body2_14_Bold.setColor(colors.primaryText),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
   }
 
   int get selectedWalletId => _selectedWalletItem != null ? _selectedWalletItem!.id : -1;
@@ -77,6 +187,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
     _selectedWalletItem = walletProvider.walletItemList.where((e) => e.id == widget.id).first;
     _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
     _walletCount = walletProvider.walletItemList.length;
+    _resumePayjoinSession();
   }
 
   @override
@@ -216,9 +327,12 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
                             ),
                           ),
                           qrData: qrData,
+                          // The pj URI is long; show the address and copy the whole URI.
+                          displayText: _payjoinUri == null ? null : receiveAddress,
                           embedWidget: const CoconutLogoIcon(size: 16),
                           isAddress: true,
                         ),
+                        if (_canPayjoin) _buildPayjoinToggle(),
                       ],
                     ),
                   ),
@@ -251,6 +365,7 @@ class _ReceiveAddressScreenState extends State<ReceiveAddressScreen> {
           final walletProvider = context.read<WalletProvider>();
           _selectedWalletItem = walletProvider.walletItemList.firstWhere((e) => e.id == id);
           _receiveAddress = walletProvider.getReceiveAddress(_selectedWalletItem!.id);
+          _resumePayjoinSession();
           setState(() {});
           Navigator.pop(context);
         },

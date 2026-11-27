@@ -108,16 +108,19 @@ void main() {
         ),
       ),
     );
-    navigator.currentState!.push(MaterialPageRoute<void>(builder: (_) => const Scaffold()));
+    final route = MaterialPageRoute<void>(builder: (_) => const Scaffold());
+    navigator.currentState!.push(route);
     await tester.pumpAndSettle();
     balance.value = 999000;
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
+    // The pop transition's length comes from the default page transition, which differs by Flutter version.
+    final pop = route.reverseTransitionDuration;
     navigator.currentState!.pop();
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 150));
+    await tester.pump(pop ~/ 2);
     expect(displayed(tester), 1000000);
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(pop - pop ~/ 2 + const Duration(milliseconds: 50));
     expect(displayed(tester), 1000000);
     await tester.pump(const Duration(milliseconds: 100));
     expect(displayed(tester), inExclusiveRange(999000, 1000000));

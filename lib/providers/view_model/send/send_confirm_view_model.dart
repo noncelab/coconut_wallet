@@ -129,14 +129,24 @@ class SendConfirmViewModel extends ChangeNotifier {
 
     final unsignedPsbt = _serializedUnsignedPsbt!;
     _sendInfoProvider.setTxWaitingForSign(unsignedPsbt);
-    final signedPsbt = await _hotWalletSigningService.sign((
+    final HotWalletSigningRequest request = (
       storageKey: metadata.secureStorageKey,
       passphrase: passphrase,
       addressTypeName: watchOnlyWallet.addressType.name,
       accountIndex: metadata.accountIndex,
       expectedExtendedPublicKey: watchOnlyWallet.keyStore.extendedPublicKey.serialize(),
       unsignedPsbt: unsignedPsbt,
-    ));
+    );
+    // A payjoin receiver checks that the Original can be broadcast as is, so
+    // it must be final.
+    final signedPsbt =
+        _sendInfoProvider.payjoinUri == null
+            ? await _hotWalletSigningService.sign(request)
+            : await _hotWalletSigningService.signAndFinalize(
+              request,
+              allowFinalizedForeignInputs: false,
+              keepDerivations: true,
+            );
     _sendInfoProvider.setSignedResult(signedPsbt);
   }
 
